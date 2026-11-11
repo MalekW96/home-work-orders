@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0.5
+
+- Fix: the top of the app was drawn under the camera and status bar. The page now sits inside a wrapper that carries the padding, because the web view ignores its own padding.
+
 ## 1.0.0.4
 
 - Header sits lower again so the full title is clear of the camera.

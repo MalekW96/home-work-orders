@@ -21,6 +21,8 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
+import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.webkit.WebViewClient
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
@@ -55,18 +57,29 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.attributes = window.attributes.apply {
+            layoutInDisplayCutoutMode = android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        }
 
         webView = WebView(this)
-        setContentView(webView)
+        // The padding for the status bar and camera cutout goes on this wrapper, not on the
+        // WebView itself: a WebView ignores its own padding and would draw under the camera.
+        val root = FrameLayout(this)
+        root.setBackgroundColor(getColor(R.color.window_bg))
+        root.addView(
+            webView,
+            FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        )
+        setContentView(root)
 
-        ViewCompat.setOnApplyWindowInsetsListener(webView) { v, insets ->
+        ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
             val bars = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or
                     WindowInsetsCompat.Type.displayCutout() or
                     WindowInsetsCompat.Type.ime()
             )
-            // Extra 60dp (about 1 cm) so the camera cutout never covers the header.
-            val extraTop = (60 * resources.displayMetrics.density).toInt()
+            // A little breathing room under the camera.
+            val extraTop = (12 * resources.displayMetrics.density).toInt()
             v.setPadding(bars.left, bars.top + extraTop, bars.right, bars.bottom)
             WindowInsetsCompat.CONSUMED
         }
