@@ -37,6 +37,28 @@ Each entry in `lines` is `{kind: part | labour | other, name, partNo, supplier, 
 2. Republish it to the same artifact so the URL and the stored records are kept. In Claude: "update my Home Work Orders artifact from home-work-orders.html".
 3. Keep the declared capabilities: `db`, `user`, `downloads`.
 
+## Android app (APK)
+
+`android/` is an Android Studio project that wraps the same page in a WebView. Records are stored on the phone only; the web version and the app do not sync. Move records between them with Settings > Full backup, then Settings > Restore from a backup.
+
+Build it:
+
+1. Open the `android/` folder in Android Studio and let Gradle sync (it downloads Gradle 8.9 and the Android Gradle Plugin 8.7.3; accept an upgrade prompt if offered).
+2. Build > Build Bundle(s) / APK(s) > Build APK(s). The APK ends up in `android/app/build/outputs/apk/debug/`.
+3. Copy it to the phone and install it. Android 10 or newer is required.
+
+## Versions and updates
+
+The version lives in two places that must match: `APP_VERSION` in `home-work-orders.html` and `versionName` in `android/app/build.gradle.kts`. Raise `versionCode` by one for every new APK, otherwise Android refuses to install it over the old one.
+
+To release a new version:
+
+1. Change the page, then bump `APP_VERSION`, `versionName` and `versionCode`.
+2. Run `scripts/sync-web.sh`. It checks that the two version numbers match and copies the page to `android/app/src/main/assets/index.html`.
+3. Rebuild the APK in Android Studio, then create a GitHub release for the new version and attach the APK.
+
+On the phone, Settings > About shows the installed version, and "Check for updates" opens this repo's Releases page. If the newest version there is higher, download its APK and install it over the old one. Records are kept as long as the new APK is signed with the same key, which Android Studio's debug key is on the same computer.
+
 ## Notes
 
 - Libraries are loaded from cdnjs at pinned versions: jsPDF 2.5.1 and jspdf-autotable 3.8.2.

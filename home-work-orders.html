@@ -44,6 +44,7 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans);
   padding-block:18px 64px;
   padding-left:max(16px,env(safe-area-inset-left,0px));
@@ -70,6 +71,7 @@ h1{font:700 28px/1.05 var(--disp);letter-spacing:.02em;text-transform:uppercase}
 .btn.primary:hover{filter:brightness(1.1)}
 .btn.danger{color:var(--danger);border-color:var(--danger)}
 .btn.sm{min-height:32px;padding:4px 10px;font-size:13px}
+a.btn{display:inline-flex;align-items:center;text-decoration:none;color:var(--ink)}
 .btn.ghost{background:transparent}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .icon{background:none;border:1px solid transparent;border-radius:4px;width:34px;height:34px;font-size:22px;line-height:1;color:var(--ink2)}
@@ -97,7 +99,8 @@ h1{font:700 28px/1.05 var(--disp);letter-spacing:.02em;text-transform:uppercase}
 .strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:4px;overflow:hidden;margin-bottom:16px}
 .strip>div{background:var(--panel);padding:12px 16px}
 .k-l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-.k-v{font:700 30px/1.15 var(--disp);overflow-wrap:anywhere}
+.k-v{font:700 clamp(20px,5.2vw,30px)/1.15 var(--disp);overflow-wrap:break-word}
+@media(max-width:520px){.strip>div:last-child:nth-child(odd){grid-column:1/-1}}
 .k-v.bad{color:var(--danger)}
 .seg{display:inline-flex;border:1px solid var(--line2);border-radius:4px;overflow:hidden;max-width:100%}
 .seg button{background:var(--panel);border:0;padding:6px 12px;font-size:13px;white-space:nowrap}
@@ -230,7 +233,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
       <span class="stamp" aria-hidden="true">WO</span>
       <div>
         <h1>Home Work Orders</h1>
-        <p class="sub">Every job on the house and the car, numbered, costed and on record.</p>
+        <p class="sub">Every job on the house and the car, numbered, costed and on record. <span class="mono" id="app-ver"></span></p>
       </div>
     </div>
     <div class="actions">
@@ -274,12 +277,15 @@ const CATEGORIES=['Home','Vehicle','Appliance','Garden & outdoor','Tools & equip
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
+const APP_VERSION='1.0.0.0';
+const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
+const IS_APP=!!window.AndroidBridge;
 const CURRENCIES=['SAR','AED','KWD','QAR','BHD','OMR','EGP','JOD','USD','EUR','GBP','INR','PKR','TRY'];
 
 const S={db:null,user:null,downloads:null,noStore:false,readOnly:false,timedOut:false,
   assets:new Map(),orders:[],settings:{currency:'SAR'},ready:{assets:false,orders:false},
   view:'dashboard',range:'year',f:{status:'active',asset:'',year:'',q:''},partsQ:'',showArchived:false,
-  wo:null,asset:null,saving:false,confirmClear:false,sheet:'',report:null};
+  wo:null,asset:null,saving:false,confirmClear:false,sheet:'',report:null,restore:null};
 const HOLDER='h'+Math.random().toString(36).slice(2,10);
 
 let _nf=null,_nfCur='';
@@ -333,12 +339,89 @@ async function allocateNumber(){
   return {year,seq,number:'WO-'+year+'-'+String(seq).padStart(4,'0')};
 }
 
+/* ---- phone app only: records kept on the device, same calls as the artifact store ---- */
+function makeLocalDb(){
+  const KEY='hwo:db:v1';
+  let store={};
+  try{ store=JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ store={}; }
+  const subs=new Set();
+  const clone=v=>JSON.parse(JSON.stringify(v));
+  const seg=p=>p.split('/');
+  const has=p=>Object.prototype.hasOwnProperty.call(store,p);
+  const newId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+  function persist(){ try{ localStorage.setItem(KEY,JSON.stringify(store)); }catch(e){ throw {code:'quota_exceeded',message:'The phone has no room left for this app\'s records.'}; } }
+  function notify(){ subs.forEach(f=>{ try{ f(); }catch(e){} }); }
+  function snapDoc(path){ const ex=has(path); const d=ex?clone(store[path]):undefined; return {id:seg(path).pop(),exists:ex,data:()=>d,metadata:{fromCache:false,hasPendingWrites:false}}; }
+  function cmp(a,op,b){
+    switch(op){ case '==':return a===b; case '!=':return a!==b; case '<':return a<b; case '<=':return a<=b; case '>':return a>b; case '>=':return a>=b; }
+    return false;
+  }
+  function inCollection(path){ const n=seg(path).length+1, pre=path+'/'; return Object.keys(store).filter(k=>k.indexOf(pre)===0&&seg(k).length===n); }
+  function query(path,filters,order,lim){
+    const run=()=>{
+      let docs=inCollection(path).map(snapDoc);
+      filters.forEach(f=>{ docs=docs.filter(d=>cmp(d.data()[f[0]],f[1],f[2])); });
+      if(order){
+        const dir=order.dir==='desc'?-1:1;
+        docs.sort((a,b)=>{ const x=a.data()[order.field],y=b.data()[order.field];
+          if(x===undefined&&y===undefined) return 0; if(x===undefined) return 1; if(y===undefined) return -1;
+          return (x<y?-1:x>y?1:0)*dir; });
+      } else docs.sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0);
+      if(lim) docs=docs.slice(0,lim);
+      return {docs,size:docs.length,empty:!docs.length,docChanges:()=>[],metadata:{fromCache:false,hasPendingWrites:false}};
+    };
+    return {
+      where:(f,op,v)=>query(path,filters.concat([[f,op,v]]),order,lim),
+      orderBy:(field,dir)=>query(path,filters,{field,dir:dir||'asc'},lim),
+      limit:n=>query(path,filters,order,n),
+      get:()=>Promise.resolve(run()),
+      onSnapshot(next){ const fire=()=>next(run()); subs.add(fire); setTimeout(fire,0); return ()=>subs.delete(fire); }
+    };
+  }
+  function docRef(path){
+    return {
+      id:seg(path).pop(), path,
+      get:()=>Promise.resolve(snapDoc(path)),
+      set(data){ const old=has(path)?store[path]:undefined; store[path]=clone(data); try{ persist(); }catch(e){ if(old===undefined) delete store[path]; else store[path]=old; return Promise.reject(e); } notify(); return Promise.resolve(); },
+      update(data){ if(!has(path)) return Promise.reject({code:'invalid_argument',message:'That record does not exist.'}); return this.set(Object.assign({},store[path],data)); },
+      delete(){ delete store[path]; try{ persist(); }catch(e){} notify(); return Promise.resolve(); },
+      acquire(){ return Promise.resolve({acquired:true}); },
+      onSnapshot(next){ const fire=()=>next(snapDoc(path)); subs.add(fire); setTimeout(fire,0); return ()=>subs.delete(fire); },
+      collection:sub=>colRef(path+'/'+sub)
+    };
+  }
+  function colRef(path){
+    const q=query(path,[],null,0);
+    return Object.assign(q,{path,
+      doc:id=>docRef(path+'/'+(id||newId())),
+      add(data){ const r=docRef(path+'/'+newId()); return r.set(data).then(()=>r); }});
+  }
+  return {doc:docRef,collection:colRef};
+}
+function makeBridgeDownloads(){
+  return {save:async function(req){
+    const data=req.data; let bytes;
+    if(typeof data==='string') bytes=new TextEncoder().encode(data);
+    else if(data instanceof ArrayBuffer) bytes=new Uint8Array(data);
+    else bytes=new Uint8Array(data.buffer||data);
+    let bin=''; for(let i=0;i<bytes.length;i+=0x8000) bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));
+    const res=window.AndroidBridge.saveFile(req.filename,btoa(bin));
+    if(res!=='ok') throw {code:'unavailable',message:res};
+    return {status:'saved'};
+  }};
+}
+
 async function boot(){
   render();
-  const c=window.claude;
-  if(!c||!c.use){ S.noStore=true; render(); return; }
-  const get=n=>c.use(n).catch(()=>null);
-  const [db,user,dl]=await Promise.all([get('db'),get('user'),get('downloads')]);
+  const verEl=$('#app-ver'); if(verEl) verEl.textContent='v'+APP_VERSION;
+  let db=null,user=null,dl=null;
+  if(IS_APP){ db=makeLocalDb(); dl=makeBridgeDownloads(); }
+  else{
+    const c=window.claude;
+    if(!c||!c.use){ S.noStore=true; render(); return; }
+    const get=n=>c.use(n).catch(()=>null);
+    [db,user,dl]=await Promise.all([get('db'),get('user'),get('downloads')]);
+  }
   S.downloads=dl; S.user=user;
   if(!db){ S.noStore=true; render(); return; }
   S.db=db;
@@ -705,9 +788,42 @@ function renderSettings(){
     <p class="hint">Three-letter code such as SAR, USD or EUR. It changes how amounts are shown, not the numbers.</p>
     <div><h3 class="sec-h">Download your records</h3>
      ${S.downloads?`<div class="addrow"><button type="button" class="btn sm" data-action="export" data-what="orders">Work orders (CSV)</button><button type="button" class="btn sm" data-action="export" data-what="lines">Cost lines (CSV)</button><button type="button" class="btn sm" data-action="export" data-what="json">Full backup (JSON)</button></div>`:`<p class="hint">Downloads aren't available in this view.</p>`}</div>
+    <div><h3 class="sec-h">Restore from a backup</h3>${canWrite()?`<label class="fld"><span>Backup file (JSON)</span><input id="st-restore" type="file" accept="application/json,.json"></label>${S.restore?`<p class="hint">${esc(S.restore.msg)}</p>${S.restore.ok?`<button type="button" class="btn sm primary" data-action="do-restore" style="margin-top:8px">Restore these records</button>`:''}`:`<p class="hint">Pick a Full backup file made by this app, for example to move your records from the web version to the phone.</p>`}`:`<p class="hint">Restoring is not available in this view.</p>`}</div>
+    <div><h3 class="sec-h">About</h3><p><b>Home Work Orders</b> <span class="mono">v${APP_VERSION}</span></p>
+     ${IS_APP?`<p class="hint">Records are stored on this phone only. Download a Full backup now and then.</p><a class="btn sm" href="${RELEASES_URL}" target="_blank" rel="noopener" style="margin-top:8px">Check for updates</a><p class="hint" style="margin-top:8px">Opens the releases page on GitHub. If the newest version there is higher than the one above, download its APK and install it over this app. Your records stay on the phone.</p>`:`<p class="hint">The web version updates itself whenever a new version is published.</p>`}</div>
    </div>
    <footer class="sheet-f"><span></span><div class="acts"><button type="button" class="btn primary" data-action="close-modal">Done</button></div></footer></section>`;
   syncInert();
+}
+function readRestore(file){
+  if(!file) return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      const j=JSON.parse(String(rd.result||''));
+      const assets=Array.isArray(j.assets)?j.assets.filter(a=>a&&a.id&&a.name):[];
+      const orders=Array.isArray(j.workOrders)?j.workOrders.filter(o=>o&&(o.number||o.id)&&o.title):[];
+      if(!assets.length&&!orders.length) throw new Error('empty');
+      S.restore={ok:true,assets,orders,msg:'Found '+assets.length+' asset'+(assets.length===1?'':'s')+' and '+orders.length+' work order'+(orders.length===1?'':'s')+' in '+file.name+'. Records with the same number are replaced.'};
+    }catch(e){ S.restore={ok:false,msg:'That file is not a backup made by this app.'}; }
+    renderSettings();
+  };
+  rd.onerror=()=>{ S.restore={ok:false,msg:'The file could not be read.'}; renderSettings(); };
+  rd.readAsText(file);
+}
+async function doRestore(){
+  const r=S.restore; if(!r||!r.ok||S.saving) return;
+  S.saving=true;
+  try{
+    for(const a of r.assets){ const doc=Object.assign({},a); delete doc.id; await S.db.doc('assets/'+a.id).set(doc); }
+    for(const o of r.orders){
+      const doc=Object.assign({},o); const no=String(o.number||o.id); delete doc.id; doc.number=no;
+      const m=/^WO-(\d{4})-(\d+)$/.exec(no); if(m){ doc.year=Number(m[1]); doc.seq=Number(m[2]); }
+      await S.db.doc('workorders/'+no).set(doc);
+    }
+    toast('Restored '+r.assets.length+' asset'+(r.assets.length===1?'':'s')+' and '+r.orders.length+' work order'+(r.orders.length===1?'':'s')); S.restore=null;
+  }catch(e){ fail(e,'Not restored'); }
+  S.saving=false; renderSettings();
 }
 async function saveCurrency(v){
   v=String(v||'').trim().toUpperCase();
@@ -737,7 +853,7 @@ async function exportData(what){
     filename='home-work-orders-backup-'+todayISO()+'.json';
     data=JSON.stringify({exportedAt:new Date().toISOString(),currency:S.settings.currency,assets:[...S.assets.values()],workOrders:orders},null,2);
   }
-  try{ await S.downloads.save({filename,data}); }
+  try{ await S.downloads.save({filename,data}); if(IS_APP) toast('Saved '+filename+' to Downloads'); }
   catch(e){ if(e&&e.code!=='declined') toast(e&&e.code==='unavailable'?'Downloads are not available here.':'The file could not be saved.',true); }
 }
 async function clearSamples(){
@@ -871,7 +987,7 @@ async function makeReport(){
     const doc=buildReportPDF({JsPDF:jp,autoTable:window.jspdf.autoTable},S.report);
     const data=doc.output('arraybuffer');
     await S.downloads.save({filename:'maintenance-report-'+todayISO()+'.pdf',data});
-    S.saving=false; closeSheet('report'); toast('Report saved');
+    S.saving=false; closeSheet('report'); toast(IS_APP?'Report saved to Downloads':'Report saved');
   }catch(e){
     S.saving=false; renderReport();
     if(!(e&&e.code==='declined')) toast(e&&e.code==='unavailable'?'Downloads are not available here.':'The report could not be created.',true);
@@ -918,6 +1034,7 @@ document.addEventListener('click',e=>{
     case 'settings': openSettings(); break;
     case 'export': exportData(el.dataset.what); break;
     case 'report': openReport(); break;
+    case 'do-restore': doRestore(); break;
     case 'make-report': makeReport(); break;
     case 'clear-samples': clearSamples(); break;
     case 'range': S.range=el.dataset.range; render(); break;
@@ -942,12 +1059,20 @@ function onInput(e){
 document.addEventListener('input',onInput);
 document.addEventListener('change',e=>{
   if(e.target&&e.target.id==='st-cur'){ saveCurrency(e.target.value); return; }
+  if(e.target&&e.target.id==='st-restore'){ readRestore(e.target.files&&e.target.files[0]); return; }
   onInput(e);
 });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&(!$('#modal').hidden||!$('#modal2').hidden)){ e.preventDefault(); closeTop(); } });
 window.addEventListener('hashchange',()=>{ const h=location.hash.slice(1); if(['dashboard','orders','assets','parts'].indexOf(h)>=0&&h!==S.view){ S.view=h; render(); } });
 (function(){ const h=location.hash.slice(1); if(['dashboard','orders','assets','parts'].indexOf(h)>=0) S.view=h; })();
 
+/* called by the phone app's Back button; true means the page handled it */
+window.__back=function(){
+  if(!$('#modal2').hidden){ S.asset=null; renderAsset(); return true; }
+  if(!$('#modal').hidden){ closeSheet(S.sheet||'wo'); return true; }
+  if(S.view!=='dashboard'){ setView('dashboard'); return true; }
+  return false;
+};
 boot();
 })();
 </script>
