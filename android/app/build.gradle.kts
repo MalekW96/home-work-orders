@@ -3,6 +3,8 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+layout.buildDirectory.set(file("${System.getProperty("user.home")}/.homeworkorders-build/app"))
+
 android {
     namespace = "com.malekw96.homeworkorders"
     compileSdk = 35
@@ -30,6 +32,16 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+}
+
+// After a debug build, also copy the APK into the project's apk/ folder.
+val copyDebugApk by tasks.registering(Copy::class) {
+    from(layout.buildDirectory.dir("outputs/apk/debug")) { include("*.apk") }
+    into(rootProject.layout.projectDirectory.dir("apk"))
+    rename { "HomeWorkOrders-v${android.defaultConfig.versionName}.apk" }
+}
+afterEvaluate {
+    tasks.named("assembleDebug") { finalizedBy(copyDebugApk) }
 }
 
 dependencies {
