@@ -347,7 +347,9 @@ const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
 const APP_VERSION='2.3.1.1';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
-const IS_APP=!!window.AndroidBridge;
+const BRIDGE=window.AndroidBridge||window.IOSBridge;
+const IS_IOS=!!window.IOSBridge;
+const IS_APP=!!BRIDGE;
 const CURRENCIES=['SAR','AED','KWD','QAR','BHD','OMR','EGP','JOD','USD','EUR','GBP','INR','PKR','TRY'];
 
 const S={db:null,user:null,downloads:null,noStore:false,readOnly:false,timedOut:false,
@@ -515,7 +517,7 @@ function makeBridgeDownloads(){
     else if(data instanceof ArrayBuffer) bytes=new Uint8Array(data);
     else bytes=new Uint8Array(data.buffer||data);
     let bin=''; for(let i=0;i<bytes.length;i+=0x8000) bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));
-    const res=window.AndroidBridge.saveFile(req.filename,btoa(bin));
+    const res=BRIDGE.saveFile(req.filename,btoa(bin));
     if(res!=='ok') throw {code:'unavailable',message:res};
     return {status:'saved'};
   }};
@@ -991,18 +993,18 @@ function aboutBlock(){
     else if(u.state==='offline') status='<p class="upd">No connection. Connect to the internet and try again.</p>';
     else status='<p class="upd">The check failed. Try again later, or open the releases page.</p>';
   }
-  const canInstall=IS_APP&&typeof window.AndroidBridge.installUpdate==='function';
+  const canInstall=IS_APP&&typeof BRIDGE.installUpdate==='function';
   const dl=S.dl||null;
   let act='';
   if(newer&&u.apkUrl&&canInstall){
     const busy=dl&&dl.state==='progress';
     act=`<button type="button" class="btn sm primary" data-action="install-update"${busy?' disabled':''}>${busy?'Downloading '+esc(dl.msg)+'%':'Download and install'}</button>`;
-  } else if(newer&&u.apkUrl){
+  } else if(newer&&u.apkUrl&&!IS_IOS){
     act=`<a class="btn sm" href="${esc(u.apkUrl)}" target="_blank" rel="noopener">Download the update</a>`;
   } else act=`<a class="btn sm" href="${esc(RELEASES_URL)}" target="_blank" rel="noopener">Open releases page</a>`;
   const dlmsg=dl&&dl.state!=='progress'?`<p class="upd${dl.state==='error'?'':' good'}">${esc(dl.msg)}</p>`:'';
   return `<section class="about" aria-label="About and updates"><div class="about-h"><div><div class="k-l">Installed version</div><div class="ver mono" id="st-version">v${esc(APP_VERSION)}</div><p class="hint">Every job on the house and the car, numbered, costed and on record.</p></div>${IS_APP?`<button type="button" class="btn sm primary" data-action="check-update"${u&&u.state==='checking'?' disabled':''}>Check for updates</button>`:''}</div>
-   ${IS_APP?`${status}${dlmsg}<div class="addrow">${act}</div><p class="hint">Update address</p><p class="addr mono">${esc(RELEASES_URL)}</p><p class="hint">When a newer version exists, press Download and install. Android asks you to confirm and installs it over this app, and your records stay on the phone.</p>`:`<p class="hint">The web version updates itself whenever a new version is published.</p>`}</section>`;
+   ${IS_APP?`${status}${dlmsg}<div class="addrow">${act}</div><p class="hint">Update address</p><p class="addr mono">${esc(RELEASES_URL)}</p><p class="hint">${IS_IOS?'A newer version arrives as a new build of the app (TestFlight, or installed again from Xcode). Install it over this one and your records stay on the iPhone.':'When a newer version exists, press Download and install. Android asks you to confirm and installs it over this app, and your records stay on the phone.'}</p>`:`<p class="hint">The web version updates itself whenever a new version is published.</p>`}</section>`;
 }
 function startInstall(){
   if(!S.upd||!S.upd.apkUrl||!window.AndroidBridge||!window.AndroidBridge.installUpdate) return;
@@ -1083,7 +1085,7 @@ async function exportData(what){
     filename='home-work-orders-backup-'+todayISO()+'.json';
     data=JSON.stringify({exportedAt:new Date().toISOString(),currency:S.settings.currency,assets:[...S.assets.values()],workOrders:orders},null,2);
   }
-  try{ await S.downloads.save({filename,data}); if(IS_APP) toast('Saved '+filename+' to Downloads'); }
+  try{ await S.downloads.save({filename,data}); if(IS_APP&&!IS_IOS) toast('Saved '+filename+' to Downloads'); }
   catch(e){ if(e&&e.code!=='declined') toast(e&&e.code==='unavailable'?'Downloads are not available here.':'The file could not be saved.',true); }
 }
 async function clearSamples(){
@@ -1219,7 +1221,7 @@ async function makeReport(){
     const doc=buildReportPDF({JsPDF:jp,autoTable:window.jspdf.autoTable},S.report);
     const data=doc.output('arraybuffer');
     await S.downloads.save({filename:'maintenance-report-'+todayISO()+'.pdf',data});
-    S.saving=false; closeSheet('report'); toast(IS_APP?'Report saved to Downloads':'Report saved');
+    S.saving=false; closeSheet('report'); toast(IS_IOS?'Report ready':IS_APP?'Report saved to Downloads':'Report saved');
   }catch(e){
     S.saving=false; renderReport();
     if(!(e&&e.code==='declined')) toast(e&&e.code==='unavailable'?'Downloads are not available here.':'The report could not be created.',true);

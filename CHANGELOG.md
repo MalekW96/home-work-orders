@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- iOS app project added (`ios/`): the same page in a WKWebView, with the camera and photo library for attachments, the share sheet for saving PDF and CSV files, a swipe in from the left edge as Back, and a second copy of your records kept in the app's own storage. See the README for how to build it.
+
 ## 2.3.1.1
 
 - "Work order" is now "Task" everywhere you see it: the tab, the + menu (Create new task), buttons, messages, the PDF and the CSV export. Task numbers still start with WO-, so existing numbers do not change.

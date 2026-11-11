@@ -1,0 +1,1337 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>[hidden]{display:none!important}</style>
+<title>I Got This</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a shop-floor ticket desk. Hairline panels, square-ish corners, mono work-order tags as the recurring motif, one blue accent, status colours kept separate from the accent. */
+:root{
+  --sans:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --disp:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;
+  --bg:#eef1f4; --panel:#ffffff; --panel2:#f5f7f9; --ink:#14202e; --ink2:#465367; --muted:#66727f;
+  --line:#dde3ea; --line2:#c6ced8; --accent:#1f5fbf; --accent-ink:#ffffff; --accent-soft:#e4edfb;
+  --danger:#b42323; --danger-soft:#fbe3e3; --track:#e6ebf1; --scrim:rgba(12,20,30,.45);
+  --st-open-bg:#e3edfb; --st-open-fg:#1c4f9c;
+  --st-prog-bg:#fdf0cf; --st-prog-fg:#7a4f00;
+  --st-done-bg:#dcf3df; --st-done-fg:#0b5d1e;
+  --st-cancel-bg:#e8ebef; --st-cancel-fg:#566170;
+  --st-over-bg:#fbe0e0; --st-over-fg:#a02222;
+  --c1:#2a78d6; --c2:#eb6834; --c3:#1baf7a;
+  --shadow:0 1px 2px rgba(20,32,46,.08),0 1px 1px rgba(20,32,46,.04);
+  --hero1:#1f5fbf; --hero2:#174a96; --hero-sh:0 8px 20px rgba(31,95,191,.28);
+  --r:16px;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e131a; --panel:#161d26; --panel2:#1b2430; --ink:#e7edf4; --ink2:#b5c0cd; --muted:#8794a4;
+    --line:#263140; --line2:#34414f; --accent:#6da7ec; --accent-ink:#0b1a2e; --accent-soft:#1b2b44;
+    --danger:#f08a8a; --danger-soft:#3a1c1c; --track:#243040; --scrim:rgba(0,0,0,.6);
+    --st-open-bg:#1c2c47; --st-open-fg:#9cc0f7;
+    --st-prog-bg:#3a2d0c; --st-prog-fg:#f2c15b;
+    --st-done-bg:#12301a; --st-done-fg:#7fd38d;
+    --st-cancel-bg:#262d36; --st-cancel-fg:#9aa6b4;
+    --st-over-bg:#3c1a1a; --st-over-fg:#f19a9a;
+    --c1:#3987e5; --c2:#d95926; --c3:#199e70;
+    --shadow:0 1px 2px rgba(0,0,0,.45); --hero1:#2b66b3; --hero2:#1d4a85; --hero-sh:0 8px 20px rgba(0,0,0,.35);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e131a; --panel:#161d26; --panel2:#1b2430; --ink:#e7edf4; --ink2:#b5c0cd; --muted:#8794a4;
+  --line:#263140; --line2:#34414f; --accent:#6da7ec; --accent-ink:#0b1a2e; --accent-soft:#1b2b44;
+  --danger:#f08a8a; --danger-soft:#3a1c1c; --track:#243040; --scrim:rgba(0,0,0,.6);
+  --st-open-bg:#1c2c47; --st-open-fg:#9cc0f7;
+  --st-prog-bg:#3a2d0c; --st-prog-fg:#f2c15b;
+  --st-done-bg:#12301a; --st-done-fg:#7fd38d;
+  --st-cancel-bg:#262d36; --st-cancel-fg:#9aa6b4;
+  --st-over-bg:#3c1a1a; --st-over-fg:#f19a9a;
+  --c1:#3987e5; --c2:#d95926; --c3:#199e70;
+  --shadow:0 1px 2px rgba(0,0,0,.45); --hero1:#2b66b3; --hero2:#1d4a85; --hero-sh:0 8px 20px rgba(0,0,0,.35);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans);
+  padding-block:18px 64px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px))}
+.app{max-width:1080px;margin:0 auto}
+h1,h2,h3,h4,p,ul,ol,dl,dd{margin:0}
+ul,ol{padding:0;list-style:none}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--mono)}
+.muted{color:var(--muted)}
+
+/* header */
+.top{display:flex;gap:12px;align-items:center;justify-content:space-between;padding-bottom:10px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.logo{width:38px;height:38px;border-radius:11px;overflow:hidden;box-shadow:var(--shadow);flex:none}.logo svg{display:block;width:100%;height:100%}
+.stamp{font:600 13px/1 var(--mono);border:2px solid var(--ink);padding:8px 7px 7px;border-radius:6px;letter-spacing:.04em;flex:none}
+h1{font:700 22px/1.05 var(--disp);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sub{color:var(--muted);font-size:13px}
+.actions{display:flex;gap:8px;align-items:center;flex:none;position:relative}
+.btn.addbtn{background:var(--accent);color:var(--accent-ink);box-shadow:var(--hero-sh,var(--shadow))}
+.btn.addbtn:hover{background:var(--accent)}
+.addmenu{position:absolute;right:0;top:calc(100% + 8px);z-index:40;min-width:13rem;background:var(--panel);border:1px solid var(--line2);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.22);padding:6px;display:flex;flex-direction:column}
+.addmenu button{background:none;border:0;text-align:left;padding:12px 14px;border-radius:10px;font-size:15px;font-weight:500;min-height:44px}
+.addmenu button:hover,.addmenu button:focus-visible{background:var(--panel2)}
+@media(max-width:699px){.wide-only{display:none!important}}
+.btn{border:1px solid var(--line2);background:var(--panel);padding:8px 14px;border-radius:12px;font-weight:500;min-height:40px;transition:transform .08s ease,background .15s}
+.btn:hover{background:var(--panel2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.1)}
+.btn.danger{color:var(--danger);border-color:var(--danger)}
+.btn.sm{min-height:34px;padding:4px 12px;font-size:13px;border-radius:10px}
+.btn.iconbtn{width:40px;border-radius:50%;border-color:transparent;box-shadow:var(--shadow);padding:0;display:inline-flex;align-items:center;justify-content:center}
+@media(prefers-reduced-motion:no-preference){.btn:active,.tkt:active,.fab:active,.chip:active{transform:scale(.97)}}
+a.btn{display:inline-flex;align-items:center;text-decoration:none;color:var(--ink)}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.icon{background:none;border:1px solid transparent;border-radius:4px;width:34px;height:34px;font-size:22px;line-height:1;color:var(--ink2)}
+.icon:hover{background:var(--panel2);border-color:var(--line)}
+
+/* tabs */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto;margin-bottom:16px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{background:none;border:0;border-bottom:3px solid transparent;padding:10px 11px 9px;font-weight:500;color:var(--ink2);white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.tab .n{font:500 12px var(--mono);color:var(--muted);margin-left:6px}
+
+/* banner */
+.banner{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;border:0;background:var(--accent-soft);border-radius:14px;padding:10px 14px;margin-bottom:16px;font-size:14px}
+.banner.warn{background:var(--danger-soft)}
+.banner p{flex:1 1 18rem}
+
+/* panels & dashboard */
+.panel{background:var(--panel);border:0;border-radius:var(--r);box-shadow:var(--shadow);padding:16px;min-width:0}
+.panel>h2,.sec-h{font:600 12px/1.2 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.group{min-width:0}.group>.sec-h{margin:6px 4px 10px}
+.panel-h{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.panel-h h2{margin:0;font:600 12px/1.2 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.stack{display:flex;flex-direction:column;gap:16px;min-width:0}
+.dash{display:grid;gap:18px;margin-top:12px;grid-template-columns:minmax(0,1fr);align-items:start}
+@media(min-width:1000px){.dash{grid-template-columns:minmax(0,3fr) minmax(0,2fr)}}
+.hero{background:linear-gradient(135deg,var(--hero1),var(--hero2));color:#fff;border-radius:18px;padding:18px 20px;box-shadow:var(--hero-sh);margin-bottom:12px;container-type:inline-size}
+.hero .k-l{color:rgba(255,255,255,.8);letter-spacing:.12em}
+.hero-v{font:600 clamp(26px,11cqi,40px)/1.15 var(--mono);margin:6px 0 2px;letter-spacing:-.02em;overflow-wrap:anywhere}
+.hero-s{font-size:13px;color:rgba(255,255,255,.82)}
+.strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:6px}
+.strip>div{background:var(--panel);border-radius:14px;box-shadow:var(--shadow);padding:12px 14px;container-type:inline-size;min-width:0}
+.k-l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.09em}
+.k-v{font:600 clamp(18px,22cqi,26px)/1.15 var(--mono);margin-top:4px;overflow-wrap:anywhere}
+.k-v.zero{color:var(--muted)}
+.k-v.bad{color:var(--danger)}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:10px;overflow:hidden;max-width:100%}
+.seg button{background:var(--panel);border:0;padding:6px 12px;font-size:13px;white-space:nowrap}
+.seg button+button{border-left:1px solid var(--line2)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
+
+/* bars */
+.bars{display:flex;flex-direction:column;gap:12px}
+.bars li{display:grid;grid-template-columns:minmax(0,9rem) minmax(0,1fr) auto;gap:4px 10px;align-items:center}
+.bar-l{font-size:14px;overflow-wrap:anywhere}
+.bar-l em{display:block;font-style:normal;font-size:12px;color:var(--muted)}
+.bar-t{height:14px;background:var(--track);border-radius:0 4px 4px 0}
+.bar-f{display:block;height:100%;background:var(--c1);border-radius:0 4px 4px 0}
+.bar-v{font-variant-numeric:tabular-nums;font-size:14px;font-weight:500;text-align:right}
+@media(max-width:520px){.bars li{grid-template-columns:minmax(0,1fr) auto}.bars .bar-t{grid-column:1/-1;grid-row:2}}
+.split{display:flex;gap:2px;height:8px;margin-bottom:12px}
+.split i{display:block;min-width:2px}
+.split i:first-child{border-radius:4px 0 0 4px}.split i:last-child{border-radius:0 4px 4px 0}.split i:only-child{border-radius:4px}
+.legend{display:flex;flex-direction:column;gap:6px;font-size:14px}
+.legend li{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:8px;align-items:center}
+.legend b{width:10px;height:10px;border-radius:2px;display:block}
+.legend span:last-child{font-variant-numeric:tabular-nums;font-weight:500}
+
+/* status */
+.pill{display:inline-block;font:600 11px/1 var(--sans);letter-spacing:.05em;text-transform:uppercase;padding:4px 7px;border-radius:3px;white-space:nowrap}
+.pill.open{background:var(--st-open-bg);color:var(--st-open-fg)}
+.pill.prog{background:var(--st-prog-bg);color:var(--st-prog-fg)}
+.pill.done{background:var(--st-done-bg);color:var(--st-done-fg)}
+.pill.cancel{background:var(--st-cancel-bg);color:var(--st-cancel-fg)}
+.pill.over{background:var(--st-over-bg);color:var(--st-over-fg)}
+.pills{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-start}
+
+/* status dots */
+.st{display:inline-flex;align-items:center;gap:6px;font:600 11.5px/1 var(--sans);color:var(--ink2);white-space:nowrap}
+.st i{width:8px;height:8px;border-radius:50%;background:var(--st-open-fg);flex:none}
+.st.prog i{background:var(--st-prog-fg)}.st.done i{background:var(--st-done-fg)}.st.cancel i{background:var(--st-cancel-fg)}.st.over{color:var(--danger)}.st.over i{background:var(--danger)}
+.ico{width:40px;height:40px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
+.ico svg{width:22px;height:22px}
+
+/* ticket rows */
+.tickets{display:flex;flex-direction:column;gap:10px;min-width:0}
+.tkt{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;text-align:left;background:var(--panel);border:0;border-radius:var(--r);box-shadow:var(--shadow);padding:13px 14px}
+.tkt:hover{background:var(--panel2)}
+.tkt-main{display:flex;flex-direction:column;gap:2px;min-width:0}
+.tkt-no{font:600 11.5px var(--mono);color:var(--muted)}
+.tkt-title{font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tkt-meta{font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tkt-r{display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.tkt-cost{font:600 13px var(--mono)}
+
+/* filters */
+.filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.searchrow{display:flex;gap:10px;align-items:stretch;margin-bottom:12px}
+.searchrow input{flex:1;min-width:0;border:0;box-shadow:var(--shadow);border-radius:14px;min-height:44px;padding:0 14px}
+.fbtn{border:0;box-shadow:var(--shadow);background:var(--panel);color:var(--accent);font-weight:600;border-radius:14px;padding:0 16px;min-height:44px;display:inline-flex;align-items:center;gap:6px}
+.fbtn b{background:var(--accent);color:var(--accent-ink);border-radius:99px;min-width:18px;height:18px;font-size:11px;display:grid;place-items:center;padding:0 5px}
+.chips{display:flex;gap:8px;overflow-x:auto;margin-bottom:12px;scrollbar-width:none;padding:2px 1px 4px}
+.chips::-webkit-scrollbar{display:none}
+.chip{border:0;background:var(--panel);box-shadow:var(--shadow);color:var(--ink2);border-radius:99px;padding:8px 14px;font-size:13px;white-space:nowrap;transition:transform .08s ease}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.fpanel{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;padding:12px;background:var(--panel);border-radius:14px;box-shadow:var(--shadow)}
+.fpanel .fld{flex:1 1 10rem}
+.fab{position:fixed;right:max(18px,env(safe-area-inset-right,0px));bottom:max(22px,env(safe-area-inset-bottom,0px));width:58px;height:58px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;box-shadow:0 10px 24px rgba(31,95,191,.4);z-index:40;transition:transform .08s ease}
+.fab svg{width:26px;height:26px}.fab:disabled{opacity:.5}
+@media(min-width:700px){.fab{display:none}}
+@media(max-width:699px){body{padding-bottom:110px!important}.toast{bottom:calc(92px + env(safe-area-inset-bottom,0px))!important}}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fld>span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.fld.grow{flex:1 1 14rem}
+.fld.span{grid-column:1/-1}
+input[type=text],input[type=search],input[type=number],input[type=date],select,textarea{width:100%;background:var(--panel);border:1px solid var(--line2);border-radius:10px;padding:8px 12px;min-height:40px}
+textarea{min-height:76px;resize:vertical}
+.sumline{display:flex;flex-wrap:wrap;gap:4px 18px;color:var(--ink2);font-size:13px;margin:0 0 8px}
+.sumline b{color:var(--ink);font-variant-numeric:tabular-nums}
+
+/* asset cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(17rem,1fr));gap:14px}
+.acard{display:flex;flex-direction:column;gap:10px}
+.ahead{display:flex;gap:12px;align-items:flex-start}.ahead>div:last-child{min-width:0}
+.acard h3{font:700 22px/1.1 var(--disp);letter-spacing:.01em;overflow-wrap:anywhere}
+.tagline{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.facts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 14px;font-size:13px}
+.facts dt{color:var(--muted)}
+.facts dd{text-align:right;font-variant-numeric:tabular-nums}
+.acard .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto}
+.acard.arch{opacity:.7}
+
+/* photos */
+.req,.opt{font-style:normal;font-size:11px;margin-left:6px;letter-spacing:.02em}
+.req{color:var(--danger)}.opt{color:var(--muted)}
+.ph{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ph label.btn{cursor:pointer}
+.thumb{padding:0;border:1px solid var(--line2);border-radius:10px;overflow:hidden;width:76px;height:58px;background:var(--panel2);flex:none}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumbx{position:relative;display:inline-block}
+.thumbx .x{position:absolute;top:-7px;right:-7px;width:22px;height:22px;border-radius:50%;border:0;background:var(--ink);color:var(--bg);font-size:15px;line-height:22px;padding:0}
+.apic-b{padding:0;border:0;background:none;flex:none}
+.apic{width:56px;height:56px;border-radius:12px;object-fit:cover;display:block;border:1px solid var(--line2)}
+#lb{position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;padding:12px}
+#lb figure{margin:0;max-width:100%;max-height:100%;display:flex;flex-direction:column;align-items:center;gap:10px}
+#lb img{max-width:100%;max-height:calc(100vh - 90px);object-fit:contain;border-radius:8px}
+#lb figcaption{color:#fff;font-size:15px;text-align:center}
+.atts{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
+.att{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center}
+
+/* table */
+.tablewrap{overflow-x:auto;border:0;border-radius:var(--r);background:var(--panel);box-shadow:var(--shadow)}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:14px}
+th{font:600 11px var(--sans);text-transform:uppercase;letter-spacing:.07em;color:var(--muted);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line2);white-space:nowrap}
+td{padding:10px 12px;border-top:1px solid var(--line);vertical-align:top}
+tr:first-child td{border-top:0}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.linkbtn{background:none;border:0;padding:0;font:600 13px var(--mono);color:var(--accent);text-decoration:underline;text-underline-offset:2px}
+
+/* empty states */
+.empty{border:1px dashed var(--line2);border-radius:var(--r);padding:28px 20px;color:var(--ink2);background:var(--panel)}
+.empty .art{width:64px;height:64px;color:var(--accent);margin-bottom:10px}
+.empty h2{font:700 24px/1.1 var(--disp);color:var(--ink);margin-bottom:6px;text-transform:none;letter-spacing:.01em}
+.empty p{max-width:46rem}
+.empty .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.steps{display:grid;gap:8px;margin:14px 0 0;counter-reset:s;max-width:46rem}
+.steps li{counter-increment:s;display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start}
+.steps li::before{content:counter(s);font:600 13px/26px var(--mono);text-align:center;border:1px solid var(--line2);border-radius:3px;height:28px;width:28px;color:var(--ink)}
+.empty.small{padding:18px;text-align:left}
+.empty.small h2{font-size:20px}
+
+/* sheets (modals) */
+.modal{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;
+  padding:max(12px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) max(12px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+#modal2{z-index:60}
+.scrim{position:absolute;inset:0;background:var(--scrim)}
+.sheet{position:relative;width:100%;max-width:780px;max-height:100%;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line2);border-radius:var(--r);box-shadow:0 18px 50px rgba(0,0,0,.28)}
+.sheet.narrow{max-width:520px}
+.sheet-h{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:16px 18px 12px;border-bottom:1px solid var(--line)}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.sheet-h h2{font:700 24px/1.15 var(--disp);letter-spacing:.01em;margin-top:2px;overflow-wrap:anywhere}
+.tag{font:600 18px/1.2 var(--mono);letter-spacing:.02em;border:1.5px solid var(--ink);padding:3px 8px;border-radius:3px;display:inline-block}
+.tag.pending{font:500 14px/1.3 var(--sans);border-style:dashed;border-color:var(--line2);color:var(--ink2)}
+.sheet-b{padding:16px 18px;overflow-y:auto;display:flex;flex-direction:column;gap:18px;min-height:0}
+.sheet-f{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid var(--line);background:var(--panel2);border-radius:0 0 var(--r) var(--r)}
+.sheet-f .tot span{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.sheet-f .tot strong{font:700 24px/1.1 var(--disp)}
+.sheet-f .acts{display:flex;gap:8px;flex-wrap:wrap}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(11.5rem,1fr));gap:12px}
+.hint{font-size:13px;color:var(--muted)}
+.lines{display:flex;flex-direction:column;gap:10px}
+.line{display:flex;flex-direction:column;gap:8px;padding:10px;border:1px solid var(--line);border-radius:4px;background:var(--panel2)}
+.line-r1{display:grid;grid-template-columns:7.5rem minmax(0,1fr) auto;gap:8px;align-items:end}
+.line-r2{display:grid;grid-template-columns:repeat(auto-fit,minmax(6.5rem,1fr));gap:8px;align-items:end}
+.line output{display:block;min-height:38px;padding:8px 0;font-variant-numeric:tabular-nums;font-weight:600}
+.addrow{display:flex;gap:8px;flex-wrap:wrap}
+.confirmrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.about{border:1px solid var(--line2);border-radius:4px;padding:14px;display:flex;flex-direction:column;gap:8px;background:var(--panel2)}
+.about-h{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.about .ver{font-size:26px;font-weight:600;line-height:1.2}
+.about p{margin:0}
+.upd{padding:8px 10px;border-radius:4px;background:var(--panel);border:1px solid var(--line2);font-size:14px}
+.upd.good{background:var(--st-done-bg);color:var(--st-done-fg);border-color:transparent}
+.addr{overflow-wrap:anywhere;user-select:all;font-size:13px}
+.chk{display:flex;gap:10px;align-items:center;font-size:14px}
+.chk input{width:18px;height:18px;margin:0}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:4px;z-index:90;max-width:min(92vw,32rem);box-shadow:0 8px 24px rgba(0,0,0,.3);font-size:14px}
+.toast.bad{background:var(--danger);color:#fff}
+@media(prefers-reduced-motion:no-preference){.sheet{animation:rise .16s ease-out}@keyframes rise{from{transform:translateY(8px);opacity:.4}to{transform:none;opacity:1}}}
+</style>
+
+<div class="app" id="app">
+  <header class="top">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"><svg viewBox="0 0 108 108"><defs><mask id="lg-m" maskUnits="userSpaceOnUse" x="-50" y="-50" width="300" height="300"><rect x="-50" y="-50" width="300" height="300" fill="#fff"/><rect x="48.5" y="10" width="11" height="23" fill="#000"/><circle cx="54" cy="33" r="5.5" fill="#000"/></mask></defs><rect width="108" height="108" fill="#e9eff7"/><g transform="translate(0 -3)"><g mask="url(#lg-m)" fill="#1f5fbf" transform="rotate(45 54 54)"><circle cx="54" cy="30" r="16"/><rect x="47.5" y="34" width="13" height="52" rx="6.5"/></g></g><circle cx="72" cy="74" r="17" fill="#1ba87a"/><path d="M63.5 74.5l6 6 11-12.5" fill="none" stroke="#fff" stroke-width="5.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <h1>I Got This</h1>
+      <span class="mono" id="app-ver" hidden></span>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn wide-only" id="btn-report" data-action="report" disabled>PDF report</button>
+      <button type="button" class="btn iconbtn addbtn" id="btn-add" data-action="toggle-add" aria-label="Add" aria-haspopup="menu" aria-expanded="false" title="Add"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+      <button type="button" class="btn iconbtn" id="btn-settings" data-action="settings" aria-label="Settings and updates" title="Settings and updates"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.56-1.11 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.01a1.7 1.7 0 0 0 1.03-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.01a1.7 1.7 0 0 0 1.56 1.03H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1.03z"/></svg></button>
+      <div class="addmenu" id="addmenu" role="menu" hidden>
+        <button type="button" role="menuitem" data-action="new-asset">Add new asset</button>
+        <button type="button" role="menuitem" data-action="new-wo">Create new task</button>
+      </div>
+    </div>
+  </header>
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button type="button" class="tab" role="tab" id="tab-dashboard" data-action="tab" data-view="dashboard">Dashboard</button>
+    <button type="button" class="tab" role="tab" id="tab-orders" data-action="tab" data-view="orders">Tasks<span class="n" id="n-orders"></span></button>
+    <button type="button" class="tab" role="tab" id="tab-assets" data-action="tab" data-view="assets">Assets<span class="n" id="n-assets"></span></button>
+    <button type="button" class="tab" role="tab" id="tab-parts" data-action="tab" data-view="parts">Parts</button>
+  </nav>
+  <div id="banner"></div>
+  <main id="view" aria-live="polite"></main>
+</div>
+<div class="modal" id="modal" hidden></div>
+<div class="modal" id="modal2" hidden></div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="libs/jspdf.umd.min.js"></script>
+<script src="libs/jspdf.plugin.autotable.min.js"></script>
+<script>
+(function(){
+'use strict';
+
+/* ---------- helpers ---------- */
+const $=(s,r)=>(r||document).querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const pad=n=>String(n).padStart(2,'0');
+const localISO=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const todayISO=()=>localISO(new Date());
+function parseD(s){ if(!s) return null; const p=String(s).split('-').map(Number); return new Date(p[0],p[1]-1,p[2]); }
+function fmtDate(s){ const d=parseD(s); return d?d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'—'; }
+const STATUSES=['Open','In progress','Completed','Cancelled'];
+const TYPES=['Preventive maintenance','Repair','Inspection','Improvement','Other'];
+const PRIORITIES=['Low','Normal','High'];
+const CATEGORIES=['Vehicle','Air conditioner','TV / Radio','Gaming console','Electrical','Appliance','Home','Garden & outdoor','Tools & equipment','Other'];
+/* first letter of a task number, from the nature of the installed parent machine */
+const WO_CODES={'Vehicle':'V','Air conditioner':'C','TV / Radio':'E','Gaming console':'E','Electrical':'E'};
+const WO_CODE_DEFAULT='G';
+const MAX_ATT=8;
+const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
+const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
+const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
+const APP_VERSION='2.3.1.1';
+const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
+const BRIDGE=window.AndroidBridge||window.IOSBridge;
+const IS_IOS=!!window.IOSBridge;
+const IS_APP=!!BRIDGE;
+const CURRENCIES=['SAR','AED','KWD','QAR','BHD','OMR','EGP','JOD','USD','EUR','GBP','INR','PKR','TRY'];
+
+const S={db:null,user:null,downloads:null,noStore:false,readOnly:false,timedOut:false,
+  assets:new Map(),orders:[],settings:{currency:'SAR'},ready:{assets:false,orders:false},
+  view:'dashboard',range:'year',f:{status:'active',asset:'',year:'',q:''},partsQ:'',showArchived:false,showFilters:false,
+  wo:null,asset:null,saving:false,confirmClear:false,sheet:'',report:null,restore:null,upd:null};
+const HOLDER='h'+Math.random().toString(36).slice(2,10);
+
+let _nf=null,_nfCur='';
+function money(n){
+  const cur=(S.settings.currency||'SAR').toUpperCase();
+  if(!_nf||_nfCur!==cur){ try{ _nf=new Intl.NumberFormat(undefined,{style:'currency',currency:cur}); }catch(e){ _nf={format:v=>cur+' '+Number(v).toFixed(2)}; } _nfCur=cur; }
+  return _nf.format(Number(n)||0);
+}
+const num=v=>{ const n=Number(v); return isFinite(n)?n:0; };
+const lineTotal=l=>num(l.qty)*num(l.unitCost);
+function orderTotals(o){
+  const t={part:0,labour:0,other:0,all:0};
+  for(const l of (o.lines||[])){ const v=lineTotal(l); const k=(l.kind==='part'||l.kind==='labour')?l.kind:'other'; t[k]+=v; t.all+=v; }
+  return t;
+}
+const orderDate=o=>o.completedOn||o.openedOn||'';
+const isActive=o=>o.status==='Open'||o.status==='In progress';
+const isOverdue=o=>isActive(o)&&o.dueOn&&o.dueOn<todayISO();
+const assetName=id=>{ const a=S.assets.get(id); return a?a.name:'Unknown asset'; };
+const byName=(a,b)=>String(a.name).localeCompare(String(b.name));
+const byNumberDesc=(a,b)=>(num(b.year)-num(a.year))||(a.createdAt&&b.createdAt&&a.createdAt!==b.createdAt?String(b.createdAt).localeCompare(String(a.createdAt)):0)||(num(b.seq)-num(a.seq))||String(b.id).localeCompare(String(a.id));
+const canWrite=()=>!!S.db&&!S.readOnly;
+const fmtMeter=(v,u)=>(v==null||v==='')?'—':Number(v).toLocaleString()+(u?' '+u:'');
+function opt(pairs,cur){ return pairs.map(p=>`<option value="${esc(p[0])}"${String(p[0])===String(cur)?' selected':''}>${esc(p[1])}</option>`).join(''); }
+const ICONS={
+ Home:'<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10"/><path d="M10 20v-6h4v6"/>',
+ Vehicle:'<path d="M5 16V11l2-4.5h10L19 11v5"/><path d="M3.5 16h17v2.5h-3V16M6.5 18.5V16"/><circle cx="7.8" cy="13.2" r=".6"/><circle cx="16.2" cy="13.2" r=".6"/>',
+ Appliance:'<rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M5 9h14"/><circle cx="12" cy="15" r="3"/>',
+ 'Garden & outdoor':'<path d="M12 21v-9"/><path d="M12 12c0-4 3-6.5 7-6.5 0 4-2.7 6.5-7 6.5Z"/><path d="M12 15c0-3-2.3-5-5.5-5 0 3 2 5 5.5 5Z"/>',
+ 'Tools & equipment':'<path d="M14.5 6.5a4 4 0 0 0 4.7 4.7L9 21.4a2.2 2.2 0 0 1-3.1-3.1l10.2-10.2"/><path d="M14.5 6.5 17 4l3 3-2.5 2.5"/>',
+ 'Air conditioner':'<rect x="3" y="5" width="18" height="8" rx="2.5"/><path d="M6 16.5c0 1.2 1 1.2 1 2.4M12 16.5c0 1.2 1 1.2 1 2.4M18 16.5c0 1.2 1 1.2 1 2.4"/><path d="M6.5 9.5h6"/>',
+ 'TV / Radio':'<rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 21h6M12 17v4"/>',
+ 'Gaming console':'<path d="M7.5 7h9a4.5 4.5 0 0 1 4.4 5.4l-.7 3.4a2.2 2.2 0 0 1-3.7 1.2L14.5 15h-5l-2 2a2.2 2.2 0 0 1-3.7-1.2l-.7-3.4A4.5 4.5 0 0 1 7.5 7Z"/><path d="M8 10v3M6.5 11.5h3"/><circle cx="15.5" cy="10.5" r=".7"/><circle cx="17.5" cy="12.3" r=".7"/>',
+ Electrical:'<path d="M13 3 5.5 13.5H11L10 21l8-11h-5.6L13 3Z"/>',
+ Other:'<rect x="4" y="4" width="16" height="16" rx="3.5"/><path d="M8.5 12h7M12 8.5v7"/>'};
+function icoFor(cat){ return `<span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[cat]||ICONS.Other}</svg></span>`; }
+function effCat(a,d){ d=d||0; if(!a) return ''; const par=a.parentId&&d<4?S.assets.get(a.parentId):null; return par?effCat(par,d+1):(a.category||''); }
+function assetCat(id){ return effCat(S.assets.get(id)); }
+function woCode(id){ return WO_CODES[assetCat(id)]||WO_CODE_DEFAULT; }
+const joinUniq=parts=>{ const seen=new Set(); return parts.map(x=>String(x||'').trim()).filter(x=>{ const k=x.toLowerCase(); if(!x||seen.has(k)) return false; seen.add(k); return true; }).join(' '); };
+const kidsOf=id=>[...S.assets.values()].filter(x=>x.parentId===id&&!x.archived);
+function attsOf(a){
+  if(Array.isArray(a.attachments)) return a.attachments.filter(x=>x&&x.src).map(x=>({src:x.src,caption:x.caption||''}));
+  const o=[]; if(a.platePhoto) o.push({src:a.platePhoto,caption:'Number plate'}); if(a.cardPhoto) o.push({src:a.cardPhoto,caption:'Car card'}); if(a.carPhoto) o.push({src:a.carPhoto,caption:'Car'});
+  (a.photos||[]).forEach(x=>{ if(x) o.push({src:x,caption:''}); }); return o;
+}
+function photoOf(a){ const l=attsOf(a); return l.length?l[0].src:''; }
+async function shrink(file,max,q){
+  const url=URL.createObjectURL(file);
+  try{
+    const img=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>rej(new Error('That file is not a picture this app can read.')); i.src=url; });
+    const k=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight)); const w=Math.max(1,Math.round(img.naturalWidth*k)), h=Math.max(1,Math.round(img.naturalHeight*k));
+    const c=document.createElement('canvas'); c.width=w; c.height=h; const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,w,h); x.drawImage(img,0,0,w,h);
+    return c.toDataURL('image/jpeg',q);
+  } finally { URL.revokeObjectURL(url); }
+}
+function showPhoto(src,cap){
+  if(!src) return; closePhoto();
+  const d=document.createElement('div'); d.id='lb'; d.setAttribute('role','dialog'); d.setAttribute('aria-label','Attachment'); d.innerHTML='<figure><img alt=""><figcaption></figcaption></figure>'; d.querySelector('img').src=src; const fc=d.querySelector('figcaption'); fc.textContent=cap||''; fc.hidden=!cap;
+  d.addEventListener('click',closePhoto); document.body.appendChild(d);
+}
+function closePhoto(){ const d=document.getElementById('lb'); if(d){ d.remove(); return true; } return false; }
+function stDot(status){ const c={'Open':'','In progress':'prog','Completed':'done','Cancelled':'cancel'}[status]||''; const l={'Completed':'Done'}[status]||status; return `<span class="st ${c}"><i></i>${esc(l)}</span>`; }
+function emptyArt(){ return `<svg class="art" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 30 32 11l24 19"/><path d="M13 27v25h38V27"/><path d="M26 52V37h12v15"/><path d="M47 14v8"/></svg>`; }
+function pill(status){ const c={'Open':'open','In progress':'prog','Completed':'done','Cancelled':'cancel'}[status]||'open'; return `<span class="pill ${c}">${esc(status)}</span>`; }
+
+let toastTimer=null;
+function toast(msg,bad){ const t=$('#toast'); t.textContent=msg; t.className='toast'+(bad?' bad':''); t.hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>{t.hidden=true;},bad?6000:3200); }
+function fail(e,what){
+  const c=e&&e.code; let m;
+  if(c==='quota_exceeded') m='Storage is full, so this could not be saved. Remove some old records first.';
+  else if(c==='invalid_argument') m='This view cannot change records. Open the page from your own account to edit.';
+  else if(c==='revoked') m='Access to this page was withdrawn.';
+  else m=(e&&e.message)?e.message:'Something went wrong.';
+  toast((what?what+': ':'')+m,true);
+}
+
+/* ---------- storage ---------- */
+async function allocateNumber(code){
+  code=code||WO_CODE_DEFAULT;
+  const year=new Date().getFullYear();
+  const lock=S.db.doc('meta/numbering');
+  let state='busy';
+  for(let i=0;i<4;i++){
+    try{ const r=await lock.acquire({holder:HOLDER,ttlMs:6000}); if(r&&r.acquired){state='held';break;} }
+    catch(e){ state='skipped'; break; }
+    await sleep(700);
+  }
+  if(state==='busy') throw new Error('Another device is issuing a number right now. Try again in a moment.');
+  const snap=await S.db.collection('workorders').where('year','==',year).get();
+  let top=0; snap.docs.forEach(d=>{ const x=d.data(); if((x.code||'')===code) top=Math.max(top,num(x.seq)); });
+  const seq=top+1;
+  return {year,seq,code,number:'WO-'+code+'-'+year+'-'+String(seq).padStart(4,'0')};
+}
+
+/* ---- phone app only: records kept on the device, same calls as the artifact store ---- */
+function makeLocalDb(){
+  const KEY='hwo:db:v1';
+  let store={};
+  try{ store=JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ store={}; }
+  const subs=new Set();
+  const clone=v=>JSON.parse(JSON.stringify(v));
+  const seg=p=>p.split('/');
+  const has=p=>Object.prototype.hasOwnProperty.call(store,p);
+  const newId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+  function persist(){ try{ localStorage.setItem(KEY,JSON.stringify(store)); }catch(e){ throw {code:'quota_exceeded',message:'The phone has no room left for this app\'s records.'}; } }
+  function notify(){ subs.forEach(f=>{ try{ f(); }catch(e){} }); }
+  function snapDoc(path){ const ex=has(path); const d=ex?clone(store[path]):undefined; return {id:seg(path).pop(),exists:ex,data:()=>d,metadata:{fromCache:false,hasPendingWrites:false}}; }
+  function cmp(a,op,b){
+    switch(op){ case '==':return a===b; case '!=':return a!==b; case '<':return a<b; case '<=':return a<=b; case '>':return a>b; case '>=':return a>=b; }
+    return false;
+  }
+  function inCollection(path){ const n=seg(path).length+1, pre=path+'/'; return Object.keys(store).filter(k=>k.indexOf(pre)===0&&seg(k).length===n); }
+  function query(path,filters,order,lim){
+    const run=()=>{
+      let docs=inCollection(path).map(snapDoc);
+      filters.forEach(f=>{ docs=docs.filter(d=>cmp(d.data()[f[0]],f[1],f[2])); });
+      if(order){
+        const dir=order.dir==='desc'?-1:1;
+        docs.sort((a,b)=>{ const x=a.data()[order.field],y=b.data()[order.field];
+          if(x===undefined&&y===undefined) return 0; if(x===undefined) return 1; if(y===undefined) return -1;
+          return (x<y?-1:x>y?1:0)*dir; });
+      } else docs.sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0);
+      if(lim) docs=docs.slice(0,lim);
+      return {docs,size:docs.length,empty:!docs.length,docChanges:()=>[],metadata:{fromCache:false,hasPendingWrites:false}};
+    };
+    return {
+      where:(f,op,v)=>query(path,filters.concat([[f,op,v]]),order,lim),
+      orderBy:(field,dir)=>query(path,filters,{field,dir:dir||'asc'},lim),
+      limit:n=>query(path,filters,order,n),
+      get:()=>Promise.resolve(run()),
+      onSnapshot(next){ const fire=()=>next(run()); subs.add(fire); setTimeout(fire,0); return ()=>subs.delete(fire); }
+    };
+  }
+  function docRef(path){
+    return {
+      id:seg(path).pop(), path,
+      get:()=>Promise.resolve(snapDoc(path)),
+      set(data){ const old=has(path)?store[path]:undefined; store[path]=clone(data); try{ persist(); }catch(e){ if(old===undefined) delete store[path]; else store[path]=old; return Promise.reject(e); } notify(); return Promise.resolve(); },
+      update(data){ if(!has(path)) return Promise.reject({code:'invalid_argument',message:'That record does not exist.'}); return this.set(Object.assign({},store[path],data)); },
+      delete(){ delete store[path]; try{ persist(); }catch(e){} notify(); return Promise.resolve(); },
+      acquire(){ return Promise.resolve({acquired:true}); },
+      onSnapshot(next){ const fire=()=>next(snapDoc(path)); subs.add(fire); setTimeout(fire,0); return ()=>subs.delete(fire); },
+      collection:sub=>colRef(path+'/'+sub)
+    };
+  }
+  function colRef(path){
+    const q=query(path,[],null,0);
+    return Object.assign(q,{path,
+      doc:id=>docRef(path+'/'+(id||newId())),
+      add(data){ const r=docRef(path+'/'+newId()); return r.set(data).then(()=>r); }});
+  }
+  return {doc:docRef,collection:colRef};
+}
+function makeBridgeDownloads(){
+  return {save:async function(req){
+    const data=req.data; let bytes;
+    if(typeof data==='string') bytes=new TextEncoder().encode(data);
+    else if(data instanceof ArrayBuffer) bytes=new Uint8Array(data);
+    else bytes=new Uint8Array(data.buffer||data);
+    let bin=''; for(let i=0;i<bytes.length;i+=0x8000) bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));
+    const res=BRIDGE.saveFile(req.filename,btoa(bin));
+    if(res!=='ok') throw {code:'unavailable',message:res};
+    return {status:'saved'};
+  }};
+}
+
+async function boot(){
+  render();
+  const verEl=$('#app-ver'); if(verEl) verEl.textContent='v'+APP_VERSION;
+  let db=null,user=null,dl=null;
+  if(IS_APP){ db=makeLocalDb(); dl=makeBridgeDownloads(); }
+  else{
+    const c=window.claude;
+    if(!c||!c.use){ S.noStore=true; render(); return; }
+    const get=n=>c.use(n).catch(()=>null);
+    [db,user,dl]=await Promise.all([get('db'),get('user'),get('downloads')]);
+  }
+  S.downloads=dl; S.user=user;
+  if(!db){ S.noStore=true; render(); return; }
+  S.db=db;
+  if(user){ try{ if((await user.can('data.write'))===false) S.readOnly=true; }catch(e){} }
+  const timer=setTimeout(()=>{ S.timedOut=true; render(); },10000);
+  const ok=()=>{ clearTimeout(timer); S.timedOut=false; };
+  const bad=e=>{ clearTimeout(timer); if(e&&e.code==='revoked'){ S.noStore=true; } S.timedOut=true; render(); };
+  db.collection('assets').onSnapshot(snap=>{
+    S.assets=new Map(snap.docs.map(d=>[d.id,Object.assign({id:d.id},d.data())]));
+    S.ready.assets=true; ok(); render();
+  },bad);
+  db.collection('workorders').onSnapshot(snap=>{
+    S.orders=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+    S.ready.orders=true; ok(); render();
+  },bad);
+  db.doc('meta/settings').onSnapshot(s=>{
+    if(s.exists){ S.settings=Object.assign({currency:'SAR'},s.data()); }
+    render();
+  },()=>{});
+}
+
+/* ---------- rendering ---------- */
+function render(){ renderChrome(); renderView(); if(S.sheet==='settings') renderSettings(); }
+
+function renderChrome(){
+  ['dashboard','orders','assets','parts'].forEach(v=>{ const t=$('#tab-'+v); t.setAttribute('aria-selected',String(S.view===v)); t.tabIndex=S.view===v?0:-1; });
+  const open=S.orders.filter(isActive).length;
+  $('#n-orders').textContent=open?String(open):'';
+  $('#n-assets').textContent=S.assets.size?String([...S.assets.values()].filter(a=>!a.archived).length):'';
+  $('#btn-add').disabled=!canWrite(); if(!canWrite()) closeAddMenu();
+  $('#btn-report').disabled=!reportReady(); $('#btn-report').title=hasDone()?'':'Available once a task is completed';
+  const b=$('#banner'); let h='';
+  const hasSamples=S.orders.some(o=>o.sample)||[...S.assets.values()].some(a=>a.sample);
+  if(S.noStore) h=`<div class="banner warn"><p>Records can't be loaded or saved in this view. Open the page from your Claude artifacts while signed in to use it.</p></div>`;
+  else if(S.timedOut&&!(S.ready.assets&&S.ready.orders)) h=`<div class="banner warn"><p>Your records can't be reached yet. They load as soon as the connection answers.</p></div>`;
+  else if(S.readOnly) h=`<div class="banner"><p>This view is read-only. You can look through the records but not change them.</p></div>`;
+  else if(hasSamples) h=`<div class="banner"><p><b>Example records are showing</b> so you can see how it works. Clear them when you are ready to log your own jobs; numbering restarts at 0001.</p><button type="button" class="btn sm${S.confirmClear?' danger':''}" data-action="clear-samples">${S.confirmClear?'Confirm: delete examples':'Clear examples'}</button></div>`;
+  b.innerHTML=h;
+}
+
+function renderView(){
+  const v=$('#view');
+  if(S.noStore){ v.innerHTML=emptyIntro(false); return; }
+  if(!(S.ready.assets&&S.ready.orders)){ v.innerHTML=emptyIntro(true); return; }
+  const f=document.activeElement&&document.activeElement.id;
+  if(S.view==='orders'&&f==='f-q'&&$('#orders-results')){ $('#orders-results').innerHTML=ordersResults(); return; }
+  if(S.view==='parts'&&f==='p-q'&&$('#parts-results')){ $('#parts-results').innerHTML=partsResults(); return; }
+  v.innerHTML=S.view==='orders'?ordersView():S.view==='assets'?assetsView():S.view==='parts'?partsView():dashboardView();
+}
+
+function emptyIntro(loading){
+  return `<div class="empty">${emptyArt()}<h2>${loading?'Loading your records':'Nothing to show here'}</h2>
+  <p>Tasks, assets, parts and costs appear here. Start with an asset such as a car, a room or an appliance, then open a numbered task against it.</p>
+  <ol class="steps"><li><span>Add an asset to track.</span></li><li><span>Open a task. It gets the next number, like WO-V-${new Date().getFullYear()}-0001.</span></li><li><span>Log parts, labour and cost, then mark it completed.</span></li></ol></div>`;
+}
+
+/* dashboard */
+function rangeStart(){ const d=new Date(); if(S.range==='year') return d.getFullYear()+'-01-01'; if(S.range==='12m'){ d.setFullYear(d.getFullYear()-1); return localISO(d); } return ''; }
+function orderRow(o){
+  const t=orderTotals(o); const od=isOverdue(o);
+  let dt;
+  if(o.status==='Completed') dt='Done '+fmtDate(o.completedOn);
+  else if(o.status!=='Cancelled'&&o.dueOn) dt='Due '+fmtDate(o.dueOn);
+  else dt='Opened '+fmtDate(o.openedOn);
+  return `<button type="button" class="tkt" data-action="open-wo" data-id="${esc(o.id)}">
+    ${icoFor(assetCat(o.assetId))}
+    <span class="tkt-main"><span class="tkt-no">${esc(o.number||o.id)}</span><span class="tkt-title">${esc(o.title)}</span><span class="tkt-meta">${esc(assetName(o.assetId))} · ${esc(dt)}</span></span>
+    <span class="tkt-r">${stDot(o.status)}${od?'<span class="st over"><i></i>Overdue</span>':''}<span class="tkt-cost">${t.all?money(t.all):'—'}</span></span></button>`;
+}
+function dashboardView(){
+  if(!S.assets.size){
+    return `<div class="empty">${emptyArt()}<h2>Start with your first asset</h2><p>An asset is anything you maintain: the car, the kitchen, the air conditioner, the water heater. Every task is opened against one, so its history and cost stay together.</p>
+    <ol class="steps"><li><span>Add an asset.</span></li><li><span>Open a task. It is numbered automatically from the kind of machine, like WO-V-${new Date().getFullYear()}-0001.</span></li><li><span>Log parts, labour and cost, then mark it completed.</span></li></ol>
+    <div class="btns"><button type="button" class="btn primary" data-action="new-asset"${canWrite()?'':' disabled'}>Add new asset</button></div></div>`;
+  }
+  const start=rangeStart(); const inR=o=>o.status!=='Cancelled'&&(!start||orderDate(o)>=start);
+  const ro=S.orders.filter(inR);
+  let spend=0; const kinds={part:0,labour:0,other:0}; const byAsset=new Map();
+  for(const o of ro){ const t=orderTotals(o); spend+=t.all; kinds.part+=t.part; kinds.labour+=t.labour; kinds.other+=t.other;
+    const e=byAsset.get(o.assetId)||{sum:0,n:0}; e.sum+=t.all; e.n++; byAsset.set(o.assetId,e); }
+  const active=S.orders.filter(isActive);
+  const overdue=active.filter(isOverdue);
+  const attention=active.slice().sort((a,b)=>(a.dueOn||'9999').localeCompare(b.dueOn||'9999')||byNumberDesc(a,b)).slice(0,8);
+  const recent=S.orders.filter(o=>o.status==='Completed').sort((a,b)=>(b.completedOn||'').localeCompare(a.completedOn||'')||byNumberDesc(a,b)).slice(0,5);
+  const rl={year:'This year','12m':'Last 12 months',all:'All time'}[S.range];
+  const rows=[...byAsset.entries()].sort((a,b)=>b[1].sum-a[1].sum).slice(0,6);
+  const max=rows.length?Math.max(...rows.map(r=>r[1].sum)):0;
+  const bars=rows.filter(r=>r[1].sum>0).map(r=>`<li title="${esc(assetName(r[0]))}: ${esc(money(r[1].sum))}"><span class="bar-l">${esc(assetName(r[0]))}<em>${r[1].n} task${r[1].n===1?'':'s'}</em></span><span class="bar-t"><span class="bar-f" style="width:${Math.max(2,Math.round(r[1].sum/max*100))}%"></span></span><span class="bar-v">${money(r[1].sum)}</span></li>`).join('');
+  const kinfo=[['Parts',kinds.part,'--c1'],['Labour',kinds.labour,'--c2'],['Other',kinds.other,'--c3']];
+  const kbar=kinfo.filter(k=>k[1]>0).map(k=>`<i style="flex:${k[1]};background:var(${k[2]})" title="${k[0]}: ${esc(money(k[1]))}"></i>`).join('');
+  const klegend=kinfo.map(k=>`<li><b style="background:var(${k[2]})"></b><span>${k[0]}</span><span>${money(k[1])}</span></li>`).join('');
+  return `<section class="hero" aria-label="Spent"><div class="k-l">Spent · ${esc(rl)}</div><div class="hero-v">${money(spend)}</div><div class="hero-s">${ro.length} job${ro.length===1?'':'s'} · ${esc(rl)}</div></section>
+  <div class="strip">
+    <div><div class="k-l">Open</div><div class="k-v">${active.length}</div></div>
+    <div><div class="k-l">Overdue</div><div class="k-v${overdue.length?' bad':' zero'}">${overdue.length}</div></div>
+    <div><div class="k-l">Assets</div><div class="k-v">${[...S.assets.values()].filter(a=>!a.archived).length}</div></div></div>
+  <div class="dash"><div class="stack">
+    <section class="group"><h2 class="sec-h">Needs attention</h2>
+      ${attention.length?`<div class="tickets">${attention.map(orderRow).join('')}</div>`:`<p class="muted" style="margin:0 4px">Nothing open. New jobs you start will be listed here, overdue ones first.</p>`}</section>
+    <section class="group"><h2 class="sec-h">Recently completed</h2>
+      ${recent.length?`<div class="tickets">${recent.map(orderRow).join('')}</div>`:`<p class="muted" style="margin:0 4px">Completed tasks show up here.</p>`}</section>
+  </div><div class="stack">
+    <section class="panel"><div class="panel-h"><h2>Spend by asset</h2>
+      <div class="seg" role="group" aria-label="Period">${[['year','This year'],['12m','12 months'],['all','All time']].map(r=>`<button type="button" data-action="range" data-range="${r[0]}" aria-pressed="${S.range===r[0]}">${r[1]}</button>`).join('')}</div></div>
+      ${bars?`<ul class="bars">${bars}</ul>`:`<p class="muted">No costs logged for this period yet.</p>`}</section>
+    <section class="panel"><div class="panel-h"><h2>Where the money goes</h2></div>
+      ${kbar?`<div class="split" role="img" aria-label="Cost split between parts, labour and other">${kbar}</div>`:''}<ul class="legend">${klegend}</ul></section>
+  </div></div>`;
+}
+
+/* tasks list */
+function filteredOrders(){
+  const q=S.f.q.trim().toLowerCase();
+  return S.orders.filter(o=>{
+    if(S.f.status==='active'){ if(!isActive(o)) return false; } else if(S.f.status!=='all'&&o.status!==S.f.status) return false;
+    if(S.f.asset&&o.assetId!==S.f.asset) return false;
+    if(S.f.year&&String(orderDate(o)).slice(0,4)!==S.f.year) return false;
+    if(q){ const hay=[o.number,o.title,o.description,o.notes,o.doneBy,o.type,assetName(o.assetId)].concat((o.lines||[]).map(l=>[l.name,l.partNo,l.supplier].join(' '))).join(' ').toLowerCase(); if(hay.indexOf(q)<0) return false; }
+    return true;
+  }).sort(byNumberDesc);
+}
+function ordersView(){
+  const yrs=[...new Set(S.orders.map(o=>String(orderDate(o)).slice(0,4)).filter(Boolean))].sort().reverse();
+  const assets=[...S.assets.values()].sort(byName);
+  const extra=(S.f.asset?1:0)+(S.f.year?1:0);
+  const chips=[['active','Active'],['Open','Open'],['In progress','In progress'],['Completed','Done'],['all','All']];
+  return `<div class="searchrow"><input id="f-q" type="search" value="${esc(S.f.q)}" placeholder="Search number, title, part, notes" aria-label="Search tasks" autocomplete="off"><button type="button" class="fbtn" data-action="toggle-filters" aria-expanded="${!!S.showFilters}">Filters${extra?`<b>${extra}</b>`:''}</button></div>
+  <div class="chips" role="group" aria-label="Status">${chips.map(c=>`<button type="button" class="chip" data-action="chip" data-status="${esc(c[0])}" aria-pressed="${S.f.status===c[0]}">${c[1]}</button>`).join('')}</div>
+  ${S.showFilters?`<div class="fpanel">
+    <label class="fld"><span>Status</span><select id="f-status">${opt([['active','Open and in progress'],['all','All statuses']].concat(STATUSES.map(s=>[s,s])),S.f.status)}</select></label>
+    <label class="fld"><span>Asset</span><select id="f-asset">${opt([['','All assets']].concat(assets.map(a=>[a.id,a.name])),S.f.asset)}</select></label>
+    <label class="fld"><span>Year</span><select id="f-year">${opt([['','All years']].concat(yrs.map(y=>[y,y])),S.f.year)}</select></label></div>`:''}
+  <div id="orders-results">${ordersResults()}</div>`;
+}
+function ordersResults(){
+  const list=filteredOrders();
+  if(!S.orders.length) return `<div class="empty small"><h2>No tasks yet</h2><p>Open the first one with the + button. Each gets the next number automatically.</p></div>`;
+  if(!list.length) return `<div class="empty small"><h2>No matches</h2><p>No tasks fit these filters. Try "All statuses" or clear the search.</p></div>`;
+  const total=list.filter(o=>o.status!=='Cancelled').reduce((s,o)=>s+orderTotals(o).all,0);
+  return `<p class="sumline"><span><b>${list.length}</b> task${list.length===1?'':'s'}</span><span><b>${list.filter(isActive).length}</b> open</span><span>Cost <b>${money(total)}</b></span></p><div class="tickets">${list.map(orderRow).join('')}</div>`;
+}
+
+/* assets */
+function assetStats(){
+  const m=new Map();
+  for(const o of S.orders){
+    let s=m.get(o.assetId); if(!s){ s={n:0,open:0,spent:0,last:'',meter:null,meterDate:''}; m.set(o.assetId,s); }
+    s.n++; if(isActive(o)) s.open++;
+    if(o.status!=='Cancelled') s.spent+=orderTotals(o).all;
+    if(o.status==='Completed'&&o.completedOn&&o.completedOn>s.last) s.last=o.completedOn;
+    const d=orderDate(o); if(o.meter!=null&&o.meter!==''&&d>=s.meterDate){ s.meter=o.meter; s.meterDate=d; }
+  }
+  return m;
+}
+function assetsView(){
+  const stats=assetStats();
+  const all=[...S.assets.values()].sort(byName);
+  const list=all.filter(a=>S.showArchived||!a.archived);
+  const archivedCount=all.filter(a=>a.archived).length;
+  const head=`<div class="toolbar"><div>${archivedCount?`<button type="button" class="btn sm ghost" data-action="toggle-archived">${S.showArchived?'Hide':'Show'} archived (${archivedCount})</button>`:''}</div></div>`;
+  if(!list.length) return head+`<div class="empty small"><h2>No assets yet</h2><p>Add the things you maintain: a car, a room, an appliance. Tasks are opened against them.</p></div>`;
+  return head+`<div class="cards">${list.map(a=>{
+    const s=stats.get(a.id)||{n:0,open:0,spent:0,last:'',meter:null};
+    const kids=kidsOf(a.id); const par=a.parentId?S.assets.get(a.parentId):null; const pic=photoOf(a);
+    const ident=[a.plate?['Number plate',a.plate]:null,a.vin?['VIN',a.vin]:null,(a.brand||a.model)&&a.category!=='Vehicle'?['Brand / model',joinUniq([a.brand,a.model])]:null,a.serial?['Serial',a.serial]:null].filter(Boolean);
+    return `<article class="panel acard${a.archived?' arch':''}"><div class="ahead">${pic?`<button type="button" class="apic-b" data-action="view-photo" data-id="${esc(a.id)}" data-k="att" data-i="0" aria-label="View attachment"><img class="apic" src="${pic}" alt=""></button>`:icoFor(effCat(a))}<div><p class="tagline">${esc(effCat(a)||'Other')}${par?' · Accessory':''}${a.archived?' · Archived':''}</p><h3>${esc(a.name)}</h3>${par?`<p class="muted">Accessory of ${esc(par.name)}</p>`:''}${a.details?`<p class="muted">${esc(a.details)}</p>`:''}</div></div>
+      <dl class="facts">${ident.map(r=>`<dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd>`).join('')}${kids.length?`<dt>Accessories</dt><dd>${esc(kids.map(k=>k.name).join(', '))}</dd>`:''}<dt>Tasks</dt><dd>${s.n}${s.open?` (${s.open} open)`:''}</dd><dt>Total spent</dt><dd>${money(s.spent)}</dd><dt>Last service</dt><dd>${s.last?fmtDate(s.last):'—'}</dd>${a.meterUnit?`<dt>Last reading</dt><dd>${fmtMeter(s.meter,a.meterUnit)}</dd>`:''}</dl>
+      <div class="acts"><button type="button" class="btn sm" data-action="asset-history" data-id="${esc(a.id)}">History</button><button type="button" class="btn sm" data-action="asset-wo" data-id="${esc(a.id)}"${canWrite()&&!a.archived?'':' disabled'}>New task</button><button type="button" class="btn sm ghost" data-action="edit-asset" data-id="${esc(a.id)}">Edit</button></div></article>`;
+  }).join('')}</div>`;
+}
+
+/* parts */
+function partRows(){
+  const q=S.partsQ.trim().toLowerCase(); const rows=[];
+  for(const o of S.orders){ if(o.status==='Cancelled') continue; for(const l of (o.lines||[])){ if(l.kind!=='part') continue;
+    if(q&&[l.name,l.partNo,l.supplier,o.number,assetName(o.assetId)].join(' ').toLowerCase().indexOf(q)<0) continue; rows.push({o,l}); } }
+  return rows.sort((a,b)=>orderDate(b.o).localeCompare(orderDate(a.o))||byNumberDesc(a.o,b.o));
+}
+function partsView(){
+  return `<div class="filters"><label class="fld grow"><span>Search parts</span><input id="p-q" type="search" value="${esc(S.partsQ)}" placeholder="Part name, part number, supplier, asset" autocomplete="off"></label></div><div id="parts-results">${partsResults()}</div>`;
+}
+function partsResults(){
+  const rows=partRows();
+  if(!rows.length) return `<div class="empty small"><h2>${S.partsQ?'No matching parts':'No parts logged yet'}</h2><p>${S.partsQ?'Try a different name or part number.':'Parts you add to a task are collected here, with part numbers, suppliers and prices, so you can find what you bought last time.'}</p></div>`;
+  const total=rows.reduce((s,r)=>s+lineTotal(r.l),0);
+  return `<p class="sumline"><span><b>${rows.length}</b> part line${rows.length===1?'':'s'}</span><span>Parts cost <b>${money(total)}</b></span></p>
+  <div class="tablewrap"><table><thead><tr><th>Date</th><th>Part</th><th>Part no.</th><th class="num">Qty</th><th class="num">Unit cost</th><th class="num">Total</th><th>Supplier</th><th>Asset</th><th>Task</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(fmtDate(orderDate(r.o)))}</td><td>${esc(r.l.name)}</td><td class="mono">${esc(r.l.partNo||'')}</td><td class="num">${esc(num(r.l.qty))}</td><td class="num">${money(num(r.l.unitCost))}</td><td class="num">${money(lineTotal(r.l))}</td><td>${esc(r.l.supplier||'')}</td><td>${esc(assetName(r.o.assetId))}</td><td><button type="button" class="linkbtn" data-action="open-wo" data-id="${esc(r.o.id)}">${esc(r.o.number||r.o.id)}</button></td></tr>`).join('')}</tbody></table></div>`;
+}
+
+/* ---------- task sheet ---------- */
+function blankWO(p){
+  p=p||{};
+  return {isNew:true,number:'',title:p.title||'',assetId:p.assetId||'',type:p.type||'Preventive maintenance',priority:'Normal',status:'Open',openedOn:todayISO(),dueOn:'',completedOn:'',meter:'',doneBy:'Me',description:'',notes:'',lines:[],followUpOf:p.followUpOf||''};
+}
+function openWO(id,prefill){
+  if(id){
+    const o=S.orders.find(x=>x.id===id); if(!o) return;
+    const c=JSON.parse(JSON.stringify(o));
+    S.wo=Object.assign(c,{isNew:false,number:o.number||o.id,meter:o.meter==null?'':String(o.meter),dueOn:o.dueOn||'',completedOn:o.completedOn||'',doneBy:o.doneBy||'',description:o.description||'',notes:o.notes||'',
+      lines:(o.lines||[]).map(l=>({kind:l.kind||'part',name:l.name||'',partNo:l.partNo||'',supplier:l.supplier||'',qty:String(l.qty==null?'':l.qty),unitCost:String(l.unitCost==null?'':l.unitCost)}))});
+  } else S.wo=blankWO(prefill);
+  S.sheet='wo'; renderWO(S.wo.isNew?'wo-title':null);
+}
+function lineHTML(l,i){
+  const lab=KIND_LABELS[l.kind]||KIND_LABELS.other; const isPart=l.kind==='part';
+  return `<div class="line"><div class="line-r1">
+    <label class="fld"><span>Type</span><select id="ln-${i}-kind" data-i="${i}" data-lf="kind">${opt(KINDS,l.kind)}</select></label>
+    <label class="fld"><span>Description</span><input id="ln-${i}-name" data-i="${i}" data-lf="name" type="text" value="${esc(l.name)}" placeholder="${isPart?'Front brake pads':l.kind==='labour'?'Workshop labour':'Disposal fee'}" autocomplete="off"></label>
+    <button type="button" class="icon" data-action="del-line" data-i="${i}" aria-label="Remove this line">&times;</button></div>
+    <div class="line-r2">
+    ${isPart?`<label class="fld"><span>Part no.</span><input id="ln-${i}-partNo" data-i="${i}" data-lf="partNo" type="text" value="${esc(l.partNo)}" autocomplete="off"></label><label class="fld"><span>Supplier</span><input id="ln-${i}-supplier" data-i="${i}" data-lf="supplier" type="text" value="${esc(l.supplier)}" autocomplete="off"></label>`:''}
+    <label class="fld"><span>${lab[0]}</span><input id="ln-${i}-qty" data-i="${i}" data-lf="qty" type="number" min="0" step="any" inputmode="decimal" value="${esc(l.qty)}"></label>
+    <label class="fld"><span>${lab[1]}</span><input id="ln-${i}-unitCost" data-i="${i}" data-lf="unitCost" type="number" min="0" step="any" inputmode="decimal" value="${esc(l.unitCost)}"></label>
+    <div class="fld"><span>Line total</span><output id="ln-${i}-total">${money(lineTotal(l))}</output></div></div></div>`;
+}
+function renderWO(focusId){
+  const host=$('#modal'); const w=S.wo;
+  if(!w){ host.innerHTML=''; host.hidden=true; syncInert(); return; }
+  const prev=$('.sheet-b',host); const scroll=prev?prev.scrollTop:0;
+  const a=S.assets.get(w.assetId); const unit=a&&a.meterUnit||'';
+  const assets=[...S.assets.values()].filter(x=>!x.archived||x.id===w.assetId).sort(byName);
+  const total=w.lines.reduce((s,l)=>s+lineTotal(l),0);
+  const was=!!prev&&!host.hidden;
+  host.hidden=false;
+  host.innerHTML=`<div class="scrim" data-action="close-modal"></div>
+  <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="wo-h">
+   <header class="sheet-h"><div><p class="eyebrow">Task${w.followUpOf?' · follow-up to '+esc(w.followUpOf):''}</p><h2 id="wo-h">${w.isNew?'<span class="tag pending">'+(w.assetId?'Number WO-'+woCode(w.assetId)+'-… assigned when you save':'Number assigned when you save')+'</span>':`<span class="tag">${esc(w.number)}</span>`}</h2></div>
+   <button type="button" class="icon" data-action="close-modal" aria-label="Close">&times;</button></header>
+   <div class="sheet-b">
+    <div class="grid">
+     <label class="fld" style="grid-column:1/-1"><span>What needs doing</span><input id="wo-title" data-f="title" type="text" value="${esc(w.title)}" placeholder="Oil and filter change" autocomplete="off"></label>
+     <label class="fld"><span>Asset</span><select id="wo-asset" data-f="assetId">${opt([['','Choose an asset…']].concat(assets.map(x=>[x.id,x.parentId&&S.assets.get(x.parentId)?x.name+' (accessory of '+S.assets.get(x.parentId).name+')':x.name])).concat([['__new','Add new asset…']]),w.assetId)}</select></label>
+     <label class="fld"><span>Type</span><select id="wo-type" data-f="type">${opt(TYPES.map(t=>[t,t]),w.type)}</select></label>
+     <label class="fld"><span>Priority</span><select id="wo-priority" data-f="priority">${opt(PRIORITIES.map(t=>[t,t]),w.priority)}</select></label>
+     <label class="fld"><span>Status</span><select id="wo-status" data-f="status">${opt(STATUSES.map(t=>[t,t]),w.status)}</select></label>
+     <label class="fld"><span>Opened</span><input id="wo-opened" data-f="openedOn" type="date" value="${esc(w.openedOn)}"></label>
+     <label class="fld"><span>Due</span><input id="wo-due" data-f="dueOn" type="date" value="${esc(w.dueOn)}"></label>
+     ${w.status==='Completed'?`<label class="fld"><span>Completed</span><input id="wo-completed" data-f="completedOn" type="date" value="${esc(w.completedOn)}"></label>`:''}
+     ${unit?`<label class="fld"><span>Reading (${esc(unit)})</span><input id="wo-meter" data-f="meter" type="number" min="0" step="any" inputmode="decimal" value="${esc(w.meter)}" placeholder="${unit==='h'?'Hours':'Odometer'}"></label>`:''}
+     <label class="fld"><span>Done by</span><input id="wo-doneby" data-f="doneBy" type="text" value="${esc(w.doneBy)}" placeholder="Me, or the workshop name" autocomplete="off"></label>
+    </div>
+    <label class="fld"><span>Work performed</span><textarea id="wo-desc" data-f="description" placeholder="What was done, what was found">${esc(w.description)}</textarea></label>
+    <div><h3 class="sec-h">Parts, labour and costs</h3>
+     <div class="lines" id="wo-lines">${w.lines.length?w.lines.map(lineHTML).join(''):'<p class="hint">No cost lines yet. Add the parts you used and any labour.</p>'}</div>
+     <div class="addrow" style="margin-top:10px"><button type="button" class="btn sm" data-action="add-line" data-kind="part">Add part</button><button type="button" class="btn sm" data-action="add-line" data-kind="labour">Add labour</button><button type="button" class="btn sm" data-action="add-line" data-kind="other">Add other cost</button></div></div>
+    <label class="fld"><span>Notes</span><textarea id="wo-notes" data-f="notes" placeholder="Warranty, next service, things to remember">${esc(w.notes)}</textarea></label>
+   </div>
+   <footer class="sheet-f"><div class="tot"><span>Order total</span><strong id="wo-total">${money(total)}</strong></div>
+    <div class="acts">${!w.isNew&&w.status==='Completed'?'<button type="button" class="btn" data-action="report-task">PDF report</button><button type="button" class="btn" data-action="followup">Create follow-up</button>':''}<button type="button" class="btn" data-action="close-modal">Cancel</button><button type="button" class="btn primary" data-action="save-wo"${S.saving?' disabled':''}>${w.isNew?'Create task':'Save changes'}</button></div></footer></section>`;
+  keepStill(host,was);
+  const sb=$('.sheet-b',host); if(sb) sb.scrollTop=scroll;
+  syncInert();
+  if(focusId){ const el=document.getElementById(focusId); if(el) el.focus(); }
+}
+function updateTotals(){
+  let sum=0; S.wo.lines.forEach((l,i)=>{ const v=lineTotal(l); sum+=v; const el=document.getElementById('ln-'+i+'-total'); if(el) el.textContent=money(v); });
+  const t=$('#wo-total'); if(t) t.textContent=money(sum);
+}
+function onWoInput(e){
+  const t=e.target; if(!S.wo||!t.closest||!t.closest('#modal')) return;
+  if(t.dataset.lf!==undefined){
+    const l=S.wo.lines[+t.dataset.i]; if(!l) return; l[t.dataset.lf]=t.value;
+    if(t.dataset.lf==='kind'){ renderWO(t.id); return; }
+    updateTotals(); return;
+  }
+  const f=t.dataset.f; if(!f) return;
+  const prev=S.wo[f];
+  if(f==='assetId'&&t.value==='__new'){ openAsset(null,true); renderWO('wo-asset'); return; }
+  S.wo[f]=t.value;
+  if(f==='assetId') renderWO(t.id);
+  if(f==='status'){ if(t.value==='Completed'&&!S.wo.completedOn) S.wo.completedOn=todayISO(); renderWO(t.id); }
+}
+async function saveWO(){
+  const w=S.wo; if(!w||S.saving) return;
+  if(!w.title.trim()){ toast('Give the task a title.',true); $('#wo-title')&&$('#wo-title').focus(); return; }
+  if(!w.assetId||!S.assets.has(w.assetId)){ toast('Choose the asset this work is for.',true); $('#wo-asset')&&$('#wo-asset').focus(); return; }
+  if(w.meter!==''&&!isFinite(Number(w.meter))){ toast('The reading must be a number.',true); return; }
+  const lines=w.lines.filter(l=>l.name.trim()||num(l.unitCost)).map(l=>({kind:l.kind,name:l.name.trim(),partNo:(l.partNo||'').trim(),supplier:(l.supplier||'').trim(),qty:num(l.qty===''?1:l.qty),unitCost:num(l.unitCost)}));
+  const now=new Date().toISOString();
+  const doc={title:w.title.trim(),assetId:w.assetId,type:w.type,priority:w.priority,status:w.status,openedOn:w.openedOn||todayISO(),dueOn:w.dueOn||'',
+    completedOn:w.status==='Completed'?(w.completedOn||todayISO()):'',meter:w.meter===''?null:Number(w.meter),doneBy:w.doneBy.trim(),description:w.description.trim(),notes:w.notes.trim(),lines,
+    followUpOf:w.followUpOf||'',sample:!!w.sample,updatedAt:now};
+  S.saving=true; renderWO();
+  try{
+    if(w.isNew){
+      const n=await allocateNumber(woCode(w.assetId));
+      Object.assign(doc,{number:n.number,year:n.year,seq:n.seq,code:n.code,createdAt:now});
+      await S.db.doc('workorders/'+n.number).set(doc);
+      toast('Created '+n.number);
+    } else {
+      Object.assign(doc,{number:w.number,year:w.year,seq:w.seq,code:w.code,createdAt:w.createdAt||now});
+      await S.db.doc('workorders/'+w.number).set(doc);
+      toast('Saved '+w.number);
+    }
+    S.saving=false; closeSheet('wo');
+  }catch(e){ S.saving=false; renderWO(); fail(e,'Not saved'); }
+}
+
+/* ---------- asset sheet ---------- */
+const ASSET_TEXT=['name','brand','make','model','colour','plate','vin','serial','details','notes'];
+function openAsset(id,fromWO){
+  const a=id?S.assets.get(id):null;
+  const base={isNew:!a,id:a?a.id:'',category:a&&a.category||'Vehicle',role:a&&a.parentId?'child':'parent',parentId:a&&a.parentId||'',meterUnit:a?(a.meterUnit||''):'',
+    attachments:a?attsOf(a):[],archived:!!(a&&a.archived),sample:!!(a&&a.sample),structured:!!(a&&a.structured),confirmDelete:false};
+  ASSET_TEXT.forEach(k=>{ base[k]=a&&a[k]?String(a[k]):''; });
+  if(a&&a.category==='Vehicle'&&!a.parentId&&a.model){ base.make=joinUniq([a.make,a.model]); base.model=''; }
+  S.asset=base; S.asset.fromWO=!!fromWO; renderAsset(a?null:'as-cat');
+}
+function attachField(){
+  const a=S.asset;
+  return `<div class="fld"><span>Attachments</span><div class="atts">
+   ${a.attachments.map((x,i)=>`<div class="att"><button type="button" class="thumb" data-action="view-photo" data-k="att" data-i="${i}" aria-label="View attachment ${i+1}"><img src="${x.src}" alt=""></button>
+     <input id="as-cap-${i}" class="capin" data-cap="${i}" type="text" value="${esc(x.caption)}" placeholder="Caption, e.g. Number plate" autocomplete="off" aria-label="Caption for attachment ${i+1}">
+     <button type="button" class="icon" data-action="del-photo" data-k="att" data-i="${i}" aria-label="Remove attachment ${i+1}">&times;</button></div>`).join('')}</div>
+   ${a.attachments.length<MAX_ATT?`<div class="ph"><label class="btn sm"><input type="file" accept="image/*" data-photo="att" hidden>Add attachment</label></div>`:`<span class="hint">Up to ${MAX_ATT} attachments.</span>`}</div>`;
+}
+function renderAsset(focusId){
+  const host=$('#modal2'); const a=S.asset;
+  if(!a){ host.innerHTML=''; host.hidden=true; syncInert(); return; }
+  const kids=a.isNew?0:kidsOf(a.id).length;
+  const used=!a.isNew&&(kids>0||S.orders.some(o=>o.assetId===a.id));
+  const was=!host.hidden&&!!host.querySelector('.sheet');
+  host.hidden=false;
+  const veh=a.category==='Vehicle'&&a.role==='parent';
+  const child=a.role==='child';
+  const parents=[...S.assets.values()].filter(x=>!x.parentId&&x.id!==a.id&&(!x.archived||x.id===a.parentId)).sort(byName);
+  const par=child&&a.parentId?S.assets.get(a.parentId):null;
+  const code=WO_CODES[child?(par?effCat(par):''):a.category]||WO_CODE_DEFAULT;
+  const f=(k,label,ph)=>`<label class="fld"><span>${label}</span><input id="as-${k}" data-af="${k}" type="text" value="${esc(a[k])}" placeholder="${esc(ph||'')}" autocomplete="off"${k==='vin'||k==='plate'?' autocapitalize="characters"':''}></label>`;
+  let body='';
+  if(!veh){
+    body+=`<label class="fld"><span>This is</span><select id="as-role" data-af="role">${opt([['parent','The main machine or instrument (parent)'],['child','An accessory of a machine (child)']],a.role)}</select></label>`;
+  }
+  if(child){
+    body+=`<label class="fld"><span>Belongs to</span><select id="as-parent" data-af="parentId">${opt([['','Choose the parent machine…']].concat(parents.map(x=>[x.id,x.name])),a.parentId)}</select></label>`;
+    if(!parents.length) body+=`<p class="hint">There is no parent machine yet. Add the main machine first, then add its accessories.</p>`;
+  } else {
+    body+=`<label class="fld"><span>Category</span><select id="as-cat" data-af="category">${opt(CATEGORIES.map(c=>[c,c]),a.category)}</select></label>`;
+  }
+  if(veh){
+    body+=`<div class="grid">${f('brand','Brand','Toyota')}${f('make','Make and model','Land Cruiser GXR')}${f('colour','Colour','White')}</div>
+     <p class="hint">Name: <b>${esc(joinUniq([a.brand,a.make,a.colour])||'built from the fields above')}</b></p>
+     <div class="grid">${f('plate','Number plate','ABC 1234')}${f('vin','VIN number','17 characters')}</div>`;
+  } else {
+    body+=`<label class="fld"><span>Name</span><input id="as-name" data-af="name" type="text" value="${esc(a.name)}" placeholder="${child?'UPS, Soundbar':'Living room AC, Bedroom TV'}" autocomplete="off"></label>
+     <div class="grid">${f('brand','Brand','Samsung')}${f('model','Model number','AR24TYHYC')}</div>
+     ${f('serial','Serial number','')}`;
+  }
+  body+=attachField();
+  if(!veh){
+    body+=`<label class="fld"><span>Notes</span><textarea id="as-notes" data-af="notes" placeholder="Purchase date, warranty, anything worth remembering">${esc(a.notes)}</textarea></label>`;
+    if(!child) body+=`<label class="fld"><span>Meter</span><select id="as-meter" data-af="meterUnit">${opt(METERS,a.meterUnit)}</select></label>`;
+  }
+  if(a.details&&!a.structured) body+=`<label class="fld"><span>Older details</span><input id="as-details" data-af="details" type="text" value="${esc(a.details)}" autocomplete="off"></label>`;
+  host.innerHTML=`<div class="scrim" data-action="close-modal2"></div>
+  <section class="sheet narrow" role="dialog" aria-modal="true" aria-labelledby="as-h">
+   <header class="sheet-h"><div><h2 id="as-h">${a.isNew?'Add new asset':esc(a.name||joinUniq([a.brand,a.make,a.colour])||'Asset')}</h2></div><button type="button" class="icon" data-action="close-modal2" aria-label="Close">&times;</button></header>
+   <div class="sheet-b">${body}
+    ${!a.isNew?`<div class="confirmrow">${a.archived?`<button type="button" class="btn sm" data-action="archive-asset">Restore asset</button>`:`<button type="button" class="btn sm" data-action="archive-asset">Archive asset</button>`}
+      ${used?`<span class="hint">${kids?'Has accessories':'Has tasks'}, so it can be archived but not deleted.</span>`:(a.confirmDelete?`<button type="button" class="btn sm danger" data-action="delete-asset">Confirm delete</button><span class="hint">This cannot be undone.</span>`:`<button type="button" class="btn sm danger" data-action="delete-asset">Delete asset</button>`)}</div>`:''}
+   </div>
+   <footer class="sheet-f"><span class="hint">${child&&!par?'':`Tasks will be numbered WO-${code}-…`}${a.meterUnit&&!child?' and ask for a reading.':''}</span><div class="acts"><button type="button" class="btn" data-action="close-modal2">Cancel</button><button type="button" class="btn primary" data-action="save-asset">${a.isNew?'Add asset':'Save changes'}</button></div></footer></section>`;
+  keepStill(host,was);
+  syncInert();
+  if(focusId){ const el=document.getElementById(focusId); if(el) el.focus(); }
+}
+async function addPhoto(input){
+  const a=S.asset; const file=input.files&&input.files[0]; input.value='';
+  if(!a||!file) return;
+  try{
+    const url=await shrink(file,1280,.72);
+    if(!S.asset) return;
+    if(a.attachments.length<MAX_ATT) a.attachments.push({src:url,caption:''});
+    renderAsset('as-cap-'+(a.attachments.length-1));
+  }catch(e){ toast(e&&e.message?e.message:'The attachment could not be added.',true); }
+}
+function assetProblem(a){
+  if(a.role==='child'&&(!a.parentId||!S.assets.has(a.parentId))) return ['Choose the parent machine this belongs to.','as-parent'];
+  const veh=a.category==='Vehicle'&&a.role==='parent';
+  const t=k=>String(a[k]||'').trim();
+  const has=veh?(t('brand')||t('make')||t('colour')||t('plate')):(t('name')||t('brand')||t('model'));
+  return has?null:['Give the asset a name or a brand first.',veh?'as-brand':'as-name'];
+}
+async function saveAsset(){
+  const a=S.asset; if(!a) return;
+  const prob=assetProblem(a);
+  if(prob){ toast(prob[0],true); if(prob[1]){ const el=document.getElementById(prob[1]); if(el) el.focus(); } return; }
+  const veh=a.category==='Vehicle'&&a.role==='parent'; const child=a.role==='child';
+  const par=child?S.assets.get(a.parentId):null;
+  const t=k=>String(a[k]||'').trim();
+  const name=veh?(joinUniq([t('brand'),t('make'),t('colour')])||t('plate')):(t('name')||joinUniq([t('brand'),t('model')])||'Asset');
+  const doc={name,category:child?effCat(par):a.category,details:t('details'),meterUnit:child?'':a.meterUnit,notes:t('notes'),archived:!!a.archived,sample:!!a.sample,structured:true,updatedAt:new Date().toISOString(),
+    brand:t('brand'),model:veh?'':t('model'),serial:veh?'':t('serial'),make:veh?t('make'):'',colour:veh?t('colour'):'',plate:veh?t('plate'):'',vin:veh?t('vin').toUpperCase():'',
+    attachments:a.attachments.map(x=>({src:x.src,caption:String(x.caption||'').trim()})),parentId:child?a.parentId:''};
+  try{
+    let id=a.id;
+    if(a.isNew){ doc.createdAt=doc.updatedAt; const ref=await S.db.collection('assets').add(doc); id=ref.id; }
+    else { const old=S.assets.get(a.id)||{}; doc.createdAt=old.createdAt||doc.updatedAt; await S.db.doc('assets/'+a.id).set(doc); }
+    toast('Saved '+doc.name);
+    const back=a.fromWO&&S.wo;
+    if(back){ S.assets.set(id,Object.assign({id},doc)); S.wo.assetId=id; }
+    S.asset=null; renderAsset();
+    if(back) renderWO('wo-asset');
+  }catch(e){ fail(e,'Not saved'); }
+}
+async function toggleArchive(){
+  const a=S.asset; if(!a||a.isNew) return;
+  const old=S.assets.get(a.id); if(!old) return;
+  try{ const doc=Object.assign({},old); delete doc.id; doc.archived=!old.archived; doc.updatedAt=new Date().toISOString(); await S.db.doc('assets/'+a.id).set(doc); toast(doc.archived?'Archived '+old.name:'Restored '+old.name); S.asset=null; renderAsset(); }
+  catch(e){ fail(e,'Not saved'); }
+}
+async function deleteAsset(){
+  const a=S.asset; if(!a||a.isNew) return;
+  if(!a.confirmDelete){ a.confirmDelete=true; renderAsset(); return; }
+  try{ await S.db.doc('assets/'+a.id).delete(); toast('Deleted '+a.name); S.asset=null; renderAsset(); }
+  catch(e){ fail(e,'Not deleted'); }
+}
+
+/* ---------- settings & export ---------- */
+function openSettings(){ S.sheet='settings'; renderSettings(); }
+function renderSettings(){
+  const host=$('#modal');
+  const focus=document.activeElement&&document.activeElement.id==='st-cur';
+  if(focus) return;
+  const was=!host.hidden&&!!host.querySelector('#st-h');
+  host.hidden=false;
+  host.innerHTML=`<div class="scrim" data-action="close-modal"></div>
+  <section class="sheet narrow" role="dialog" aria-modal="true" aria-labelledby="st-h">
+   <header class="sheet-h"><div><p class="eyebrow">Settings</p><h2 id="st-h">Settings and updates</h2></div><button type="button" class="icon" data-action="close-modal" aria-label="Close">&times;</button></header>
+   <div class="sheet-b">
+    ${aboutBlock()}
+    <label class="fld"><span>Currency code</span><input id="st-cur" list="st-curlist" type="text" maxlength="3" value="${esc(S.settings.currency||'SAR')}" autocomplete="off" ${canWrite()?'':'disabled'}><datalist id="st-curlist">${CURRENCIES.map(c=>`<option value="${c}"></option>`).join('')}</datalist></label>
+    <p class="hint">Three-letter code such as SAR, USD or EUR. It changes how amounts are shown, not the numbers.</p>
+    <div><h3 class="sec-h">Report</h3><div class="addrow"><button type="button" class="btn sm" id="st-report" data-action="report"${reportReady()?'':' disabled'}>PDF report</button>${hasDone()?'':'<span class="hint">Available once a task is completed.</span>'}</div></div>
+    <div><h3 class="sec-h">Download your records</h3>
+     ${S.downloads?`<div class="addrow"><button type="button" class="btn sm" data-action="export" data-what="orders">Tasks (CSV)</button><button type="button" class="btn sm" data-action="export" data-what="lines">Cost lines (CSV)</button><button type="button" class="btn sm" data-action="export" data-what="json">Full backup (JSON)</button></div>`:`<p class="hint">Downloads aren't available in this view.</p>`}</div>
+    <div><h3 class="sec-h">Restore from a backup</h3>${canWrite()?`<label class="fld"><span>Backup file (JSON)</span><input id="st-restore" type="file" accept="application/json,.json"></label>${S.restore?`<p class="hint">${esc(S.restore.msg)}</p>${S.restore.ok?`<button type="button" class="btn sm primary" data-action="do-restore" style="margin-top:8px">Restore these records</button>`:''}`:`<p class="hint">Pick a Full backup file made by this app, for example to move your records from the web version to the phone.</p>`}`:`<p class="hint">Restoring is not available in this view.</p>`}</div>
+    
+   </div>
+   <footer class="sheet-f"><span></span><div class="acts"><button type="button" class="btn primary" data-action="close-modal">Done</button></div></footer></section>`;
+  keepStill(host,was); syncInert();
+}
+function cmpVer(a,b){
+  const x=String(a).split('.').map(Number), y=String(b).split('.').map(Number);
+  for(let i=0;i<Math.max(x.length,y.length);i++){ const d=(x[i]||0)-(y[i]||0); if(d) return d>0?1:-1; }
+  return 0;
+}
+function aboutBlock(){
+  const u=S.upd; const newer=u&&u.state==='newer';
+  let status='';
+  if(IS_APP){
+    if(!u) status='<p class="hint">Not checked yet.</p>';
+    else if(u.state==='checking') status='<p class="hint">Checking for updates...</p>';
+    else if(newer) status=`<p class="upd good"><b>Version ${esc(u.tag)} is available.</b> You have ${esc(APP_VERSION)}.</p>`;
+    else if(u.state==='current') status=`<p class="upd good">You are up to date (${esc(APP_VERSION)}).</p>`;
+    else if(u.state==='unreadable') status='<p class="upd">The release list could not be read. No release may be published yet, or the repository is private. Open the releases page to check by hand.</p>';
+    else if(u.state==='offline') status='<p class="upd">No connection. Connect to the internet and try again.</p>';
+    else status='<p class="upd">The check failed. Try again later, or open the releases page.</p>';
+  }
+  const canInstall=IS_APP&&typeof BRIDGE.installUpdate==='function';
+  const dl=S.dl||null;
+  let act='';
+  if(newer&&u.apkUrl&&canInstall){
+    const busy=dl&&dl.state==='progress';
+    act=`<button type="button" class="btn sm primary" data-action="install-update"${busy?' disabled':''}>${busy?'Downloading '+esc(dl.msg)+'%':'Download and install'}</button>`;
+  } else if(newer&&u.apkUrl&&!IS_IOS){
+    act=`<a class="btn sm" href="${esc(u.apkUrl)}" target="_blank" rel="noopener">Download the update</a>`;
+  } else act=`<a class="btn sm" href="${esc(RELEASES_URL)}" target="_blank" rel="noopener">Open releases page</a>`;
+  const dlmsg=dl&&dl.state!=='progress'?`<p class="upd${dl.state==='error'?'':' good'}">${esc(dl.msg)}</p>`:'';
+  return `<section class="about" aria-label="About and updates"><div class="about-h"><div><div class="k-l">Installed version</div><div class="ver mono" id="st-version">v${esc(APP_VERSION)}</div><p class="hint">Every job on the house and the car, numbered, costed and on record.</p></div>${IS_APP?`<button type="button" class="btn sm primary" data-action="check-update"${u&&u.state==='checking'?' disabled':''}>Check for updates</button>`:''}</div>
+   ${IS_APP?`${status}${dlmsg}<div class="addrow">${act}</div><p class="hint">Update address</p><p class="addr mono">${esc(RELEASES_URL)}</p><p class="hint">${IS_IOS?'A newer version arrives as a new build of the app (TestFlight, or installed again from Xcode). Install it over this one and your records stay on the iPhone.':'When a newer version exists, press Download and install. Android asks you to confirm and installs it over this app, and your records stay on the phone.'}</p>`:`<p class="hint">The web version updates itself whenever a new version is published.</p>`}</section>`;
+}
+function startInstall(){
+  if(!S.upd||!S.upd.apkUrl||!window.AndroidBridge||!window.AndroidBridge.installUpdate) return;
+  S.dl={state:'progress',msg:'0'}; renderSettings();
+  try{ window.AndroidBridge.installUpdate(S.upd.apkUrl); }catch(e){ S.dl={state:'error',msg:'The installer could not be started.'}; renderSettings(); }
+}
+window.__upd=function(state,msg){ S.dl={state,msg}; if(S.sheet==='settings'){ try{ renderSettings(); }catch(e){} } };
+async function checkUpdate(){
+  if(S.upd&&S.upd.state==='checking') return;
+  S.upd={state:'checking'}; renderSettings();
+  try{
+    const r=await fetch('https://api.github.com/repos/MalekW96/home-work-orders/releases/latest',{headers:{Accept:'application/vnd.github+json'}});
+    if(r.status===404||r.status===401||r.status===403) S.upd={state:'unreadable'};
+    else if(!r.ok) S.upd={state:'error'};
+    else{
+      const j=await r.json(); const tag=String(j.tag_name||'').replace(/^v/i,'');
+      const apk=(j.assets||[]).find(a=>/\.apk$/i.test(a.name||''));
+      S.upd={state:cmpVer(tag,APP_VERSION)>0?'newer':'current',tag,apkUrl:apk?apk.browser_download_url:''};
+    }
+  }catch(e){ S.upd={state:'offline'}; }
+  renderSettings();
+}
+function readRestore(file){
+  if(!file) return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      const j=JSON.parse(String(rd.result||''));
+      const assets=Array.isArray(j.assets)?j.assets.filter(a=>a&&a.id&&a.name):[];
+      const orders=Array.isArray(j.workOrders)?j.workOrders.filter(o=>o&&(o.number||o.id)&&o.title):[];
+      if(!assets.length&&!orders.length) throw new Error('empty');
+      S.restore={ok:true,assets,orders,msg:'Found '+assets.length+' asset'+(assets.length===1?'':'s')+' and '+orders.length+' task'+(orders.length===1?'':'s')+' in '+file.name+'. Records with the same number are replaced.'};
+    }catch(e){ S.restore={ok:false,msg:'That file is not a backup made by this app.'}; }
+    renderSettings();
+  };
+  rd.onerror=()=>{ S.restore={ok:false,msg:'The file could not be read.'}; renderSettings(); };
+  rd.readAsText(file);
+}
+async function doRestore(){
+  const r=S.restore; if(!r||!r.ok||S.saving) return;
+  S.saving=true;
+  try{
+    for(const a of r.assets){ const doc=Object.assign({},a); delete doc.id; await S.db.doc('assets/'+a.id).set(doc); }
+    for(const o of r.orders){
+      const doc=Object.assign({},o); const no=String(o.number||o.id); delete doc.id; doc.number=no;
+      const m=/^WO-(?:([A-Z])-)?(\d{4})-(\d+)$/.exec(no); if(m){ doc.year=Number(m[2]); doc.seq=Number(m[3]); if(m[1]) doc.code=m[1]; }
+      await S.db.doc('workorders/'+no).set(doc);
+    }
+    toast('Restored '+r.assets.length+' asset'+(r.assets.length===1?'':'s')+' and '+r.orders.length+' task'+(r.orders.length===1?'':'s')); S.restore=null;
+  }catch(e){ fail(e,'Not restored'); }
+  S.saving=false; renderSettings();
+}
+async function saveCurrency(v){
+  v=String(v||'').trim().toUpperCase();
+  if(!/^[A-Z]{3}$/.test(v)){ toast('Use a three-letter currency code, like SAR.',true); return; }
+  try{ new Intl.NumberFormat(undefined,{style:'currency',currency:v}); }catch(e){ toast('That currency code is not recognised.',true); return; }
+  if(v===S.settings.currency) return;
+  try{ await S.db.doc('meta/settings').set({currency:v}); S.settings.currency=v; toast('Currency set to '+v); render(); }
+  catch(e){ fail(e,'Not saved'); }
+}
+const csvCell=v=>{ let s=v==null?'':String(v); if(/^[=+@]/.test(s)) s="'"+s; return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+const toCSV=rows=>'﻿'+rows.map(r=>r.map(csvCell).join(',')).join('\r\n');
+async function exportData(what){
+  if(!S.downloads) return;
+  const orders=S.orders.slice().sort((a,b)=>byNumberDesc(b,a));
+  let filename,data;
+  if(what==='orders'){
+    filename='work-orders-'+todayISO()+'.csv';
+    data=toCSV([['Task','Title','Asset','Category','Type','Priority','Status','Opened','Due','Completed','Reading','Unit','Done by','Parts','Labour','Other','Total','Work performed','Notes']].concat(orders.map(o=>{
+      const a=S.assets.get(o.assetId)||{}; const t=orderTotals(o);
+      return [o.number,o.title,a.name,a.category,o.type,o.priority,o.status,o.openedOn,o.dueOn,o.completedOn,o.meter,a.meterUnit,o.doneBy,t.part.toFixed(2),t.labour.toFixed(2),t.other.toFixed(2),t.all.toFixed(2),o.description,o.notes];
+    })));
+  } else if(what==='lines'){
+    filename='cost-lines-'+todayISO()+'.csv'; const rows=[['Task','Date','Asset','Type','Description','Part no.','Supplier','Qty','Unit cost','Line total']];
+    orders.forEach(o=>(o.lines||[]).forEach(l=>rows.push([o.number,orderDate(o),assetName(o.assetId),l.kind,l.name,l.partNo,l.supplier,l.qty,num(l.unitCost).toFixed(2),lineTotal(l).toFixed(2)])));
+    data=toCSV(rows);
+  } else {
+    filename='home-work-orders-backup-'+todayISO()+'.json';
+    data=JSON.stringify({exportedAt:new Date().toISOString(),currency:S.settings.currency,assets:[...S.assets.values()],workOrders:orders},null,2);
+  }
+  try{ await S.downloads.save({filename,data}); if(IS_APP&&!IS_IOS) toast('Saved '+filename+' to Downloads'); }
+  catch(e){ if(e&&e.code!=='declined') toast(e&&e.code==='unavailable'?'Downloads are not available here.':'The file could not be saved.',true); }
+}
+async function clearSamples(){
+  if(!S.confirmClear){ S.confirmClear=true; renderChrome(); return; }
+  S.confirmClear=false;
+  try{
+    for(const o of S.orders.filter(o=>o.sample)) await S.db.doc('workorders/'+o.id).delete();
+    for(const a of [...S.assets.values()].filter(a=>a.sample)) await S.db.doc('assets/'+a.id).delete();
+    toast('Example records cleared');
+  }catch(e){ fail(e,'Not cleared'); }
+  renderChrome();
+}
+
+/* ---------- PDF report ---------- */
+/* REPORT-START */
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function pdfDate(s){ const d=parseD(s); return d?d.getDate()+' '+MON[d.getMonth()]+' '+d.getFullYear():''; }
+function pdfMoney(n){ return String(S.settings.currency||'SAR').toUpperCase()+' '+num(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+/* The built-in PDF fonts cover Latin text only, so anything else is swapped for "?" rather than drawn as noise. */
+function pdfText(s){ return String(s==null?'':s).replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,'-').replace(/…/g,'...').replace(/[  ]/g,' ').replace(/[^\n\x20-\x7E\xA1-\xFF]/g,'?'); }
+function reportData(opt){
+  let start=''; const d=new Date();
+  if(opt.period==='year') start=d.getFullYear()+'-01-01';
+  else if(opt.period==='12m'){ d.setFullYear(d.getFullYear()-1); start=localISO(d); }
+  const list=S.orders.filter(o=>o.status!=='Cancelled'&&(!opt.asset||o.assetId===opt.asset)&&(!start||orderDate(o)>=start)).sort((a,b)=>byNumberDesc(b,a));
+  return {start,list};
+}
+function buildReportPDF(deps,opt){
+  const list=reportData(opt).list;
+  const doc=new deps.JsPDF({unit:'mm',format:'a4'});
+  const W=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight(), M=14;
+  const ACC=[31,95,191], INK=[20,32,46], MUT=[102,114,127];
+  const periodLabel={year:'This year ('+new Date().getFullYear()+')','12m':'Last 12 months',all:'All time'}[opt.period]||'All time';
+  const assetLabel=opt.asset?assetName(opt.asset):'All assets';
+  doc.setFont('helvetica','bold'); doc.setFontSize(20); doc.setTextColor(INK[0],INK[1],INK[2]); doc.text('Maintenance report',M,20);
+  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(MUT[0],MUT[1],MUT[2]);
+  doc.text('I Got This',M,26);
+  doc.text(pdfText('Period: '+periodLabel+'    Asset: '+assetLabel+'    Generated: '+pdfDate(todayISO())),M,31);
+  doc.setDrawColor(ACC[0],ACC[1],ACC[2]); doc.setLineWidth(0.6); doc.line(M,34,W-M,34);
+
+  const tot={part:0,labour:0,other:0,all:0}; let done=0, open=0; const byAsset=new Map();
+  for(const o of list){
+    const t=orderTotals(o); tot.part+=t.part; tot.labour+=t.labour; tot.other+=t.other; tot.all+=t.all;
+    if(o.status==='Completed') done++; else if(isActive(o)) open++;
+    const e=byAsset.get(o.assetId)||{n:0,part:0,labour:0,other:0,all:0};
+    e.n++; e.part+=t.part; e.labour+=t.labour; e.other+=t.other; e.all+=t.all; byAsset.set(o.assetId,e);
+  }
+  let y=44;
+  const figs=[['Total cost',pdfMoney(tot.all)],['Tasks',String(list.length)],['Completed',String(done)],['Open',String(open)]];
+  const cw=(W-2*M)/figs.length;
+  figs.forEach((f,i)=>{
+    const x=M+i*cw;
+    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(MUT[0],MUT[1],MUT[2]); doc.text(f[0].toUpperCase(),x,y);
+    doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(INK[0],INK[1],INK[2]); doc.text(pdfText(f[1]),x,y+7);
+  });
+  y+=18;
+
+  const section=title=>{ if(y>H-45){ doc.addPage(); y=20; } doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(INK[0],INK[1],INK[2]); doc.text(title,M,y); y+=3; };
+  const table=o=>{
+    const cfg=Object.assign({startY:y,margin:{left:M,right:M,bottom:16},theme:'striped',
+      styles:{font:'helvetica',fontSize:8.5,cellPadding:1.8,textColor:INK,overflow:'linebreak'},
+      headStyles:{fillColor:ACC,textColor:255,fontStyle:'bold'},
+      footStyles:{fillColor:[230,235,241],textColor:INK,fontStyle:'bold'},
+      alternateRowStyles:{fillColor:[245,247,249]}},o);
+    if(deps.autoTable) deps.autoTable(doc,cfg); else doc.autoTable(cfg);
+    y=doc.lastAutoTable.finalY+9;
+  };
+  const right=[1,2,3,4,5].reduce((m,i)=>{ m[i]={halign:'right'}; return m; },{});
+
+  if(!opt.asset&&byAsset.size){
+    section('Spend by asset');
+    const rows=[...byAsset.entries()].sort((a,b)=>b[1].all-a[1].all);
+    table({head:[['Asset','Orders','Parts','Labour','Other','Total']],
+      body:rows.map(r=>[pdfText(assetName(r[0])),String(r[1].n),pdfMoney(r[1].part),pdfMoney(r[1].labour),pdfMoney(r[1].other),pdfMoney(r[1].all)]),
+      foot:[['All assets',String(list.length),pdfMoney(tot.part),pdfMoney(tot.labour),pdfMoney(tot.other),pdfMoney(tot.all)]],
+      showFoot:'lastPage',columnStyles:right});
+  }
+
+  section('Tasks');
+  table({head:[['No.','Date','Asset','Title','Status','Cost']],
+    body:list.map(o=>[o.number||o.id,pdfDate(orderDate(o)),pdfText(assetName(o.assetId)),pdfText(o.title),o.status,pdfMoney(orderTotals(o).all)]),
+    columnStyles:{0:{cellWidth:28},1:{cellWidth:23},2:{cellWidth:34},4:{cellWidth:22},5:{cellWidth:28,halign:'right'}}});
+
+  if(opt.parts){
+    const prow=[]; for(const o of list) for(const l of (o.lines||[])) if(l.kind==='part') prow.push([pdfDate(orderDate(o)),pdfText(l.name),pdfText(l.partNo),String(num(l.qty)),pdfMoney(num(l.unitCost)),pdfMoney(lineTotal(l)),pdfText(l.supplier),o.number||o.id]);
+    if(prow.length){
+      section('Parts used');
+      table({head:[['Date','Part','Part no.','Qty','Unit cost','Total','Supplier','Task']],body:prow,
+        styles:{font:'helvetica',fontSize:8,cellPadding:1.6,textColor:INK,overflow:'linebreak'},
+        columnStyles:{0:{cellWidth:19},2:{cellWidth:22},3:{cellWidth:10,halign:'right'},4:{cellWidth:22,halign:'right'},5:{cellWidth:22,halign:'right'},7:{cellWidth:27}}});
+    }
+  }
+  const n=doc.getNumberOfPages();
+  for(let i=1;i<=n;i++){
+    doc.setPage(i); doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(MUT[0],MUT[1],MUT[2]);
+    doc.text('Cancelled tasks are not included.',M,H-8); doc.text('Page '+i+' of '+n,W-M,H-8,{align:'right'});
+  }
+  return doc;
+}
+/* REPORT-END */
+const hasDone=()=>S.orders.some(o=>o.status==='Completed');
+const reportReady=()=>!!(S.db&&S.downloads&&S.ready.orders&&S.ready.assets&&hasDone());
+function openReport(pre){ if(!hasDone()){ toast('The PDF report is available once a task is completed.',true); return; }  if(!S.report) S.report={period:'year',asset:'',parts:true}; if(pre&&pre.asset!==undefined) S.report.asset=pre.asset; S.sheet='report'; renderReport(); }
+function updateReportCount(){
+  const c=$('#rp-count'); if(!c||!S.report) return;
+  const n=reportData(S.report).list.length;
+  c.textContent=n?n+' task'+(n===1?'':'s')+' will be included.':'No tasks match these choices.';
+}
+function renderReport(){
+  const host=$('#modal'); const was=!host.hidden&&!!host.querySelector('#rp-h'); host.hidden=false; const r=S.report;
+  const assets=[...S.assets.values()].sort(byName);
+  host.innerHTML=`<div class="scrim" data-action="close-modal"></div>
+  <section class="sheet narrow" role="dialog" aria-modal="true" aria-labelledby="rp-h">
+   <header class="sheet-h"><div><p class="eyebrow">PDF report</p><h2 id="rp-h">Maintenance report</h2></div><button type="button" class="icon" data-action="close-modal" aria-label="Close">&times;</button></header>
+   <div class="sheet-b">
+    <label class="fld"><span>Period</span><select id="rp-period">${opt([['year','This year'],['12m','Last 12 months'],['all','All time']],r.period)}</select></label>
+    <label class="fld"><span>Asset</span><select id="rp-asset">${opt([['','All assets']].concat(assets.map(a=>[a.id,a.name])),r.asset)}</select></label>
+    <label class="chk"><input id="rp-parts" type="checkbox"${r.parts?' checked':''}><span>Include the list of parts used</span></label>
+    <p class="hint" id="rp-count"></p>
+    <p class="hint">Cancelled tasks are left out. Text outside the Latin alphabet shows as "?" in the PDF.</p>
+   </div>
+   <footer class="sheet-f"><span></span><div class="acts"><button type="button" class="btn" data-action="close-modal">Cancel</button><button type="button" class="btn primary" data-action="make-report"${S.saving?' disabled':''}>${S.saving?'Creating…':'Create PDF'}</button></div></footer></section>`;
+  keepStill(host,was); syncInert(); updateReportCount();
+}
+async function makeReport(){
+  if(S.saving||!S.report) return;
+  const jp=window.jspdf&&window.jspdf.jsPDF;
+  if(!jp){ toast('The PDF library did not load. Check your connection and reload the page.',true); return; }
+  if(!S.downloads){ toast('Downloads are not available in this view.',true); return; }
+  if(!reportData(S.report).list.length){ toast('No tasks match these choices.',true); return; }
+  S.saving=true; renderReport();
+  try{
+    const doc=buildReportPDF({JsPDF:jp,autoTable:window.jspdf.autoTable},S.report);
+    const data=doc.output('arraybuffer');
+    await S.downloads.save({filename:'maintenance-report-'+todayISO()+'.pdf',data});
+    S.saving=false; closeSheet('report'); toast(IS_IOS?'Report ready':IS_APP?'Report saved to Downloads':'Report saved');
+  }catch(e){
+    S.saving=false; renderReport();
+    if(!(e&&e.code==='declined')) toast(e&&e.code==='unavailable'?'Downloads are not available here.':'The report could not be created.',true);
+  }
+}
+
+/* ---------- sheets plumbing ---------- */
+function keepStill(host,was){ if(was){ const sh=host.querySelector('.sheet'); if(sh) sh.style.animation='none'; } }
+function syncInert(){
+  const m1=$('#modal'),m2=$('#modal2');
+  $('#app').inert=!m1.hidden||!m2.hidden;
+  m1.inert=!m2.hidden;
+}
+function closeSheet(which){
+  if(which==='wo'||which==='settings'||which==='report'){ S.wo=null; S.sheet=''; const h=$('#modal'); h.innerHTML=''; h.hidden=true; }
+  syncInert();
+}
+function closeAddMenu(){ const m=$('#addmenu'); if(m&&!m.hidden){ m.hidden=true; const b=$('#btn-add'); if(b) b.setAttribute('aria-expanded','false'); return true; } return false; }
+function toggleAddMenu(){ const m=$('#addmenu'); if(!m) return; if(!closeAddMenu()){ m.hidden=false; $('#btn-add').setAttribute('aria-expanded','true'); const f=m.querySelector('button'); if(f) f.focus(); } }
+function closeTop(){
+  if(closeAddMenu()) return;
+  if(closePhoto()) return;
+  if(!$('#modal2').hidden){ S.asset=null; renderAsset(); return; }
+  if(!$('#modal').hidden) closeSheet(S.sheet||'wo');
+}
+
+/* ---------- events ---------- */
+function setView(v){ S.view=v; if(location.hash!=='#'+v){ try{ location.hash=v; }catch(e){} } render(); window.scrollTo(0,0); }
+document.addEventListener('click',e=>{
+  const own=e.target.closest&&e.target.closest('#btn-add'); if(!own) closeAddMenu();
+  const el=e.target.closest&&e.target.closest('[data-action]'); if(!el) return;
+  const a=el.dataset.action, id=el.dataset.id;
+  switch(a){
+    case 'tab': setView(el.dataset.view); break;
+    case 'toggle-add': toggleAddMenu(); break;
+    case 'new-wo': if(canWrite()) openWO(null); break;
+    case 'open-wo': openWO(id); break;
+    case 'close-modal': closeSheet(S.sheet||'wo'); break;
+    case 'close-modal2': S.asset=null; renderAsset(); break;
+    case 'save-wo': saveWO(); break;
+    case 'followup': { const w=S.wo; if(w) openWO(null,{assetId:w.assetId,title:w.title,type:w.type,followUpOf:w.number}); break; }
+    case 'add-line': if(S.wo){ S.wo.lines.push({kind:el.dataset.kind,name:'',partNo:'',supplier:'',qty:'1',unitCost:''}); renderWO('ln-'+(S.wo.lines.length-1)+'-name'); } break;
+    case 'del-line': if(S.wo){ S.wo.lines.splice(+el.dataset.i,1); renderWO(); } break;
+    case 'new-asset': if(canWrite()) openAsset(null,false); break;
+    case 'edit-asset': openAsset(id,false); break;
+    case 'view-photo': { const src=id?S.assets.get(id):S.asset; if(src){ const l=id?attsOf(src):src.attachments; const x=l[+el.dataset.i||0]; if(x) showPhoto(x.src,x.caption); } break; }
+    case 'del-photo': if(S.asset){ S.asset.attachments.splice(+el.dataset.i||0,1); renderAsset(); } break;
+    case 'asset-history': S.f={status:'all',asset:id,year:'',q:''}; setView('orders'); break;
+    case 'asset-wo': if(canWrite()) openWO(null,{assetId:id}); break;
+    case 'save-asset': saveAsset(); break;
+    case 'archive-asset': toggleArchive(); break;
+    case 'delete-asset': deleteAsset(); break;
+    case 'settings': openSettings(); break;
+    case 'export': exportData(el.dataset.what); break;
+    case 'report': openReport(); break;
+    case 'report-task': { const aid=S.wo&&S.wo.assetId; closeSheet('wo'); openReport({asset:aid||''}); break; }
+    case 'do-restore': doRestore(); break;
+    case 'check-update': S.dl=null; checkUpdate(); break;
+    case 'install-update': startInstall(); break;
+    case 'make-report': makeReport(); break;
+    case 'clear-samples': clearSamples(); break;
+    case 'chip': S.f.status=el.dataset.status; renderView(); break;
+    case 'toggle-filters': S.showFilters=!S.showFilters; renderView(); break;
+    case 'range': S.range=el.dataset.range; render(); break;
+    case 'toggle-archived': S.showArchived=!S.showArchived; render(); break;
+  }
+});
+function onInput(e){
+  const t=e.target; if(!t||!t.id&&!t.dataset) return;
+  if(t.dataset&&t.dataset.cap!==undefined&&S.asset){ const x=S.asset.attachments[+t.dataset.cap]; if(x) x.caption=t.value; return; }
+  if(t.dataset&&t.dataset.af!==undefined&&S.asset){
+    const k=t.dataset.af; S.asset[k]=t.value;
+    if(k==='category'){ if(t.value==='Vehicle'){ S.asset.role='parent'; S.asset.parentId=''; } renderAsset(t.id); }
+    else if(k==='role'){ if(t.value==='parent') S.asset.parentId=''; renderAsset(t.id); }
+    else if(k==='parentId'){ renderAsset(t.id); }
+    return;
+  }
+  if(t.closest&&t.closest('#modal')&&S.wo&&S.sheet==='wo'){ onWoInput(e); return; }
+  switch(t.id){
+    case 'f-q': S.f.q=t.value; $('#orders-results').innerHTML=ordersResults(); break;
+    case 'f-status': S.f.status=t.value; renderView(); break;
+    case 'f-asset': S.f.asset=t.value; renderView(); break;
+    case 'f-year': S.f.year=t.value; renderView(); break;
+    case 'p-q': S.partsQ=t.value; $('#parts-results').innerHTML=partsResults(); break;
+    case 'rp-period': if(S.report){ S.report.period=t.value; updateReportCount(); } break;
+    case 'rp-asset': if(S.report){ S.report.asset=t.value; updateReportCount(); } break;
+    case 'rp-parts': if(S.report) S.report.parts=!!t.checked; break;
+  }
+}
+document.addEventListener('input',onInput);
+document.addEventListener('change',e=>{
+  if(e.target&&e.target.id==='st-cur'){ saveCurrency(e.target.value); return; }
+  if(e.target&&e.target.dataset&&e.target.dataset.photo){ addPhoto(e.target); return; }
+  if(e.target&&e.target.id==='st-restore'){ readRestore(e.target.files&&e.target.files[0]); return; }
+  onInput(e);
+});
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&(!$('#modal').hidden||!$('#modal2').hidden||!$('#addmenu').hidden)){ e.preventDefault(); closeTop(); } });
+window.addEventListener('hashchange',()=>{ const h=location.hash.slice(1); if(['dashboard','orders','assets','parts'].indexOf(h)>=0&&h!==S.view){ S.view=h; render(); } });
+(function(){ const h=location.hash.slice(1); if(['dashboard','orders','assets','parts'].indexOf(h)>=0) S.view=h; })();
+
+/* called by the phone app's Back button; true means the page handled it */
+window.__back=function(){
+  if(closeAddMenu()) return true;
+  if(closePhoto()) return true;
+  if(!$('#modal2').hidden){ S.asset=null; renderAsset(); return true; }
+  if(!$('#modal').hidden){ closeSheet(S.sheet||'wo'); return true; }
+  if(S.view!=='dashboard'){ setView('dashboard'); return true; }
+  return false;
+};
+boot();
+})();
+</script>

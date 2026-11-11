@@ -1,0 +1,53 @@
+name: iOS build
+
+# Builds the iOS app on a Mac runner. No Apple account is needed here: the result is an UNSIGNED .ipa
+# (download it from the run's Artifacts) that Sideloadly or AltStore can sign with your own Apple ID.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "ios/**"
+      - "home-work-orders.html"
+      - ".github/workflows/ios.yml"
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate the Xcode project
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: Build for the simulator (compile check)
+        working-directory: ios
+        run: |
+          xcodebuild build \
+            -project IGotThis.xcodeproj -scheme IGotThis \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Archive for devices (unsigned)
+        working-directory: ios
+        run: |
+          xcodebuild archive \
+            -project IGotThis.xcodeproj -scheme IGotThis \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/IGotThis.xcarchive \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+
+      - name: Package the .ipa
+        working-directory: ios
+        run: |
+          mkdir -p build/ipa/Payload
+          cp -R build/IGotThis.xcarchive/Products/Applications/IGotThis.app build/ipa/Payload/
+          (cd build/ipa && zip -qry ../IGotThis-unsigned.ipa Payload)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: IGotThis-unsigned-ipa
+          path: ios/build/IGotThis-unsigned.ipa

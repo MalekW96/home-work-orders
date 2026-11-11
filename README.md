@@ -47,6 +47,23 @@ Build it:
 2. Build > Build Bundle(s) / APK(s) > Build APK(s). The APK ends up in `android/app/build/outputs/apk/debug/`.
 3. Copy it to the phone and install it. Android 10 or newer is required.
 
+## iPhone / iPad app
+
+`ios/` is the same page in a WKWebView (Swift, iOS 15 or newer). Like the Android app, records stay on the device and are not synced with the web version; use Settings > Full backup and Restore to move them.
+
+What differs from Android:
+
+- PDF and CSV files open the iOS share sheet (Save to Files, AirDrop, Mail) instead of going straight to Downloads.
+- Swiping in from the left edge works as Back.
+- There is no in-app updater; Apple does not allow it. A new version is a new build you install over the old one.
+- A second copy of the records is kept in the app's own storage and put back if iOS ever clears the web view's storage.
+
+Building needs a Mac with Xcode, or the GitHub Actions workflow `iOS build` (Actions tab > iOS build > Run workflow), which compiles the app on a Mac runner and produces an unsigned `IGotThis-unsigned.ipa`. Sideloadly or AltStore (both run on Windows) can sign that with your own Apple ID and install it on an iPhone; a free Apple ID's signature lasts 7 days, a paid Apple Developer account's a year, and TestFlight or the App Store needs the paid account.
+
+On a Mac: `brew install xcodegen`, then `cd ios && xcodegen generate && open IGotThis.xcodeproj`, pick your team under Signing & Capabilities and run.
+
+`scripts/sync-web.sh` copies the page into `ios/IGotThis/Web/` as well, and checks that `MARKETING_VERSION` (first three parts of `APP_VERSION`) and `CURRENT_PROJECT_VERSION` (the fourth) in `ios/project.yml` match it.
+
 ## Versions and updates
 
 The version lives in two places that must match: `APP_VERSION` in `home-work-orders.html` and `versionName` in `android/app/build.gradle.kts`. Raise `versionCode` by one for every new APK, otherwise Android refuses to install it over the old one.

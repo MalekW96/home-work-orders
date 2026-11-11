@@ -1,0 +1,50 @@
+name: IGotThis
+options:
+  bundleIdPrefix: com.malekw96
+  deploymentTarget:
+    iOS: "15.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    # Marketing version = first three parts of APP_VERSION in the page; build number = the fourth.
+    # scripts/sync-web.sh checks both.
+    MARKETING_VERSION: "2.3.1"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  IGotThis:
+    type: application
+    platform: iOS
+    sources:
+      - path: IGotThis
+        excludes:
+          - "Web/**"
+      - path: IGotThis/Web
+        type: folder
+    info:
+      path: IGotThis/Info.plist
+      properties:
+        CFBundleDisplayName: I Got This
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        NSCameraUsageDescription: "I Got This uses the camera so you can attach photos (number plate, car card, the item itself) to an asset."
+        NSPhotoLibraryUsageDescription: "I Got This lets you pick photos from your library to attach to an asset."
+        ITSAppUsesNonExemptEncryption: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.malekw96.homeworkorders
+        PRODUCT_NAME: IGotThis
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGN_STYLE: Automatic
+        # Set your Apple Developer team in Xcode (Signing & Capabilities) or pass DEVELOPMENT_TEAM=XXXX on the command line.

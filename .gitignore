@@ -8,3 +8,8 @@ android/local.properties
 android/captures/
 *.apk
 *.aab
+ios/IGotThis.xcodeproj/
+ios/build/
+ios/IGotThis/Info.plist
+*.xcuserstate
+.DS_Store
