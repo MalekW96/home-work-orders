@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0.2
+
+- Header sits about 0.5 cm lower so the camera cutout no longer covers it.
+
 ## 1.0.0.1
 
 - Settings gear in the header. Settings now opens with the installed version and the update address.

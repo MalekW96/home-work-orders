@@ -58,7 +58,9 @@ class MainActivity : AppCompatActivity() {
                     WindowInsetsCompat.Type.displayCutout() or
                     WindowInsetsCompat.Type.ime()
             )
-            v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            // Extra 32dp (about 0.5 cm) so the camera cutout never covers the header.
+            val extraTop = (32 * resources.displayMetrics.density).toInt()
+            v.setPadding(bars.left, bars.top + extraTop, bars.right, bars.bottom)
             WindowInsetsCompat.CONSUMED
         }
 
