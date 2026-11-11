@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.3.0.1
+
+- One + button in the header, next to the settings gear. It opens a small menu: Add new asset or New work order.
+- The Add new asset button on the Assets tab and the round + button at the bottom right are gone.
+
 ## 2.2.0.1
 
 - Nothing is required any more when adding an asset, except a name or brand to call it by (and the parent, for an accessory).

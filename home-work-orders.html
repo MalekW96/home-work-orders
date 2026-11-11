@@ -70,7 +70,12 @@ button{cursor:pointer}
 .stamp{font:600 13px/1 var(--mono);border:2px solid var(--ink);padding:8px 7px 7px;border-radius:6px;letter-spacing:.04em;flex:none}
 h1{font:700 22px/1.05 var(--disp);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sub{color:var(--muted);font-size:13px}
-.actions{display:flex;gap:8px;align-items:center;flex:none}
+.actions{display:flex;gap:8px;align-items:center;flex:none;position:relative}
+.btn.addbtn{background:var(--accent);color:var(--accent-ink);box-shadow:var(--hero-sh,var(--shadow))}
+.btn.addbtn:hover{background:var(--accent)}
+.addmenu{position:absolute;right:0;top:calc(100% + 8px);z-index:40;min-width:13rem;background:var(--panel);border:1px solid var(--line2);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.22);padding:6px;display:flex;flex-direction:column}
+.addmenu button{background:none;border:0;text-align:left;padding:12px 14px;border-radius:10px;font-size:15px;font-weight:500;min-height:44px}
+.addmenu button:hover,.addmenu button:focus-visible{background:var(--panel2)}
 @media(max-width:699px){.wide-only{display:none!important}}
 .btn{border:1px solid var(--line2);background:var(--panel);padding:8px 14px;border-radius:12px;font-weight:500;min-height:40px;transition:transform .08s ease,background .15s}
 .btn:hover{background:var(--panel2)}
@@ -293,8 +298,12 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
     </div>
     <div class="actions">
       <button type="button" class="btn wide-only" id="btn-report" data-action="report" disabled>PDF report</button>
-      <button type="button" class="btn primary wide-only" id="btn-new" data-action="new-wo">New work order</button>
+      <button type="button" class="btn iconbtn addbtn" id="btn-add" data-action="toggle-add" aria-label="Add" aria-haspopup="menu" aria-expanded="false" title="Add"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
       <button type="button" class="btn iconbtn" id="btn-settings" data-action="settings" aria-label="Settings and updates" title="Settings and updates"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.56-1.11 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.01a1.7 1.7 0 0 0 1.03-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.01a1.7 1.7 0 0 0 1.56 1.03H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1.03z"/></svg></button>
+      <div class="addmenu" id="addmenu" role="menu" hidden>
+        <button type="button" role="menuitem" data-action="new-asset">Add new asset</button>
+        <button type="button" role="menuitem" data-action="new-wo">New work order</button>
+      </div>
     </div>
   </header>
   <nav class="tabs" role="tablist" aria-label="Sections">
@@ -305,7 +314,6 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
   </nav>
   <div id="banner"></div>
   <main id="view" aria-live="polite"></main>
-  <button type="button" class="fab" id="btn-fab" data-action="new-wo" aria-label="New work order" title="New work order"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
 </div>
 <div class="modal" id="modal" hidden></div>
 <div class="modal" id="modal2" hidden></div>
@@ -337,7 +345,7 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
-const APP_VERSION='2.2.0.1';
+const APP_VERSION='2.3.0.1';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const IS_APP=!!window.AndroidBridge;
 const CURRENCIES=['SAR','AED','KWD','QAR','BHD','OMR','EGP','JOD','USD','EUR','GBP','INR','PKR','TRY'];
@@ -553,7 +561,7 @@ function renderChrome(){
   const open=S.orders.filter(isActive).length;
   $('#n-orders').textContent=open?String(open):'';
   $('#n-assets').textContent=S.assets.size?String([...S.assets.values()].filter(a=>!a.archived).length):'';
-  $('#btn-new').disabled=!canWrite(); const fb=$('#btn-fab'); if(fb) fb.disabled=!canWrite();
+  $('#btn-add').disabled=!canWrite(); if(!canWrite()) closeAddMenu();
   $('#btn-report').disabled=!(S.db&&S.downloads&&S.ready.orders&&S.ready.assets);
   const b=$('#banner'); let h='';
   const hasSamples=S.orders.some(o=>o.sample)||[...S.assets.values()].some(a=>a.sample);
@@ -683,7 +691,7 @@ function assetsView(){
   const all=[...S.assets.values()].sort(byName);
   const list=all.filter(a=>S.showArchived||!a.archived);
   const archivedCount=all.filter(a=>a.archived).length;
-  const head=`<div class="toolbar"><div>${archivedCount?`<button type="button" class="btn sm ghost" data-action="toggle-archived">${S.showArchived?'Hide':'Show'} archived (${archivedCount})</button>`:''}</div><button type="button" class="btn primary" data-action="new-asset"${canWrite()?'':' disabled'}>Add new asset</button></div>`;
+  const head=`<div class="toolbar"><div>${archivedCount?`<button type="button" class="btn sm ghost" data-action="toggle-archived">${S.showArchived?'Hide':'Show'} archived (${archivedCount})</button>`:''}</div></div>`;
   if(!list.length) return head+`<div class="empty small"><h2>No assets yet</h2><p>Add the things you maintain: a car, a room, an appliance. Work orders are opened against them.</p></div>`;
   return head+`<div class="cards">${list.map(a=>{
     const s=stats.get(a.id)||{n:0,open:0,spent:0,last:'',meter:null};
@@ -1227,7 +1235,10 @@ function closeSheet(which){
   if(which==='wo'||which==='settings'||which==='report'){ S.wo=null; S.sheet=''; const h=$('#modal'); h.innerHTML=''; h.hidden=true; }
   syncInert();
 }
+function closeAddMenu(){ const m=$('#addmenu'); if(m&&!m.hidden){ m.hidden=true; const b=$('#btn-add'); if(b) b.setAttribute('aria-expanded','false'); return true; } return false; }
+function toggleAddMenu(){ const m=$('#addmenu'); if(!m) return; if(!closeAddMenu()){ m.hidden=false; $('#btn-add').setAttribute('aria-expanded','true'); const f=m.querySelector('button'); if(f) f.focus(); } }
 function closeTop(){
+  if(closeAddMenu()) return;
   if(closePhoto()) return;
   if(!$('#modal2').hidden){ S.asset=null; renderAsset(); return; }
   if(!$('#modal').hidden) closeSheet(S.sheet||'wo');
@@ -1236,10 +1247,12 @@ function closeTop(){
 /* ---------- events ---------- */
 function setView(v){ S.view=v; if(location.hash!=='#'+v){ try{ location.hash=v; }catch(e){} } render(); window.scrollTo(0,0); }
 document.addEventListener('click',e=>{
+  const own=e.target.closest&&e.target.closest('#btn-add'); if(!own) closeAddMenu();
   const el=e.target.closest&&e.target.closest('[data-action]'); if(!el) return;
   const a=el.dataset.action, id=el.dataset.id;
   switch(a){
     case 'tab': setView(el.dataset.view); break;
+    case 'toggle-add': toggleAddMenu(); break;
     case 'new-wo': if(canWrite()) openWO(null); break;
     case 'open-wo': openWO(id); break;
     case 'close-modal': closeSheet(S.sheet||'wo'); break;
@@ -1300,12 +1313,13 @@ document.addEventListener('change',e=>{
   if(e.target&&e.target.id==='st-restore'){ readRestore(e.target.files&&e.target.files[0]); return; }
   onInput(e);
 });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&(!$('#modal').hidden||!$('#modal2').hidden)){ e.preventDefault(); closeTop(); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&(!$('#modal').hidden||!$('#modal2').hidden||!$('#addmenu').hidden)){ e.preventDefault(); closeTop(); } });
 window.addEventListener('hashchange',()=>{ const h=location.hash.slice(1); if(['dashboard','orders','assets','parts'].indexOf(h)>=0&&h!==S.view){ S.view=h; render(); } });
 (function(){ const h=location.hash.slice(1); if(['dashboard','orders','assets','parts'].indexOf(h)>=0) S.view=h; })();
 
 /* called by the phone app's Back button; true means the page handled it */
 window.__back=function(){
+  if(closeAddMenu()) return true;
   if(closePhoto()) return true;
   if(!$('#modal2').hidden){ S.asset=null; renderAsset(); return true; }
   if(!$('#modal').hidden){ closeSheet(S.sheet||'wo'); return true; }
