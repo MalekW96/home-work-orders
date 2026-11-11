@@ -72,6 +72,7 @@ h1{font:700 28px/1.05 var(--disp);letter-spacing:.02em;text-transform:uppercase}
 .btn.primary:hover{filter:brightness(1.1)}
 .btn.danger{color:var(--danger);border-color:var(--danger)}
 .btn.sm{min-height:32px;padding:4px 10px;font-size:13px}
+.btn.iconbtn{width:38px;padding:0;display:inline-flex;align-items:center;justify-content:center}
 a.btn{display:inline-flex;align-items:center;text-decoration:none;color:var(--ink)}
 .btn.ghost{background:transparent}
 .btn:disabled{opacity:.5;cursor:not-allowed}
@@ -95,12 +96,12 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none;color:var(--in
 .panel-h{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:12px}
 .panel-h h2{margin:0}
 .stack{display:flex;flex-direction:column;gap:16px;min-width:0}
-.dash{display:grid;gap:16px;grid-template-columns:minmax(0,3fr) minmax(0,2fr);align-items:start}
-@media(max-width:820px){.dash{grid-template-columns:minmax(0,1fr)}}
+.dash{display:grid;gap:16px;grid-template-columns:minmax(0,1fr);align-items:start}
+@media(min-width:1000px){.dash{grid-template-columns:minmax(0,3fr) minmax(0,2fr)}}
 .strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:4px;overflow:hidden;margin-bottom:16px}
-.strip>div{background:var(--panel);padding:12px 16px}
+.strip>div{background:var(--panel);padding:12px 16px;container-type:inline-size}
 .k-l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-.k-v{font:700 clamp(20px,5.2vw,30px)/1.15 var(--disp);overflow-wrap:break-word}
+.k-v{font:700 clamp(18px,15cqi,30px)/1.15 var(--disp);overflow-wrap:break-word}
 @media(max-width:520px){.strip>div:last-child:nth-child(odd){grid-column:1/-1}}
 .k-v.bad{color:var(--danger)}
 .seg{display:inline-flex;border:1px solid var(--line2);border-radius:4px;overflow:hidden;max-width:100%}
@@ -136,7 +137,7 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none;color:var(--in
 .pills{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-start}
 
 /* ticket rows */
-.tickets{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:4px;background:var(--panel);overflow:hidden}
+.tickets{container-type:inline-size;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:4px;background:var(--panel);overflow:hidden}
 .panel .tickets{border:0;border-radius:0;margin:-4px -16px -16px}
 .tkt{display:grid;grid-template-columns:9.5rem minmax(0,1fr) 10rem 8.5rem 7.5rem;gap:4px 14px;align-items:center;width:100%;text-align:left;background:var(--panel);border:0;border-top:1px solid var(--line);padding:12px 14px}
 .tkt:first-child{border-top:0}
@@ -147,7 +148,7 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none;color:var(--in
 .tkt-meta{display:block;font-size:13px;color:var(--muted);overflow-wrap:anywhere}
 .tkt-date{font-size:13px;color:var(--ink2)}
 .tkt-cost{text-align:right;font-variant-numeric:tabular-nums;font-weight:500}
-@media(max-width:760px){
+@container (max-width:700px){
   .tkt{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"no st" "main main" "date cost"}
   .tkt-no{grid-area:no}.tkt .pills{grid-area:st;justify-content:flex-end}.tkt-main{grid-area:main}.tkt-date{grid-area:date}.tkt-cost{grid-area:cost}
 }
@@ -220,6 +221,13 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .line output{display:block;min-height:38px;padding:8px 0;font-variant-numeric:tabular-nums;font-weight:600}
 .addrow{display:flex;gap:8px;flex-wrap:wrap}
 .confirmrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.about{border:1px solid var(--line2);border-radius:4px;padding:14px;display:flex;flex-direction:column;gap:8px;background:var(--panel2)}
+.about-h{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.about .ver{font-size:26px;font-weight:600;line-height:1.2}
+.about p{margin:0}
+.upd{padding:8px 10px;border-radius:4px;background:var(--panel);border:1px solid var(--line2);font-size:14px}
+.upd.good{background:var(--st-done-bg);color:var(--st-done-fg);border-color:transparent}
+.addr{overflow-wrap:anywhere;user-select:all;font-size:13px}
 .chk{display:flex;gap:10px;align-items:center;font-size:14px}
 .chk input{width:18px;height:18px;margin:0}
 
@@ -239,8 +247,8 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
     </div>
     <div class="actions">
       <button type="button" class="btn" id="btn-report" data-action="report" disabled>PDF report</button>
-      <button type="button" class="btn" id="btn-settings" data-action="settings">Settings</button>
       <button type="button" class="btn primary" id="btn-new" data-action="new-wo">New work order</button>
+      <button type="button" class="btn iconbtn" id="btn-settings" data-action="settings" aria-label="Settings and updates" title="Settings and updates"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.56-1.11 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.01a1.7 1.7 0 0 0 1.03-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.01a1.7 1.7 0 0 0 1.56 1.03H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1.03z"/></svg></button>
     </div>
   </header>
   <nav class="tabs" role="tablist" aria-label="Sections">
@@ -278,7 +286,7 @@ const CATEGORIES=['Home','Vehicle','Appliance','Garden & outdoor','Tools & equip
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
-const APP_VERSION='1.0.0.0';
+const APP_VERSION='1.0.0.1';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const IS_APP=!!window.AndroidBridge;
 const CURRENCIES=['SAR','AED','KWD','QAR','BHD','OMR','EGP','JOD','USD','EUR','GBP','INR','PKR','TRY'];
@@ -286,7 +294,7 @@ const CURRENCIES=['SAR','AED','KWD','QAR','BHD','OMR','EGP','JOD','USD','EUR','G
 const S={db:null,user:null,downloads:null,noStore:false,readOnly:false,timedOut:false,
   assets:new Map(),orders:[],settings:{currency:'SAR'},ready:{assets:false,orders:false},
   view:'dashboard',range:'year',f:{status:'active',asset:'',year:'',q:''},partsQ:'',showArchived:false,
-  wo:null,asset:null,saving:false,confirmClear:false,sheet:'',report:null,restore:null};
+  wo:null,asset:null,saving:false,confirmClear:false,sheet:'',report:null,restore:null,upd:null};
 const HOLDER='h'+Math.random().toString(36).slice(2,10);
 
 let _nf=null,_nfCur='';
@@ -644,6 +652,7 @@ function renderWO(focusId){
   const a=S.assets.get(w.assetId); const unit=a&&a.meterUnit||'';
   const assets=[...S.assets.values()].filter(x=>!x.archived||x.id===w.assetId).sort(byName);
   const total=w.lines.reduce((s,l)=>s+lineTotal(l),0);
+  const was=!!prev&&!host.hidden;
   host.hidden=false;
   host.innerHTML=`<div class="scrim" data-action="close-modal"></div>
   <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="wo-h">
@@ -670,6 +679,7 @@ function renderWO(focusId){
    </div>
    <footer class="sheet-f"><div class="tot"><span>Order total</span><strong id="wo-total">${money(total)}</strong></div>
     <div class="acts">${!w.isNew&&w.status==='Completed'?'<button type="button" class="btn" data-action="followup">Create follow-up</button>':''}<button type="button" class="btn" data-action="close-modal">Cancel</button><button type="button" class="btn primary" data-action="save-wo"${S.saving?' disabled':''}>${w.isNew?'Create work order':'Save changes'}</button></div></footer></section>`;
+  keepStill(host,was);
   const sb=$('.sheet-b',host); if(sb) sb.scrollTop=scroll;
   syncInert();
   if(focusId){ const el=document.getElementById(focusId); if(el) el.focus(); }
@@ -729,6 +739,7 @@ function renderAsset(focusId){
   const host=$('#modal2'); const a=S.asset;
   if(!a){ host.innerHTML=''; host.hidden=true; syncInert(); return; }
   const used=!a.isNew&&S.orders.some(o=>o.assetId===a.id);
+  const was=!host.hidden&&!!host.querySelector('.sheet');
   host.hidden=false;
   host.innerHTML=`<div class="scrim" data-action="close-modal2"></div>
   <section class="sheet narrow" role="dialog" aria-modal="true" aria-labelledby="as-h">
@@ -744,6 +755,7 @@ function renderAsset(focusId){
       ${used?`<span class="hint">Has work orders, so it can be archived but not deleted.</span>`:(a.confirmDelete?`<button type="button" class="btn sm danger" data-action="delete-asset">Confirm delete</button><span class="hint">This cannot be undone.</span>`:`<button type="button" class="btn sm danger" data-action="delete-asset">Delete asset</button>`)}</div>`:''}
    </div>
    <footer class="sheet-f"><span class="hint">${a.meterUnit?'Work orders will ask for a reading.':''}</span><div class="acts"><button type="button" class="btn" data-action="close-modal2">Cancel</button><button type="button" class="btn primary" data-action="save-asset">${a.isNew?'Add asset':'Save changes'}</button></div></footer></section>`;
+  keepStill(host,was);
   syncInert();
   if(focusId){ const el=document.getElementById(focusId); if(el) el.focus(); }
 }
@@ -778,23 +790,61 @@ async function deleteAsset(){
 /* ---------- settings & export ---------- */
 function openSettings(){ S.sheet='settings'; renderSettings(); }
 function renderSettings(){
-  const host=$('#modal'); host.hidden=false;
+  const host=$('#modal');
   const focus=document.activeElement&&document.activeElement.id==='st-cur';
   if(focus) return;
+  const was=!host.hidden&&!!host.querySelector('#st-h');
+  host.hidden=false;
   host.innerHTML=`<div class="scrim" data-action="close-modal"></div>
   <section class="sheet narrow" role="dialog" aria-modal="true" aria-labelledby="st-h">
-   <header class="sheet-h"><div><p class="eyebrow">Settings</p><h2 id="st-h">Currency and backups</h2></div><button type="button" class="icon" data-action="close-modal" aria-label="Close">&times;</button></header>
+   <header class="sheet-h"><div><p class="eyebrow">Settings</p><h2 id="st-h">Settings and updates</h2></div><button type="button" class="icon" data-action="close-modal" aria-label="Close">&times;</button></header>
    <div class="sheet-b">
+    ${aboutBlock()}
     <label class="fld"><span>Currency code</span><input id="st-cur" list="st-curlist" type="text" maxlength="3" value="${esc(S.settings.currency||'SAR')}" autocomplete="off" ${canWrite()?'':'disabled'}><datalist id="st-curlist">${CURRENCIES.map(c=>`<option value="${c}"></option>`).join('')}</datalist></label>
     <p class="hint">Three-letter code such as SAR, USD or EUR. It changes how amounts are shown, not the numbers.</p>
     <div><h3 class="sec-h">Download your records</h3>
      ${S.downloads?`<div class="addrow"><button type="button" class="btn sm" data-action="export" data-what="orders">Work orders (CSV)</button><button type="button" class="btn sm" data-action="export" data-what="lines">Cost lines (CSV)</button><button type="button" class="btn sm" data-action="export" data-what="json">Full backup (JSON)</button></div>`:`<p class="hint">Downloads aren't available in this view.</p>`}</div>
     <div><h3 class="sec-h">Restore from a backup</h3>${canWrite()?`<label class="fld"><span>Backup file (JSON)</span><input id="st-restore" type="file" accept="application/json,.json"></label>${S.restore?`<p class="hint">${esc(S.restore.msg)}</p>${S.restore.ok?`<button type="button" class="btn sm primary" data-action="do-restore" style="margin-top:8px">Restore these records</button>`:''}`:`<p class="hint">Pick a Full backup file made by this app, for example to move your records from the web version to the phone.</p>`}`:`<p class="hint">Restoring is not available in this view.</p>`}</div>
-    <div><h3 class="sec-h">About</h3><p><b>Home Work Orders</b> <span class="mono">v${APP_VERSION}</span></p>
-     ${IS_APP?`<p class="hint">Records are stored on this phone only. Download a Full backup now and then.</p><a class="btn sm" href="${RELEASES_URL}" target="_blank" rel="noopener" style="margin-top:8px">Check for updates</a><p class="hint" style="margin-top:8px">Opens the releases page on GitHub. If the newest version there is higher than the one above, download its APK and install it over this app. Your records stay on the phone.</p>`:`<p class="hint">The web version updates itself whenever a new version is published.</p>`}</div>
+    
    </div>
    <footer class="sheet-f"><span></span><div class="acts"><button type="button" class="btn primary" data-action="close-modal">Done</button></div></footer></section>`;
-  syncInert();
+  keepStill(host,was); syncInert();
+}
+function cmpVer(a,b){
+  const x=String(a).split('.').map(Number), y=String(b).split('.').map(Number);
+  for(let i=0;i<Math.max(x.length,y.length);i++){ const d=(x[i]||0)-(y[i]||0); if(d) return d>0?1:-1; }
+  return 0;
+}
+function aboutBlock(){
+  const u=S.upd; const newer=u&&u.state==='newer';
+  let status='';
+  if(IS_APP){
+    if(!u) status='<p class="hint">Not checked yet.</p>';
+    else if(u.state==='checking') status='<p class="hint">Checking for updates...</p>';
+    else if(newer) status=`<p class="upd good"><b>Version ${esc(u.tag)} is available.</b> You have ${esc(APP_VERSION)}.</p>`;
+    else if(u.state==='current') status=`<p class="upd good">You are up to date (${esc(APP_VERSION)}).</p>`;
+    else if(u.state==='unreadable') status='<p class="upd">The release list could not be read. No release may be published yet, or the repository is private. Open the releases page to check by hand.</p>';
+    else if(u.state==='offline') status='<p class="upd">No connection. Connect to the internet and try again.</p>';
+    else status='<p class="upd">The check failed. Try again later, or open the releases page.</p>';
+  }
+  const link=newer&&u.apkUrl?esc(u.apkUrl):esc(RELEASES_URL);
+  return `<section class="about" aria-label="About and updates"><div class="about-h"><div><div class="k-l">Installed version</div><div class="ver mono" id="st-version">v${esc(APP_VERSION)}</div></div>${IS_APP?`<button type="button" class="btn sm primary" data-action="check-update"${u&&u.state==='checking'?' disabled':''}>Check for updates</button>`:''}</div>
+   ${IS_APP?`${status}<p class="hint">Update address</p><p class="addr mono">${esc(RELEASES_URL)}</p><div class="addrow"><a class="btn sm" href="${link}" target="_blank" rel="noopener">${newer&&u.apkUrl?'Download the update':'Open releases page'}</a></div><p class="hint">To update, download the new APK and open it. Android installs it over this app and your records stay on the phone.</p>`:`<p class="hint">The web version updates itself whenever a new version is published.</p>`}</section>`;
+}
+async function checkUpdate(){
+  if(S.upd&&S.upd.state==='checking') return;
+  S.upd={state:'checking'}; renderSettings();
+  try{
+    const r=await fetch('https://api.github.com/repos/MalekW96/home-work-orders/releases/latest',{headers:{Accept:'application/vnd.github+json'}});
+    if(r.status===404||r.status===401||r.status===403) S.upd={state:'unreadable'};
+    else if(!r.ok) S.upd={state:'error'};
+    else{
+      const j=await r.json(); const tag=String(j.tag_name||'').replace(/^v/i,'');
+      const apk=(j.assets||[]).find(a=>/\.apk$/i.test(a.name||''));
+      S.upd={state:cmpVer(tag,APP_VERSION)>0?'newer':'current',tag,apkUrl:apk?apk.browser_download_url:''};
+    }
+  }catch(e){ S.upd={state:'offline'}; }
+  renderSettings();
 }
 function readRestore(file){
   if(!file) return;
@@ -962,7 +1012,7 @@ function updateReportCount(){
   c.textContent=n?n+' work order'+(n===1?'':'s')+' will be included.':'No work orders match these choices.';
 }
 function renderReport(){
-  const host=$('#modal'); host.hidden=false; const r=S.report;
+  const host=$('#modal'); const was=!host.hidden&&!!host.querySelector('#rp-h'); host.hidden=false; const r=S.report;
   const assets=[...S.assets.values()].sort(byName);
   host.innerHTML=`<div class="scrim" data-action="close-modal"></div>
   <section class="sheet narrow" role="dialog" aria-modal="true" aria-labelledby="rp-h">
@@ -975,7 +1025,7 @@ function renderReport(){
     <p class="hint">Cancelled work orders are left out. Text outside the Latin alphabet shows as "?" in the PDF.</p>
    </div>
    <footer class="sheet-f"><span></span><div class="acts"><button type="button" class="btn" data-action="close-modal">Cancel</button><button type="button" class="btn primary" data-action="make-report"${S.saving?' disabled':''}>${S.saving?'Creating…':'Create PDF'}</button></div></footer></section>`;
-  syncInert(); updateReportCount();
+  keepStill(host,was); syncInert(); updateReportCount();
 }
 async function makeReport(){
   if(S.saving||!S.report) return;
@@ -996,6 +1046,7 @@ async function makeReport(){
 }
 
 /* ---------- sheets plumbing ---------- */
+function keepStill(host,was){ if(was){ const sh=host.querySelector('.sheet'); if(sh) sh.style.animation='none'; } }
 function syncInert(){
   const m1=$('#modal'),m2=$('#modal2');
   $('#app').inert=!m1.hidden||!m2.hidden;
@@ -1036,6 +1087,7 @@ document.addEventListener('click',e=>{
     case 'export': exportData(el.dataset.what); break;
     case 'report': openReport(); break;
     case 'do-restore': doRestore(); break;
+    case 'check-update': checkUpdate(); break;
     case 'make-report': makeReport(); break;
     case 'clear-samples': clearSamples(); break;
     case 'range': S.range=el.dataset.range; render(); break;
