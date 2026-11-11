@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0.4
+
+- Header sits lower again so the full title is clear of the camera.
+
 ## 1.0.0.3
 
 - Update inside the app: when a newer release exists, Settings shows Download and install. The app downloads the APK, shows progress, and opens Android's installer. The first time, Android asks you to allow installs from this app.
