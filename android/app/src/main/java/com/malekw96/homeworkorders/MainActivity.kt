@@ -44,12 +44,21 @@ class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private var fileCallback: ValueCallback<Array<Uri>>? = null
 
+    private var cameraFile: File? = null
+
     private val picker = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        fileCallback?.onReceiveValue(
+        val cam = cameraFile
+        cameraFile = null
+        val fromCamera = result.resultCode == RESULT_OK && result.data?.data == null &&
+            result.data?.clipData == null && cam != null && cam.length() > 0
+        val uris: Array<Uri>? = if (fromCamera) {
+            arrayOf(FileProvider.getUriForFile(this, "$packageName.files", cam!!))
+        } else {
             WebChromeClient.FileChooserParams.parseResult(result.resultCode, result.data)
-        )
+        }
+        fileCallback?.onReceiveValue(uris)
         fileCallback = null
     }
 
@@ -126,7 +135,27 @@ class MainActivity : AppCompatActivity() {
                 fileCallback?.onReceiveValue(null)
                 fileCallback = callback
                 return try {
-                    picker.launch(params.createIntent())
+                    val base = params.createIntent()
+                    val wantsImage = params.acceptTypes.any { it.startsWith("image") }
+                    if (wantsImage) {
+                        val dir = File(cacheDir, "photos").apply { mkdirs() }
+                        val f = File(dir, "capture.jpg")
+                        if (f.exists()) f.delete()
+                        cameraFile = f
+                        val cam = Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE).apply {
+                            putExtra(
+                                android.provider.MediaStore.EXTRA_OUTPUT,
+                                FileProvider.getUriForFile(this@MainActivity, "$packageName.files", f)
+                            )
+                            addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        val chooser = Intent.createChooser(base, "Add a photo").apply {
+                            putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(cam))
+                        }
+                        picker.launch(chooser)
+                    } else {
+                        picker.launch(base)
+                    }
                     true
                 } catch (_: Exception) {
                     fileCallback = null

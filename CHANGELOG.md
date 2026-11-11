@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.1.0.1
+
+- Adding a vehicle now needs brand, make, model, colour, number plate, VIN, a photo of the plate and a photo of the car card. A photo of the car is optional.
+- Other assets (AC, TV, console and so on) need a brand, model number and serial number, and can have up to four pictures.
+- Parent and child assets: mark the main machine as the parent, and accessories such as a UPS as children of it.
+- Work order numbers now start with a letter from the parent machine: WO-V-2026-0001 vehicle, C climate (air conditioner), E entertainment (TV, radio, console) and electrical, G everything else. Each letter counts up on its own. Older numbers are unchanged.
+- The asset sheet now says "Add new asset" and the small "Asset" label above it is gone.
+- In the phone app, adding a picture offers the camera as well as the gallery.
+
 ## 2.0.0.1
 
 - New name: I Got This. It shows under the icon, in the header and on the PDF report.
