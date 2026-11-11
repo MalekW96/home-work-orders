@@ -1,6 +1,10 @@
 package com.malekw96.homeworkorders
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import android.webkit.GeolocationPermissions
 import android.content.ContentValues
 import android.content.Intent
 import android.net.Uri
@@ -45,6 +49,30 @@ class MainActivity : AppCompatActivity() {
     private var fileCallback: ValueCallback<Array<Uri>>? = null
 
     private var cameraFile: File? = null
+
+    private var pendingGeo: Pair<String, GeolocationPermissions.Callback>? = null
+    private var askedNotifications = false
+
+    private val locationPermission = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { grants ->
+        val ok = grants.values.any { it }
+        pendingGeo?.let { it.second.invoke(it.first, ok, false) }
+        pendingGeo = null
+    }
+
+    private val notificationPermission = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { }
+
+    private fun askForNotifications() {
+        if (android.os.Build.VERSION.SDK_INT >= 33 && !askedNotifications &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            askedNotifications = true
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
 
     private val picker = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -127,6 +155,17 @@ class MainActivity : AppCompatActivity() {
         }
 
         webView.webChromeClient = object : WebChromeClient() {
+            override fun onGeolocationPermissionsShowPrompt(origin: String, callback: GeolocationPermissions.Callback) {
+                if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                    callback.invoke(origin, true, false)
+                } else {
+                    pendingGeo = Pair(origin, callback)
+                    locationPermission.launch(
+                        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+                    )
+                }
+            }
+
             override fun onShowFileChooser(
                 webView: WebView,
                 callback: ValueCallback<Array<Uri>>,
@@ -214,6 +253,13 @@ class MainActivity : AppCompatActivity() {
                 e.message ?: "The file could not be saved."
             }
         }
+        /** Replaces the scheduled follow-up reminders with the list the page sends (JSON). */
+        @JavascriptInterface
+        fun setReminders(json: String) {
+            Reminders.schedule(applicationContext, json)
+            if (json.length > 2) runOnUiThread { askForNotifications() }
+        }
+
         /** Downloads the APK at [url] and opens Android's installer. Progress is reported to the page. */
         @JavascriptInterface
         fun installUpdate(url: String) {

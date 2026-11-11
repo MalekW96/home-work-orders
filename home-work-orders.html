@@ -12,6 +12,7 @@
   --danger:#b42323; --danger-soft:#fbe3e3; --track:#e6ebf1; --scrim:rgba(12,20,30,.45);
   --st-open-bg:#e3edfb; --st-open-fg:#1c4f9c;
   --st-prog-bg:#fdf0cf; --st-prog-fg:#7a4f00;
+  --st-further-bg:#ffe5d0; --st-further-fg:#8a3a00;
   --st-done-bg:#dcf3df; --st-done-fg:#0b5d1e;
   --st-cancel-bg:#e8ebef; --st-cancel-fg:#566170;
   --st-over-bg:#fbe0e0; --st-over-fg:#a02222;
@@ -27,6 +28,7 @@
     --danger:#f08a8a; --danger-soft:#3a1c1c; --track:#243040; --scrim:rgba(0,0,0,.6);
     --st-open-bg:#1c2c47; --st-open-fg:#9cc0f7;
     --st-prog-bg:#3a2d0c; --st-prog-fg:#f2c15b;
+    --st-further-bg:#3d2410; --st-further-fg:#f5a566;
     --st-done-bg:#12301a; --st-done-fg:#7fd38d;
     --st-cancel-bg:#262d36; --st-cancel-fg:#9aa6b4;
     --st-over-bg:#3c1a1a; --st-over-fg:#f19a9a;
@@ -41,6 +43,7 @@
   --danger:#f08a8a; --danger-soft:#3a1c1c; --track:#243040; --scrim:rgba(0,0,0,.6);
   --st-open-bg:#1c2c47; --st-open-fg:#9cc0f7;
   --st-prog-bg:#3a2d0c; --st-prog-fg:#f2c15b;
+  --st-further-bg:#3d2410; --st-further-fg:#f5a566;
   --st-done-bg:#12301a; --st-done-fg:#7fd38d;
   --st-cancel-bg:#262d36; --st-cancel-fg:#9aa6b4;
   --st-over-bg:#3c1a1a; --st-over-fg:#f19a9a;
@@ -149,6 +152,7 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none;color:var(--in
 .pill{display:inline-block;font:600 11px/1 var(--sans);letter-spacing:.05em;text-transform:uppercase;padding:4px 7px;border-radius:3px;white-space:nowrap}
 .pill.open{background:var(--st-open-bg);color:var(--st-open-fg)}
 .pill.prog{background:var(--st-prog-bg);color:var(--st-prog-fg)}
+.pill.further{background:var(--st-further-bg);color:var(--st-further-fg)}
 .pill.done{background:var(--st-done-bg);color:var(--st-done-fg)}
 .pill.cancel{background:var(--st-cancel-bg);color:var(--st-cancel-fg)}
 .pill.over{background:var(--st-over-bg);color:var(--st-over-fg)}
@@ -157,7 +161,7 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none;color:var(--in
 /* status dots */
 .st{display:inline-flex;align-items:center;gap:6px;font:600 11.5px/1 var(--sans);color:var(--ink2);white-space:nowrap}
 .st i{width:8px;height:8px;border-radius:50%;background:var(--st-open-fg);flex:none}
-.st.prog i{background:var(--st-prog-fg)}.st.done i{background:var(--st-done-fg)}.st.cancel i{background:var(--st-cancel-fg)}.st.over{color:var(--danger)}.st.over i{background:var(--danger)}
+.st.prog i{background:var(--st-prog-fg)}.st.further i{background:var(--st-further-fg)}.st.done i{background:var(--st-done-fg)}.st.cancel i{background:var(--st-cancel-fg)}.st.over{color:var(--danger)}.st.over i{background:var(--danger)}
 .ico{width:40px;height:40px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
 .ico svg{width:22px;height:22px}
 
@@ -282,6 +286,12 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .upd.good{background:var(--st-done-bg);color:var(--st-done-fg);border-color:transparent}
 .addr{overflow-wrap:anywhere;user-select:all;font-size:13px}
 .chk{display:flex;gap:10px;align-items:center;font-size:14px}
+.bang{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;background:var(--danger);color:var(--bg);font:700 12px/1 var(--sans);margin-right:6px;vertical-align:1px}
+.alertnote{margin:2px 0 0;padding:9px 11px;border-radius:6px;background:var(--danger-soft);color:var(--ink);font-size:13px;line-height:1.4}
+.visitbox{display:flex;flex-direction:column;gap:12px;padding-top:6px;border-top:1px solid var(--line)}
+.visit{display:flex;flex-direction:column;gap:12px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--panel2)}
+.locline{margin:0 0 8px;font-size:13px;overflow-wrap:anywhere}.locline em{color:var(--muted)}
+.followbox{display:flex;flex-direction:column;gap:8px}
 .chk input{width:18px;height:18px;margin:0}
 
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:4px;z-index:90;max-width:min(92vw,32rem);box-shadow:0 8px 24px rgba(0,0,0,.3);font-size:14px}
@@ -301,7 +311,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
       <button type="button" class="btn iconbtn addbtn" id="btn-add" data-action="toggle-add" aria-label="Add" aria-haspopup="menu" aria-expanded="false" title="Add"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
       <button type="button" class="btn iconbtn" id="btn-settings" data-action="settings" aria-label="Settings and updates" title="Settings and updates"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.56-1.11 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.01a1.7 1.7 0 0 0 1.03-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.01a1.7 1.7 0 0 0 1.56 1.03H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1.03z"/></svg></button>
       <div class="addmenu" id="addmenu" role="menu" hidden>
-        <button type="button" role="menuitem" data-action="new-asset">Add new asset</button>
+        <button type="button" role="menuitem" data-action="new-asset">Add new equipment</button>
         <button type="button" role="menuitem" data-action="new-wo">Create new task</button>
       </div>
     </div>
@@ -309,7 +319,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
   <nav class="tabs" role="tablist" aria-label="Sections">
     <button type="button" class="tab" role="tab" id="tab-dashboard" data-action="tab" data-view="dashboard">Dashboard</button>
     <button type="button" class="tab" role="tab" id="tab-orders" data-action="tab" data-view="orders">Tasks<span class="n" id="n-orders"></span></button>
-    <button type="button" class="tab" role="tab" id="tab-assets" data-action="tab" data-view="assets">Assets<span class="n" id="n-assets"></span></button>
+    <button type="button" class="tab" role="tab" id="tab-assets" data-action="tab" data-view="assets">Equipment<span class="n" id="n-assets"></span></button>
     <button type="button" class="tab" role="tab" id="tab-parts" data-action="tab" data-view="parts">Parts</button>
   </nav>
   <div id="banner"></div>
@@ -334,8 +344,8 @@ const localISO=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const todayISO=()=>localISO(new Date());
 function parseD(s){ if(!s) return null; const p=String(s).split('-').map(Number); return new Date(p[0],p[1]-1,p[2]); }
 function fmtDate(s){ const d=parseD(s); return d?d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'—'; }
-const STATUSES=['Open','In progress','Completed','Cancelled'];
-const TYPES=['Preventive maintenance','Repair','Inspection','Improvement','Other'];
+const STATUSES=['Open','In progress','Further action','Completed','Cancelled'];
+const TYPES=['Preventive maintenance','Corrective maintenance','Inspection','Improvement','Other'];
 const PRIORITIES=['Low','Normal','High'];
 const CATEGORIES=['Vehicle','Air conditioner','TV / Radio','Gaming console','Electrical','Appliance','Home','Garden & outdoor','Tools & equipment','Other'];
 /* first letter of a task number, from the nature of the installed parent machine */
@@ -345,7 +355,7 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
-const APP_VERSION='2.3.1.1';
+const APP_VERSION='2.3.1.2';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
 const IS_IOS=!!window.IOSBridge;
@@ -373,9 +383,16 @@ function orderTotals(o){
   return t;
 }
 const orderDate=o=>o.completedOn||o.openedOn||'';
-const isActive=o=>o.status==='Open'||o.status==='In progress';
+const isActive=o=>o.status==='Open'||o.status==='In progress'||o.status==='Further action';
+/* corrective + High priority = marked with !, and reminded 3 days after it is set to Further action */
+const FURTHER_DAYS=3;
+const isCorrective=o=>!!o&&(o.type==='Corrective maintenance'||o.type==='Repair');
+const isUrgent=o=>isCorrective(o)&&o.priority==='High'&&isActive(o);
+const followUpAt=o=>{ if(!isUrgent(o)||o.status!=='Further action'||!o.furtherAt) return null; const t=Date.parse(o.furtherAt); return isFinite(t)?t+FURTHER_DAYS*864e5:null; };
+const followUpDue=o=>{ const t=followUpAt(o); return t!==null&&t<=Date.now(); };
+const bang=o=>isUrgent(o)?'<span class="bang" title="High-priority corrective task" aria-label="High priority">!</span>':'';
 const isOverdue=o=>isActive(o)&&o.dueOn&&o.dueOn<todayISO();
-const assetName=id=>{ const a=S.assets.get(id); return a?a.name:'Unknown asset'; };
+const assetName=id=>{ const a=S.assets.get(id); return a?a.name:'Unknown equipment'; };
 const byName=(a,b)=>String(a.name).localeCompare(String(b.name));
 const byNumberDesc=(a,b)=>(num(b.year)-num(a.year))||(a.createdAt&&b.createdAt&&a.createdAt!==b.createdAt?String(b.createdAt).localeCompare(String(a.createdAt)):0)||(num(b.seq)-num(a.seq))||String(b.id).localeCompare(String(a.id));
 const canWrite=()=>!!S.db&&!S.readOnly;
@@ -419,9 +436,9 @@ function showPhoto(src,cap){
   d.addEventListener('click',closePhoto); document.body.appendChild(d);
 }
 function closePhoto(){ const d=document.getElementById('lb'); if(d){ d.remove(); return true; } return false; }
-function stDot(status){ const c={'Open':'','In progress':'prog','Completed':'done','Cancelled':'cancel'}[status]||''; const l={'Completed':'Done'}[status]||status; return `<span class="st ${c}"><i></i>${esc(l)}</span>`; }
+function stDot(status){ const c={'Open':'','In progress':'prog','Further action':'further','Completed':'done','Cancelled':'cancel'}[status]||''; const l={'Completed':'Done'}[status]||status; return `<span class="st ${c}"><i></i>${esc(l)}</span>`; }
 function emptyArt(){ return `<svg class="art" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 30 32 11l24 19"/><path d="M13 27v25h38V27"/><path d="M26 52V37h12v15"/><path d="M47 14v8"/></svg>`; }
-function pill(status){ const c={'Open':'open','In progress':'prog','Completed':'done','Cancelled':'cancel'}[status]||'open'; return `<span class="pill ${c}">${esc(status)}</span>`; }
+function pill(status){ const c={'Open':'open','In progress':'prog','Further action':'further','Completed':'done','Cancelled':'cancel'}[status]||'open'; return `<span class="pill ${c}">${esc(status)}</span>`; }
 
 let toastTimer=null;
 function toast(msg,bad){ const t=$('#toast'); t.textContent=msg; t.className='toast'+(bad?' bad':''); t.hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>{t.hidden=true;},bad?6000:3200); }
@@ -597,7 +614,7 @@ async function boot(){
   },bad);
   db.collection('workorders').onSnapshot(snap=>{
     S.orders=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
-    S.ready.orders=true; ok(); render();
+    S.ready.orders=true; ok(); render(); syncReminders();
   },bad);
   db.doc('meta/settings').onSnapshot(s=>{
     if(s.exists){ S.settings=Object.assign({currency:'SAR'},s.data()); }
@@ -636,8 +653,8 @@ function renderView(){
 
 function emptyIntro(loading){
   return `<div class="empty">${emptyArt()}<h2>${loading?'Loading your records':'Nothing to show here'}</h2>
-  <p>Tasks, assets, parts and costs appear here. Start with an asset such as a car, a room or an appliance, then open a numbered task against it.</p>
-  <ol class="steps"><li><span>Add an asset to track.</span></li><li><span>Open a task. It gets the next number, like WO-V-${new Date().getFullYear()}-0001.</span></li><li><span>Log parts, labour and cost, then mark it completed.</span></li></ol></div>`;
+  <p>Tasks, equipment, parts and costs appear here. Start with equipment such as a car, a room or an appliance, then open a numbered task against it.</p>
+  <ol class="steps"><li><span>Add equipment to track.</span></li><li><span>Open a task. It gets the next number, like WO-V-${new Date().getFullYear()}-0001.</span></li><li><span>Log parts, labour and cost, then mark it completed.</span></li></ol></div>`;
 }
 
 /* dashboard */
@@ -646,18 +663,19 @@ function orderRow(o){
   const t=orderTotals(o); const od=isOverdue(o);
   let dt;
   if(o.status==='Completed') dt='Done '+fmtDate(o.completedOn);
+  else if(o.status==='Further action'&&o.furtherAt) dt='Further action since '+fmtDate(String(o.furtherAt).slice(0,10))+(followUpDue(o)?' · follow-up due':'');
   else if(o.status!=='Cancelled'&&o.dueOn) dt='Due '+fmtDate(o.dueOn);
   else dt='Opened '+fmtDate(o.openedOn);
   return `<button type="button" class="tkt" data-action="open-wo" data-id="${esc(o.id)}">
     ${icoFor(assetCat(o.assetId))}
-    <span class="tkt-main"><span class="tkt-no">${esc(o.number||o.id)}</span><span class="tkt-title">${esc(o.title)}</span><span class="tkt-meta">${esc(assetName(o.assetId))} · ${esc(dt)}</span></span>
+    <span class="tkt-main"><span class="tkt-no">${bang(o)}${esc(o.number||o.id)}</span><span class="tkt-title">${esc(o.title)}</span><span class="tkt-meta">${esc(assetName(o.assetId))} · ${esc(dt)}</span></span>
     <span class="tkt-r">${stDot(o.status)}${od?'<span class="st over"><i></i>Overdue</span>':''}<span class="tkt-cost">${t.all?money(t.all):'—'}</span></span></button>`;
 }
 function dashboardView(){
   if(!S.assets.size){
-    return `<div class="empty">${emptyArt()}<h2>Start with your first asset</h2><p>An asset is anything you maintain: the car, the kitchen, the air conditioner, the water heater. Every task is opened against one, so its history and cost stay together.</p>
-    <ol class="steps"><li><span>Add an asset.</span></li><li><span>Open a task. It is numbered automatically from the kind of machine, like WO-V-${new Date().getFullYear()}-0001.</span></li><li><span>Log parts, labour and cost, then mark it completed.</span></li></ol>
-    <div class="btns"><button type="button" class="btn primary" data-action="new-asset"${canWrite()?'':' disabled'}>Add new asset</button></div></div>`;
+    return `<div class="empty">${emptyArt()}<h2>Start with your first piece of equipment</h2><p>Equipment is anything you maintain: the car, the kitchen, the air conditioner, the water heater. Every task is opened against one, so its history and cost stay together.</p>
+    <ol class="steps"><li><span>Add the equipment.</span></li><li><span>Open a task. It is numbered automatically from the kind of machine, like WO-V-${new Date().getFullYear()}-0001.</span></li><li><span>Log parts, labour and cost, then mark it completed.</span></li></ol>
+    <div class="btns"><button type="button" class="btn primary" data-action="new-asset"${canWrite()?'':' disabled'}>Add new equipment</button></div></div>`;
   }
   const start=rangeStart(); const inR=o=>o.status!=='Cancelled'&&(!start||orderDate(o)>=start);
   const ro=S.orders.filter(inR);
@@ -666,7 +684,8 @@ function dashboardView(){
     const e=byAsset.get(o.assetId)||{sum:0,n:0}; e.sum+=t.all; e.n++; byAsset.set(o.assetId,e); }
   const active=S.orders.filter(isActive);
   const overdue=active.filter(isOverdue);
-  const attention=active.slice().sort((a,b)=>(a.dueOn||'9999').localeCompare(b.dueOn||'9999')||byNumberDesc(a,b)).slice(0,8);
+  const due=active.filter(followUpDue).sort(byNumberDesc);
+  const attention=active.slice().sort((a,b)=>(isUrgent(b)?1:0)-(isUrgent(a)?1:0)||(a.dueOn||'9999').localeCompare(b.dueOn||'9999')||byNumberDesc(a,b)).slice(0,8);
   const recent=S.orders.filter(o=>o.status==='Completed').sort((a,b)=>(b.completedOn||'').localeCompare(a.completedOn||'')||byNumberDesc(a,b)).slice(0,5);
   const rl={year:'This year','12m':'Last 12 months',all:'All time'}[S.range];
   const rows=[...byAsset.entries()].sort((a,b)=>b[1].sum-a[1].sum).slice(0,6);
@@ -679,14 +698,15 @@ function dashboardView(){
   <div class="strip">
     <div><div class="k-l">Open</div><div class="k-v">${active.length}</div></div>
     <div><div class="k-l">Overdue</div><div class="k-v${overdue.length?' bad':' zero'}">${overdue.length}</div></div>
-    <div><div class="k-l">Assets</div><div class="k-v">${[...S.assets.values()].filter(a=>!a.archived).length}</div></div></div>
+    <div><div class="k-l">Equipment</div><div class="k-v">${[...S.assets.values()].filter(a=>!a.archived).length}</div></div></div>
   <div class="dash"><div class="stack">
+    ${due.length?`<section class="group"><h2 class="sec-h">Follow-up needed</h2><p class="alertnote"><span class="bang">!</span> ${due.length===1?'This task has':'These tasks have'} been waiting for further action for ${FURTHER_DAYS} days or more.</p><div class="tickets">${due.map(orderRow).join('')}</div></section>`:''}
     <section class="group"><h2 class="sec-h">Needs attention</h2>
       ${attention.length?`<div class="tickets">${attention.map(orderRow).join('')}</div>`:`<p class="muted" style="margin:0 4px">Nothing open. New jobs you start will be listed here, overdue ones first.</p>`}</section>
     <section class="group"><h2 class="sec-h">Recently completed</h2>
       ${recent.length?`<div class="tickets">${recent.map(orderRow).join('')}</div>`:`<p class="muted" style="margin:0 4px">Completed tasks show up here.</p>`}</section>
   </div><div class="stack">
-    <section class="panel"><div class="panel-h"><h2>Spend by asset</h2>
+    <section class="panel"><div class="panel-h"><h2>Spend by equipment</h2>
       <div class="seg" role="group" aria-label="Period">${[['year','This year'],['12m','12 months'],['all','All time']].map(r=>`<button type="button" data-action="range" data-range="${r[0]}" aria-pressed="${S.range===r[0]}">${r[1]}</button>`).join('')}</div></div>
       ${bars?`<ul class="bars">${bars}</ul>`:`<p class="muted">No costs logged for this period yet.</p>`}</section>
     <section class="panel"><div class="panel-h"><h2>Where the money goes</h2></div>
@@ -709,12 +729,12 @@ function ordersView(){
   const yrs=[...new Set(S.orders.map(o=>String(orderDate(o)).slice(0,4)).filter(Boolean))].sort().reverse();
   const assets=[...S.assets.values()].sort(byName);
   const extra=(S.f.asset?1:0)+(S.f.year?1:0);
-  const chips=[['active','Active'],['Open','Open'],['In progress','In progress'],['Completed','Done'],['all','All']];
+  const chips=[['active','Active'],['Open','Open'],['In progress','In progress'],['Further action','Further action'],['Completed','Done'],['all','All']];
   return `<div class="searchrow"><input id="f-q" type="search" value="${esc(S.f.q)}" placeholder="Search number, title, part, notes" aria-label="Search tasks" autocomplete="off"><button type="button" class="fbtn" data-action="toggle-filters" aria-expanded="${!!S.showFilters}">Filters${extra?`<b>${extra}</b>`:''}</button></div>
   <div class="chips" role="group" aria-label="Status">${chips.map(c=>`<button type="button" class="chip" data-action="chip" data-status="${esc(c[0])}" aria-pressed="${S.f.status===c[0]}">${c[1]}</button>`).join('')}</div>
   ${S.showFilters?`<div class="fpanel">
-    <label class="fld"><span>Status</span><select id="f-status">${opt([['active','Open and in progress'],['all','All statuses']].concat(STATUSES.map(s=>[s,s])),S.f.status)}</select></label>
-    <label class="fld"><span>Asset</span><select id="f-asset">${opt([['','All assets']].concat(assets.map(a=>[a.id,a.name])),S.f.asset)}</select></label>
+    <label class="fld"><span>Status</span><select id="f-status">${opt([['active','All active'],['all','All statuses']].concat(STATUSES.map(s=>[s,s])),S.f.status)}</select></label>
+    <label class="fld"><span>Equipment</span><select id="f-asset">${opt([['','All equipment']].concat(assets.map(a=>[a.id,a.name])),S.f.asset)}</select></label>
     <label class="fld"><span>Year</span><select id="f-year">${opt([['','All years']].concat(yrs.map(y=>[y,y])),S.f.year)}</select></label></div>`:''}
   <div id="orders-results">${ordersResults()}</div>`;
 }
@@ -744,7 +764,7 @@ function assetsView(){
   const list=all.filter(a=>S.showArchived||!a.archived);
   const archivedCount=all.filter(a=>a.archived).length;
   const head=`<div class="toolbar"><div>${archivedCount?`<button type="button" class="btn sm ghost" data-action="toggle-archived">${S.showArchived?'Hide':'Show'} archived (${archivedCount})</button>`:''}</div></div>`;
-  if(!list.length) return head+`<div class="empty small"><h2>No assets yet</h2><p>Add the things you maintain: a car, a room, an appliance. Tasks are opened against them.</p></div>`;
+  if(!list.length) return head+`<div class="empty small"><h2>No equipment yet</h2><p>Add the things you maintain: a car, a room, an appliance. Tasks are opened against them.</p></div>`;
   return head+`<div class="cards">${list.map(a=>{
     const s=stats.get(a.id)||{n:0,open:0,spent:0,last:'',meter:null};
     const kids=kidsOf(a.id); const par=a.parentId?S.assets.get(a.parentId):null; const pic=photoOf(a);
@@ -763,26 +783,28 @@ function partRows(){
   return rows.sort((a,b)=>orderDate(b.o).localeCompare(orderDate(a.o))||byNumberDesc(a.o,b.o));
 }
 function partsView(){
-  return `<div class="filters"><label class="fld grow"><span>Search parts</span><input id="p-q" type="search" value="${esc(S.partsQ)}" placeholder="Part name, part number, supplier, asset" autocomplete="off"></label></div><div id="parts-results">${partsResults()}</div>`;
+  return `<div class="filters"><label class="fld grow"><span>Search parts</span><input id="p-q" type="search" value="${esc(S.partsQ)}" placeholder="Part name, part number, supplier, equipment" autocomplete="off"></label></div><div id="parts-results">${partsResults()}</div>`;
 }
 function partsResults(){
   const rows=partRows();
   if(!rows.length) return `<div class="empty small"><h2>${S.partsQ?'No matching parts':'No parts logged yet'}</h2><p>${S.partsQ?'Try a different name or part number.':'Parts you add to a task are collected here, with part numbers, suppliers and prices, so you can find what you bought last time.'}</p></div>`;
   const total=rows.reduce((s,r)=>s+lineTotal(r.l),0);
   return `<p class="sumline"><span><b>${rows.length}</b> part line${rows.length===1?'':'s'}</span><span>Parts cost <b>${money(total)}</b></span></p>
-  <div class="tablewrap"><table><thead><tr><th>Date</th><th>Part</th><th>Part no.</th><th class="num">Qty</th><th class="num">Unit cost</th><th class="num">Total</th><th>Supplier</th><th>Asset</th><th>Task</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(fmtDate(orderDate(r.o)))}</td><td>${esc(r.l.name)}</td><td class="mono">${esc(r.l.partNo||'')}</td><td class="num">${esc(num(r.l.qty))}</td><td class="num">${money(num(r.l.unitCost))}</td><td class="num">${money(lineTotal(r.l))}</td><td>${esc(r.l.supplier||'')}</td><td>${esc(assetName(r.o.assetId))}</td><td><button type="button" class="linkbtn" data-action="open-wo" data-id="${esc(r.o.id)}">${esc(r.o.number||r.o.id)}</button></td></tr>`).join('')}</tbody></table></div>`;
+  <div class="tablewrap"><table><thead><tr><th>Date</th><th>Part</th><th>Part no.</th><th class="num">Qty</th><th class="num">Unit cost</th><th class="num">Total</th><th>Supplier</th><th>Equipment</th><th>Task</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(fmtDate(orderDate(r.o)))}</td><td>${esc(r.l.name)}</td><td class="mono">${esc(r.l.partNo||'')}</td><td class="num">${esc(num(r.l.qty))}</td><td class="num">${money(num(r.l.unitCost))}</td><td class="num">${money(lineTotal(r.l))}</td><td>${esc(r.l.supplier||'')}</td><td>${esc(assetName(r.o.assetId))}</td><td><button type="button" class="linkbtn" data-action="open-wo" data-id="${esc(r.o.id)}">${esc(r.o.number||r.o.id)}</button></td></tr>`).join('')}</tbody></table></div>`;
 }
 
 /* ---------- task sheet ---------- */
+function blankVisit(){ return {on:false,name:'',contact:'',loc:null,atts:[]}; }
 function blankWO(p){
   p=p||{};
-  return {isNew:true,number:'',title:p.title||'',assetId:p.assetId||'',type:p.type||'Preventive maintenance',priority:'Normal',status:'Open',openedOn:todayISO(),dueOn:'',completedOn:'',meter:'',doneBy:'Me',description:'',notes:'',lines:[],followUpOf:p.followUpOf||''};
+  return {isNew:true,number:'',title:p.title||'',assetId:p.assetId||'',type:p.type||'Preventive maintenance',priority:'Normal',status:'Open',openedOn:todayISO(),dueOn:'',completedOn:'',meter:'',doneBy:'Me',description:'',notes:'',lines:[],followUpOf:p.followUpOf||'',furtherAt:'',visit:blankVisit()};
 }
 function openWO(id,prefill){
   if(id){
     const o=S.orders.find(x=>x.id===id); if(!o) return;
     const c=JSON.parse(JSON.stringify(o));
-    S.wo=Object.assign(c,{isNew:false,number:o.number||o.id,meter:o.meter==null?'':String(o.meter),dueOn:o.dueOn||'',completedOn:o.completedOn||'',doneBy:o.doneBy||'',description:o.description||'',notes:o.notes||'',
+    S.wo=Object.assign(c,{isNew:false,number:o.number||o.id,type:o.type==='Repair'?'Corrective maintenance':(o.type||'Preventive maintenance'),furtherAt:o.furtherAt||'',
+      visit:o.visit?{on:true,name:o.visit.name||'',contact:o.visit.contact||'',loc:o.visit.loc||null,atts:(o.visit.atts||[]).map(x=>({src:x.src,caption:x.caption||''}))}:blankVisit(),meter:o.meter==null?'':String(o.meter),dueOn:o.dueOn||'',completedOn:o.completedOn||'',doneBy:o.doneBy||'',description:o.description||'',notes:o.notes||'',
       lines:(o.lines||[]).map(l=>({kind:l.kind||'part',name:l.name||'',partNo:l.partNo||'',supplier:l.supplier||'',qty:String(l.qty==null?'':l.qty),unitCost:String(l.unitCost==null?'':l.unitCost)}))});
   } else S.wo=blankWO(prefill);
   S.sheet='wo'; renderWO(S.wo.isNew?'wo-title':null);
@@ -810,12 +832,12 @@ function renderWO(focusId){
   host.hidden=false;
   host.innerHTML=`<div class="scrim" data-action="close-modal"></div>
   <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="wo-h">
-   <header class="sheet-h"><div><p class="eyebrow">Task${w.followUpOf?' · follow-up to '+esc(w.followUpOf):''}</p><h2 id="wo-h">${w.isNew?'<span class="tag pending">'+(w.assetId?'Number WO-'+woCode(w.assetId)+'-… assigned when you save':'Number assigned when you save')+'</span>':`<span class="tag">${esc(w.number)}</span>`}</h2></div>
+   <header class="sheet-h"><div><p class="eyebrow">Task${w.followUpOf?' · follow-up to '+esc(w.followUpOf):''}</p><h2 id="wo-h">${bang(w)}${w.isNew?'<span class="tag pending">'+(w.assetId?'Number WO-'+woCode(w.assetId)+'-… assigned when you save':'Number assigned when you save')+'</span>':`<span class="tag">${esc(w.number)}</span>`}</h2></div>
    <button type="button" class="icon" data-action="close-modal" aria-label="Close">&times;</button></header>
    <div class="sheet-b">
     <div class="grid">
      <label class="fld" style="grid-column:1/-1"><span>What needs doing</span><input id="wo-title" data-f="title" type="text" value="${esc(w.title)}" placeholder="Oil and filter change" autocomplete="off"></label>
-     <label class="fld"><span>Asset</span><select id="wo-asset" data-f="assetId">${opt([['','Choose an asset…']].concat(assets.map(x=>[x.id,x.parentId&&S.assets.get(x.parentId)?x.name+' (accessory of '+S.assets.get(x.parentId).name+')':x.name])).concat([['__new','Add new asset…']]),w.assetId)}</select></label>
+     <label class="fld"><span>Equipment</span><select id="wo-asset" data-f="assetId">${opt([['','Choose the equipment…']].concat(assets.map(x=>[x.id,x.parentId&&S.assets.get(x.parentId)?x.name+' (accessory of '+S.assets.get(x.parentId).name+')':x.name])).concat([['__new','Add new equipment…']]),w.assetId)}</select></label>
      <label class="fld"><span>Type</span><select id="wo-type" data-f="type">${opt(TYPES.map(t=>[t,t]),w.type)}</select></label>
      <label class="fld"><span>Priority</span><select id="wo-priority" data-f="priority">${opt(PRIORITIES.map(t=>[t,t]),w.priority)}</select></label>
      <label class="fld"><span>Status</span><select id="wo-status" data-f="status">${opt(STATUSES.map(t=>[t,t]),w.status)}</select></label>
@@ -825,11 +847,16 @@ function renderWO(focusId){
      ${unit?`<label class="fld"><span>Reading (${esc(unit)})</span><input id="wo-meter" data-f="meter" type="number" min="0" step="any" inputmode="decimal" value="${esc(w.meter)}" placeholder="${unit==='h'?'Hours':'Odometer'}"></label>`:''}
      <label class="fld"><span>Done by</span><input id="wo-doneby" data-f="doneBy" type="text" value="${esc(w.doneBy)}" placeholder="Me, or the workshop name" autocomplete="off"></label>
     </div>
+    ${woAlertNote(w)}
     <label class="fld"><span>Work performed</span><textarea id="wo-desc" data-f="description" placeholder="What was done, what was found">${esc(w.description)}</textarea></label>
     <div><h3 class="sec-h">Parts, labour and costs</h3>
      <div class="lines" id="wo-lines">${w.lines.length?w.lines.map(lineHTML).join(''):'<p class="hint">No cost lines yet. Add the parts you used and any labour.</p>'}</div>
      <div class="addrow" style="margin-top:10px"><button type="button" class="btn sm" data-action="add-line" data-kind="part">Add part</button><button type="button" class="btn sm" data-action="add-line" data-kind="labour">Add labour</button><button type="button" class="btn sm" data-action="add-line" data-kind="other">Add other cost</button></div></div>
     <label class="fld"><span>Notes</span><textarea id="wo-notes" data-f="notes" placeholder="Warranty, next service, things to remember">${esc(w.notes)}</textarea></label>
+    <div class="visitbox">
+     <label class="chk"><input id="wo-visit-on" type="checkbox" data-vf="on"${w.visit.on?' checked':''}><span>The equipment went to a garage, or a technician came over</span></label>
+     ${w.visit.on?visitHTML(w.visit):''}
+    </div>
    </div>
    <footer class="sheet-f"><div class="tot"><span>Order total</span><strong id="wo-total">${money(total)}</strong></div>
     <div class="acts">${!w.isNew&&w.status==='Completed'?'<button type="button" class="btn" data-action="report-task">PDF report</button><button type="button" class="btn" data-action="followup">Create follow-up</button>':''}<button type="button" class="btn" data-action="close-modal">Cancel</button><button type="button" class="btn primary" data-action="save-wo"${S.saving?' disabled':''}>${w.isNew?'Create task':'Save changes'}</button></div></footer></section>`;
@@ -837,6 +864,79 @@ function renderWO(focusId){
   const sb=$('.sheet-b',host); if(sb) sb.scrollTop=scroll;
   syncInert();
   if(focusId){ const el=document.getElementById(focusId); if(el) el.focus(); }
+}
+function woAlertNote(w){
+  if(isCorrective(w)&&w.priority==='High'){
+    let m;
+    if(w.status==='Further action'){
+      const t=w.furtherAt?Date.parse(w.furtherAt)+FURTHER_DAYS*864e5:Date.now()+FURTHER_DAYS*864e5;
+      m='You will be reminded on '+fmtDate(new Date(t).toISOString().slice(0,10))+' if this is still waiting for further action.';
+    } else if(isActive(w)) m='Set the status to Further action to be reminded '+FURTHER_DAYS+' days later.';
+    else m='Alerts stop once a task is completed or cancelled.';
+    return `<p class="alertnote"><span class="bang">!</span> High-priority corrective task. ${esc(m)}</p>`;
+  }
+  if(isCorrective(w)) return `<p class="hint">Corrective maintenance means something is wrong with the equipment. Set the priority to High to get the ! mark and reminders.</p>`;
+  if(w.status==='Further action') return `<p class="hint">Reminders are sent for corrective tasks with High priority.</p>`;
+  return '';
+}
+function visitHTML(v){
+  const loc=v.loc;
+  return `<div class="visit">
+   <div class="grid">
+    <label class="fld"><span>Name (garage or technician)</span><input id="wo-visit-name" data-vf="name" type="text" value="${esc(v.name)}" autocomplete="off"></label>
+    <label class="fld"><span>Contact</span><input id="wo-visit-contact" data-vf="contact" type="text" value="${esc(v.contact)}" placeholder="Phone or email" autocomplete="off"></label>
+   </div>
+   <div class="fld"><span>Location</span>
+    ${loc?`<p class="locline"><span class="mono">${esc(loc.lat)}, ${esc(loc.lng)}</span>${loc.acc?` <em>(within ${esc(loc.acc)} m)</em>`:''} · <a href="https://www.google.com/maps?q=${encodeURIComponent(loc.lat+','+loc.lng)}" target="_blank" rel="noopener">Open in maps</a></p>`:'<p class="hint">No location saved yet. Press the button while you are at the garage.</p>'}
+    <div class="addrow"><button type="button" id="wo-visit-loc" class="btn sm" data-action="visit-loc"${S.locBusy?' disabled':''}>${S.locBusy?'Finding location…':loc?'Update to my current location':'Save current location'}</button>${loc?'<button type="button" class="btn sm ghost" data-action="visit-loc-clear">Clear</button>':''}</div></div>
+   <div class="fld"><span>Photos of the location</span><div class="atts">
+    ${v.atts.map((x,i)=>`<div class="att"><button type="button" class="thumb" data-action="view-photo" data-k="visit" data-i="${i}" aria-label="View photo ${i+1}"><img src="${x.src}" alt=""></button>
+     <input id="wo-vcap-${i}" class="capin" data-vcap="${i}" type="text" value="${esc(x.caption)}" placeholder="Caption, e.g. Garage entrance" autocomplete="off" aria-label="Caption for photo ${i+1}">
+     <button type="button" class="icon" data-action="del-photo" data-k="visit" data-i="${i}" aria-label="Remove photo ${i+1}">&times;</button></div>`).join('')}</div>
+    ${v.atts.length<MAX_ATT?`<div class="ph"><label class="btn sm"><input type="file" accept="image/*" data-photo="visit" hidden>Add attachment</label></div>`:`<span class="hint">Up to ${MAX_ATT} attachments.</span>`}</div>
+  </div>`;
+}
+function getPosition(){
+  return new Promise((res,rej)=>{
+    if(BRIDGE&&typeof BRIDGE.requestLocation==='function'){ locWait={res,rej}; try{ BRIDGE.requestLocation(); }catch(e){ locWait=null; rej({message:'Location is not available here.'}); } return; }
+    if(!navigator.geolocation){ rej({message:'Location is not available here.'}); return; }
+    navigator.geolocation.getCurrentPosition(p=>res({lat:p.coords.latitude,lng:p.coords.longitude,acc:p.coords.accuracy}),
+      e=>rej({message:e&&e.code===1?'Location permission was declined. Allow it in your settings and try again.':'The location could not be read. Try again with a better signal.'}),
+      {enableHighAccuracy:true,timeout:20000,maximumAge:0});
+  });
+}
+let locWait=null;
+window.__locDone=function(ok,a,b,c){ const w=locWait; locWait=null; if(!w) return; if(ok) w.res({lat:Number(a),lng:Number(b),acc:Number(c)}); else w.rej({message:String(a||'The location could not be read.')}); };
+async function captureLocation(){
+  if(!S.wo||S.locBusy) return;
+  S.locBusy=true; renderWO('wo-visit-loc');
+  try{
+    const p=await getPosition();
+    if(S.wo){ S.wo.visit.loc={lat:Number(p.lat.toFixed(6)),lng:Number(p.lng.toFixed(6)),acc:Math.round(p.acc||0),at:new Date().toISOString()}; toast('Location saved'); }
+  }catch(e){ toast(e&&e.message?e.message:'The location could not be read.',true); }
+  S.locBusy=false; if(S.wo) renderWO('wo-visit-loc');
+}
+async function addVisitPhoto(input){
+  const w=S.wo; const file=input.files&&input.files[0]; input.value='';
+  if(!w||!file) return;
+  try{
+    const url=await shrink(file,1280,.72);
+    if(!S.wo) return;
+    if(w.visit.atts.length<MAX_ATT) w.visit.atts.push({src:url,caption:''});
+    renderWO('wo-vcap-'+(w.visit.atts.length-1));
+  }catch(e){ toast(e&&e.message?e.message:'The attachment could not be added.',true); }
+}
+/* Reminders: the phone apps schedule a notification for each corrective, High-priority task 3 days after it was set to Further action. */
+let remTimer=null;
+function syncReminders(){
+  clearTimeout(remTimer);
+  remTimer=setTimeout(()=>{
+    if(!BRIDGE||typeof BRIDGE.setReminders!=='function'||!S.ready.orders||!S.ready.assets) return;
+    const items=[];
+    S.orders.forEach(o=>{ const t=followUpAt(o); if(t===null) return;
+      items.push({key:(o.number||o.id)+'@'+o.furtherAt,at:t,title:'Follow-up needed',body:(o.number||o.id)+' · '+o.title+' ('+assetName(o.assetId)+') has been waiting for further action for '+FURTHER_DAYS+' days.'}); });
+    try{ BRIDGE.setReminders(JSON.stringify(items)); }catch(e){}
+  },600);
 }
 function updateTotals(){
   let sum=0; S.wo.lines.forEach((l,i)=>{ const v=lineTotal(l); sum+=v; const el=document.getElementById('ln-'+i+'-total'); if(el) el.textContent=money(v); });
@@ -849,23 +949,33 @@ function onWoInput(e){
     if(t.dataset.lf==='kind'){ renderWO(t.id); return; }
     updateTotals(); return;
   }
+  if(t.dataset.vf!==undefined){
+    const k=t.dataset.vf;
+    if(k==='on'){ S.wo.visit.on=!!t.checked; renderWO(t.checked?'wo-visit-name':t.id); }
+    else S.wo.visit[k]=t.value;
+    return;
+  }
+  if(t.dataset.vcap!==undefined){ const x=S.wo.visit.atts[+t.dataset.vcap]; if(x) x.caption=t.value; return; }
   const f=t.dataset.f; if(!f) return;
   const prev=S.wo[f];
   if(f==='assetId'&&t.value==='__new'){ openAsset(null,true); renderWO('wo-asset'); return; }
   S.wo[f]=t.value;
   if(f==='assetId') renderWO(t.id);
-  if(f==='status'){ if(t.value==='Completed'&&!S.wo.completedOn) S.wo.completedOn=todayISO(); renderWO(t.id); }
+  if(f==='status'){ if(t.value==='Completed'&&!S.wo.completedOn) S.wo.completedOn=todayISO(); S.wo.furtherAt=t.value==='Further action'?(prev==='Further action'&&S.wo.furtherAt?S.wo.furtherAt:new Date().toISOString()):''; renderWO(t.id); }
+  if(f==='type'||f==='priority') renderWO(t.id);
 }
 async function saveWO(){
   const w=S.wo; if(!w||S.saving) return;
   if(!w.title.trim()){ toast('Give the task a title.',true); $('#wo-title')&&$('#wo-title').focus(); return; }
-  if(!w.assetId||!S.assets.has(w.assetId)){ toast('Choose the asset this work is for.',true); $('#wo-asset')&&$('#wo-asset').focus(); return; }
+  if(!w.assetId||!S.assets.has(w.assetId)){ toast('Choose the equipment this work is for.',true); $('#wo-asset')&&$('#wo-asset').focus(); return; }
   if(w.meter!==''&&!isFinite(Number(w.meter))){ toast('The reading must be a number.',true); return; }
   const lines=w.lines.filter(l=>l.name.trim()||num(l.unitCost)).map(l=>({kind:l.kind,name:l.name.trim(),partNo:(l.partNo||'').trim(),supplier:(l.supplier||'').trim(),qty:num(l.qty===''?1:l.qty),unitCost:num(l.unitCost)}));
   const now=new Date().toISOString();
   const doc={title:w.title.trim(),assetId:w.assetId,type:w.type,priority:w.priority,status:w.status,openedOn:w.openedOn||todayISO(),dueOn:w.dueOn||'',
     completedOn:w.status==='Completed'?(w.completedOn||todayISO()):'',meter:w.meter===''?null:Number(w.meter),doneBy:w.doneBy.trim(),description:w.description.trim(),notes:w.notes.trim(),lines,
-    followUpOf:w.followUpOf||'',sample:!!w.sample,updatedAt:now};
+    followUpOf:w.followUpOf||'',sample:!!w.sample,updatedAt:now,
+    furtherAt:w.status==='Further action'?(w.furtherAt||now):'',
+    visit:w.visit&&w.visit.on?{name:w.visit.name.trim(),contact:w.visit.contact.trim(),loc:w.visit.loc||null,atts:w.visit.atts}:null};
   S.saving=true; renderWO();
   try{
     if(w.isNew){
@@ -940,17 +1050,18 @@ function renderAsset(focusId){
   if(a.details&&!a.structured) body+=`<label class="fld"><span>Older details</span><input id="as-details" data-af="details" type="text" value="${esc(a.details)}" autocomplete="off"></label>`;
   host.innerHTML=`<div class="scrim" data-action="close-modal2"></div>
   <section class="sheet narrow" role="dialog" aria-modal="true" aria-labelledby="as-h">
-   <header class="sheet-h"><div><h2 id="as-h">${a.isNew?'Add new asset':esc(a.name||joinUniq([a.brand,a.make,a.colour])||'Asset')}</h2></div><button type="button" class="icon" data-action="close-modal2" aria-label="Close">&times;</button></header>
+   <header class="sheet-h"><div><h2 id="as-h">${a.isNew?'Add new equipment':esc(a.name||joinUniq([a.brand,a.make,a.colour])||'Equipment')}</h2></div><button type="button" class="icon" data-action="close-modal2" aria-label="Close">&times;</button></header>
    <div class="sheet-b">${body}
-    ${!a.isNew?`<div class="confirmrow">${a.archived?`<button type="button" class="btn sm" data-action="archive-asset">Restore asset</button>`:`<button type="button" class="btn sm" data-action="archive-asset">Archive asset</button>`}
-      ${used?`<span class="hint">${kids?'Has accessories':'Has tasks'}, so it can be archived but not deleted.</span>`:(a.confirmDelete?`<button type="button" class="btn sm danger" data-action="delete-asset">Confirm delete</button><span class="hint">This cannot be undone.</span>`:`<button type="button" class="btn sm danger" data-action="delete-asset">Delete asset</button>`)}</div>`:''}
+    ${!a.isNew?`<div class="confirmrow">${a.archived?`<button type="button" class="btn sm" data-action="archive-asset">Restore equipment</button>`:`<button type="button" class="btn sm" data-action="archive-asset">Archive equipment</button>`}
+      ${used?`<span class="hint">${kids?'Has accessories':'Has tasks'}, so it can be archived but not deleted.</span>`:(a.confirmDelete?`<button type="button" class="btn sm danger" data-action="delete-asset">Confirm delete</button><span class="hint">This cannot be undone.</span>`:`<button type="button" class="btn sm danger" data-action="delete-asset">Delete equipment</button>`)}</div>`:''}
    </div>
-   <footer class="sheet-f"><span class="hint">${child&&!par?'':`Tasks will be numbered WO-${code}-…`}${a.meterUnit&&!child?' and ask for a reading.':''}</span><div class="acts"><button type="button" class="btn" data-action="close-modal2">Cancel</button><button type="button" class="btn primary" data-action="save-asset">${a.isNew?'Add asset':'Save changes'}</button></div></footer></section>`;
+   <footer class="sheet-f"><span class="hint">${child&&!par?'':`Tasks will be numbered WO-${code}-…`}${a.meterUnit&&!child?' and ask for a reading.':''}</span><div class="acts"><button type="button" class="btn" data-action="close-modal2">Cancel</button><button type="button" class="btn primary" data-action="save-asset">${a.isNew?'Add equipment':'Save changes'}</button></div></footer></section>`;
   keepStill(host,was);
   syncInert();
   if(focusId){ const el=document.getElementById(focusId); if(el) el.focus(); }
 }
 async function addPhoto(input){
+  if(input.dataset&&input.dataset.photo==='visit'){ addVisitPhoto(input); return; }
   const a=S.asset; const file=input.files&&input.files[0]; input.value='';
   if(!a||!file) return;
   try{
@@ -965,7 +1076,7 @@ function assetProblem(a){
   const veh=a.category==='Vehicle'&&a.role==='parent';
   const t=k=>String(a[k]||'').trim();
   const has=veh?(t('brand')||t('make')||t('colour')||t('plate')):(t('name')||t('brand')||t('model'));
-  return has?null:['Give the asset a name or a brand first.',veh?'as-brand':'as-name'];
+  return has?null:['Give the equipment a name or a brand first.',veh?'as-brand':'as-name'];
 }
 async function saveAsset(){
   const a=S.asset; if(!a) return;
@@ -974,7 +1085,7 @@ async function saveAsset(){
   const veh=a.category==='Vehicle'&&a.role==='parent'; const child=a.role==='child';
   const par=child?S.assets.get(a.parentId):null;
   const t=k=>String(a[k]||'').trim();
-  const name=veh?(joinUniq([t('brand'),t('make'),t('colour')])||t('plate')):(t('name')||joinUniq([t('brand'),t('model')])||'Asset');
+  const name=veh?(joinUniq([t('brand'),t('make'),t('colour')])||t('plate')):(t('name')||joinUniq([t('brand'),t('model')])||'Equipment');
   const doc={name,category:child?effCat(par):a.category,details:t('details'),meterUnit:child?'':a.meterUnit,notes:t('notes'),archived:!!a.archived,sample:!!a.sample,structured:true,updatedAt:new Date().toISOString(),
     brand:t('brand'),model:veh?'':t('model'),serial:veh?'':t('serial'),make:veh?t('make'):'',colour:veh?t('colour'):'',plate:veh?t('plate'):'',vin:veh?t('vin').toUpperCase():'',
     attachments:a.attachments.map(x=>({src:x.src,caption:String(x.caption||'').trim()})),parentId:child?a.parentId:''};
@@ -1086,7 +1197,7 @@ function readRestore(file){
       const assets=Array.isArray(j.assets)?j.assets.filter(a=>a&&a.id&&a.name):[];
       const orders=Array.isArray(j.workOrders)?j.workOrders.filter(o=>o&&(o.number||o.id)&&o.title):[];
       if(!assets.length&&!orders.length) throw new Error('empty');
-      S.restore={ok:true,assets,orders,msg:'Found '+assets.length+' asset'+(assets.length===1?'':'s')+' and '+orders.length+' task'+(orders.length===1?'':'s')+' in '+file.name+'. Records with the same number are replaced.'};
+      S.restore={ok:true,assets,orders,msg:'Found '+assets.length+' equipment and '+orders.length+' task'+(orders.length===1?'':'s')+' in '+file.name+'. Records with the same number are replaced.'};
     }catch(e){ S.restore={ok:false,msg:'That file is not a backup made by this app.'}; }
     renderSettings();
   };
@@ -1123,12 +1234,12 @@ async function exportData(what){
   let filename,data;
   if(what==='orders'){
     filename='work-orders-'+todayISO()+'.csv';
-    data=toCSV([['Task','Title','Asset','Category','Type','Priority','Status','Opened','Due','Completed','Reading','Unit','Done by','Parts','Labour','Other','Total','Work performed','Notes']].concat(orders.map(o=>{
+    data=toCSV([['Task','Title','Equipment','Category','Type','Priority','Status','Opened','Due','Completed','Reading','Unit','Done by','Parts','Labour','Other','Total','Work performed','Notes','Garage / technician','Contact','Location']].concat(orders.map(o=>{
       const a=S.assets.get(o.assetId)||{}; const t=orderTotals(o);
-      return [o.number,o.title,a.name,a.category,o.type,o.priority,o.status,o.openedOn,o.dueOn,o.completedOn,o.meter,a.meterUnit,o.doneBy,t.part.toFixed(2),t.labour.toFixed(2),t.other.toFixed(2),t.all.toFixed(2),o.description,o.notes];
+      return [o.number,o.title,a.name,a.category,o.type,o.priority,o.status,o.openedOn,o.dueOn,o.completedOn,o.meter,a.meterUnit,o.doneBy,t.part.toFixed(2),t.labour.toFixed(2),t.other.toFixed(2),t.all.toFixed(2),o.description,o.notes,o.visit?o.visit.name:'',o.visit?o.visit.contact:'',o.visit&&o.visit.loc?o.visit.loc.lat+', '+o.visit.loc.lng:''];
     })));
   } else if(what==='lines'){
-    filename='cost-lines-'+todayISO()+'.csv'; const rows=[['Task','Date','Asset','Type','Description','Part no.','Supplier','Qty','Unit cost','Line total']];
+    filename='cost-lines-'+todayISO()+'.csv'; const rows=[['Task','Date','Equipment','Type','Description','Part no.','Supplier','Qty','Unit cost','Line total']];
     orders.forEach(o=>(o.lines||[]).forEach(l=>rows.push([o.number,orderDate(o),assetName(o.assetId),l.kind,l.name,l.partNo,l.supplier,l.qty,num(l.unitCost).toFixed(2),lineTotal(l).toFixed(2)])));
     data=toCSV(rows);
   } else {
@@ -1169,11 +1280,11 @@ function buildReportPDF(deps,opt){
   const W=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight(), M=14;
   const ACC=[31,95,191], INK=[20,32,46], MUT=[102,114,127];
   const periodLabel={year:'This year ('+new Date().getFullYear()+')','12m':'Last 12 months',all:'All time'}[opt.period]||'All time';
-  const assetLabel=opt.asset?assetName(opt.asset):'All assets';
+  const assetLabel=opt.asset?assetName(opt.asset):'All equipment';
   doc.setFont('helvetica','bold'); doc.setFontSize(20); doc.setTextColor(INK[0],INK[1],INK[2]); doc.text('Maintenance report',M,20);
   doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(MUT[0],MUT[1],MUT[2]);
   doc.text('I Got This',M,26);
-  doc.text(pdfText('Period: '+periodLabel+'    Asset: '+assetLabel+'    Generated: '+pdfDate(todayISO())),M,31);
+  doc.text(pdfText('Period: '+periodLabel+'    Equipment: '+assetLabel+'    Generated: '+pdfDate(todayISO())),M,31);
   doc.setDrawColor(ACC[0],ACC[1],ACC[2]); doc.setLineWidth(0.6); doc.line(M,34,W-M,34);
 
   const tot={part:0,labour:0,other:0,all:0}; let done=0, open=0; const byAsset=new Map();
@@ -1206,16 +1317,16 @@ function buildReportPDF(deps,opt){
   const right=[1,2,3,4,5].reduce((m,i)=>{ m[i]={halign:'right'}; return m; },{});
 
   if(!opt.asset&&byAsset.size){
-    section('Spend by asset');
+    section('Spend by equipment');
     const rows=[...byAsset.entries()].sort((a,b)=>b[1].all-a[1].all);
-    table({head:[['Asset','Orders','Parts','Labour','Other','Total']],
+    table({head:[['Equipment','Tasks','Parts','Labour','Other','Total']],
       body:rows.map(r=>[pdfText(assetName(r[0])),String(r[1].n),pdfMoney(r[1].part),pdfMoney(r[1].labour),pdfMoney(r[1].other),pdfMoney(r[1].all)]),
-      foot:[['All assets',String(list.length),pdfMoney(tot.part),pdfMoney(tot.labour),pdfMoney(tot.other),pdfMoney(tot.all)]],
+      foot:[['All equipment',String(list.length),pdfMoney(tot.part),pdfMoney(tot.labour),pdfMoney(tot.other),pdfMoney(tot.all)]],
       showFoot:'lastPage',columnStyles:right});
   }
 
   section('Tasks');
-  table({head:[['No.','Date','Asset','Title','Status','Cost']],
+  table({head:[['No.','Date','Equipment','Title','Status','Cost']],
     body:list.map(o=>[o.number||o.id,pdfDate(orderDate(o)),pdfText(assetName(o.assetId)),pdfText(o.title),o.status,pdfMoney(orderTotals(o).all)]),
     columnStyles:{0:{cellWidth:28},1:{cellWidth:23},2:{cellWidth:34},4:{cellWidth:22},5:{cellWidth:28,halign:'right'}}});
 
@@ -1252,7 +1363,7 @@ function renderReport(){
    <header class="sheet-h"><div><p class="eyebrow">PDF report</p><h2 id="rp-h">Maintenance report</h2></div><button type="button" class="icon" data-action="close-modal" aria-label="Close">&times;</button></header>
    <div class="sheet-b">
     <label class="fld"><span>Period</span><select id="rp-period">${opt([['year','This year'],['12m','Last 12 months'],['all','All time']],r.period)}</select></label>
-    <label class="fld"><span>Asset</span><select id="rp-asset">${opt([['','All assets']].concat(assets.map(a=>[a.id,a.name])),r.asset)}</select></label>
+    <label class="fld"><span>Equipment</span><select id="rp-asset">${opt([['','All equipment']].concat(assets.map(a=>[a.id,a.name])),r.asset)}</select></label>
     <label class="chk"><input id="rp-parts" type="checkbox"${r.parts?' checked':''}><span>Include the list of parts used</span></label>
     <p class="hint" id="rp-count"></p>
     <p class="hint">Cancelled tasks are left out. Text outside the Latin alphabet shows as "?" in the PDF.</p>
@@ -1313,12 +1424,14 @@ document.addEventListener('click',e=>{
     case 'close-modal2': S.asset=null; renderAsset(); break;
     case 'save-wo': saveWO(); break;
     case 'followup': { const w=S.wo; if(w) openWO(null,{assetId:w.assetId,title:w.title,type:w.type,followUpOf:w.number}); break; }
+    case 'visit-loc': captureLocation(); break;
+    case 'visit-loc-clear': if(S.wo){ S.wo.visit.loc=null; renderWO('wo-visit-loc'); } break;
     case 'add-line': if(S.wo){ S.wo.lines.push({kind:el.dataset.kind,name:'',partNo:'',supplier:'',qty:'1',unitCost:''}); renderWO('ln-'+(S.wo.lines.length-1)+'-name'); } break;
     case 'del-line': if(S.wo){ S.wo.lines.splice(+el.dataset.i,1); renderWO(); } break;
     case 'new-asset': if(canWrite()) openAsset(null,false); break;
     case 'edit-asset': openAsset(id,false); break;
-    case 'view-photo': { const src=id?S.assets.get(id):S.asset; if(src){ const l=id?attsOf(src):src.attachments; const x=l[+el.dataset.i||0]; if(x) showPhoto(x.src,x.caption); } break; }
-    case 'del-photo': if(S.asset){ S.asset.attachments.splice(+el.dataset.i||0,1); renderAsset(); } break;
+    case 'view-photo': { if(el.dataset.k==='visit'){ const x=S.wo&&S.wo.visit.atts[+el.dataset.i||0]; if(x) showPhoto(x.src,x.caption); break; } const src=id?S.assets.get(id):S.asset; if(src){ const l=id?attsOf(src):src.attachments; const x=l[+el.dataset.i||0]; if(x) showPhoto(x.src,x.caption); } break; }
+    case 'del-photo': if(el.dataset.k==='visit'){ if(S.wo){ S.wo.visit.atts.splice(+el.dataset.i||0,1); renderWO(); } } else if(S.asset){ S.asset.attachments.splice(+el.dataset.i||0,1); renderAsset(); } break;
     case 'asset-history': S.f={status:'all',asset:id,year:'',q:''}; setView('orders'); break;
     case 'asset-wo': if(canWrite()) openWO(null,{assetId:id}); break;
     case 'save-asset': saveAsset(); break;

@@ -4,11 +4,16 @@ name: iOS build
 # (download it from the run's Artifacts) that Sideloadly or AltStore can sign with your own Apple ID.
 on:
   workflow_dispatch:
+  release:
+    types: [published]
   push:
     paths:
       - "ios/**"
       - "home-work-orders.html"
       - ".github/workflows/ios.yml"
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -51,3 +56,12 @@ jobs:
         with:
           name: IGotThis-unsigned-ipa
           path: ios/build/IGotThis-unsigned.ipa
+
+      # When a GitHub release is published, attach the unsigned .ipa to it next to the APK.
+      - name: Attach to the release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp ios/build/IGotThis-unsigned.ipa "ios/build/IGotThis-${{ github.event.release.tag_name }}-unsigned.ipa"
+          gh release upload "${{ github.event.release.tag_name }}" "ios/build/IGotThis-${{ github.event.release.tag_name }}-unsigned.ipa" --clobber

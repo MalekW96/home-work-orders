@@ -1,11 +1,21 @@
 import UIKit
 import WebKit
+import CoreLocation
+import UserNotifications
 
 /// Hosts the I Got This page in a WKWebView. The page talks to the app through `window.IOSBridge`
 /// (defined by the script below), only to hand files to the share sheet and to keep a native copy of the records.
-final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
+final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler,
+    UNUserNotificationCenterDelegate, CLLocationManagerDelegate {
 
     private var webView: WKWebView!
+    private var wantsLocation = false
+    private lazy var locator: CLLocationManager = {
+        let m = CLLocationManager()
+        m.delegate = self
+        m.desiredAccuracy = kCLLocationAccuracyBest
+        return m
+    }()
 
     private static let background = UIColor { trait in
         trait.userInterfaceStyle == .dark
@@ -25,6 +35,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = Self.background
+        UNUserNotificationCenter.current().delegate = self
 
         let config = WKWebViewConfiguration()
         config.setURLSchemeHandler(AssetSchemeHandler(), forURLScheme: AssetSchemeHandler.scheme)
@@ -91,7 +102,11 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
           document.addEventListener('visibilitychange',function(){
             if(document.hidden){ try{ var v=window.localStorage.getItem(KEY); if(v!==null) post({t:'persist',v:v}); }catch(e){} }
           });
-          window.IOSBridge={ saveFile:function(name,b64){ post({t:'save',name:String(name),data:String(b64)}); return 'ok'; } };
+          window.IOSBridge={
+            saveFile:function(name,b64){ post({t:'save',name:String(name),data:String(b64)}); return 'ok'; },
+            setReminders:function(json){ post({t:'reminders',v:String(json)}); return 'ok'; },
+            requestLocation:function(){ post({t:'location'}); }
+          };
         })();
         """
     }
@@ -107,9 +122,92 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
             if let name = body["name"] as? String, let b64 = body["data"] as? String {
                 share(name: name, base64: b64)
             }
+        case "reminders":
+            if let json = body["v"] as? String { scheduleReminders(json) }
+        case "location":
+            startLocation()
         default:
             break
         }
+    }
+
+    // MARK: Follow-up reminders
+
+    /// The page sends the full list each time its tasks change. Each item is {key, at (epoch ms), title, body}.
+    private func scheduleReminders(_ json: String) {
+        guard let data = json.data(using: .utf8),
+              let items = (try? JSONSerialization.jsonObject(with: data)) as? [[String: Any]] else { return }
+        let center = UNUserNotificationCenter.current()
+        center.getPendingNotificationRequests { pending in
+            // Replace everything this app scheduled before.
+            let ours = pending.map { $0.identifier }.filter { $0.hasPrefix("hwo-") }
+            center.removePendingNotificationRequests(withIdentifiers: ours)
+            if items.isEmpty { return }
+            center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
+                guard granted else { return }
+                let now = Date().timeIntervalSince1970 * 1000
+                for item in items {
+                    guard let key = item["key"] as? String,
+                          let at = (item["at"] as? NSNumber)?.doubleValue,
+                          at > now else { continue }
+                    let content = UNMutableNotificationContent()
+                    content.title = "! " + (item["title"] as? String ?? "Follow-up needed")
+                    content.body = item["body"] as? String ?? ""
+                    content.sound = .default
+                    let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(1, (at - now) / 1000), repeats: false)
+                    center.add(UNNotificationRequest(identifier: "hwo-" + key, content: content, trigger: trigger))
+                }
+            }
+        }
+    }
+
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,
+                                withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler([.banner, .list, .sound])
+    }
+
+    // MARK: Location (for "Save current location" on a task)
+
+    private func startLocation() {
+        wantsLocation = true
+        switch locator.authorizationStatus {
+        case .denied, .restricted:
+            finishLocation(error: "Location is turned off for this app. Turn it on in Settings, then try again.")
+        case .notDetermined:
+            locator.requestWhenInUseAuthorization()
+        default:
+            locator.requestLocation()
+        }
+    }
+
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        guard wantsLocation else { return }
+        switch manager.authorizationStatus {
+        case .authorizedWhenInUse, .authorizedAlways:
+            manager.requestLocation()
+        case .denied, .restricted:
+            finishLocation(error: "Location is turned off for this app. Turn it on in Settings, then try again.")
+        default:
+            break
+        }
+    }
+
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard wantsLocation, let l = locations.last else { return }
+        wantsLocation = false
+        let js = "window.__locDone && window.__locDone(true,\(l.coordinate.latitude),\(l.coordinate.longitude),\(max(0, l.horizontalAccuracy)))"
+        webView.evaluateJavaScript(js, completionHandler: nil)
+    }
+
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        guard wantsLocation else { return }
+        finishLocation(error: "The location could not be read. Try again with a better signal.")
+    }
+
+    private func finishLocation(error message: String) {
+        wantsLocation = false
+        let quoted = (try? JSONEncoder().encode(message)).flatMap { String(data: $0, encoding: .utf8) } ?? "\"\""
+        webView.evaluateJavaScript("window.__locDone && window.__locDone(false,\(quoted))", completionHandler: nil)
     }
 
     private func share(name: String, base64: String) {

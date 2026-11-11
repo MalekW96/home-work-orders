@@ -64,7 +64,7 @@ What differs from Android:
 - There is no in-app updater; Apple does not allow it. A new version is a new build you install over the old one.
 - A second copy of the records is kept in the app's own storage and put back if iOS ever clears the web view's storage.
 
-Building needs a Mac with Xcode, or the GitHub Actions workflow `iOS build` (Actions tab > iOS build > Run workflow), which compiles the app on a Mac runner and produces an unsigned `IGotThis-unsigned.ipa`. Sideloadly or AltStore (both run on Windows) can sign that with your own Apple ID and install it on an iPhone; a free Apple ID's signature lasts 7 days, a paid Apple Developer account's a year, and TestFlight or the App Store needs the paid account.
+The unsigned `.ipa` is also attached to each GitHub release automatically (the `iOS build` workflow runs when a release is published). Building needs a Mac with Xcode, or the GitHub Actions workflow `iOS build` (Actions tab > iOS build > Run workflow), which compiles the app on a Mac runner and produces an unsigned `IGotThis-unsigned.ipa`. Sideloadly or AltStore (both run on Windows) can sign that with your own Apple ID and install it on an iPhone; a free Apple ID's signature lasts 7 days, a paid Apple Developer account's a year, and TestFlight or the App Store needs the paid account.
 
 On a Mac: `brew install xcodegen`, then `cd ios && xcodegen generate && open IGotThis.xcodeproj`, pick your team under Signing & Capabilities and run.
 
@@ -72,7 +72,7 @@ On a Mac: `brew install xcodegen`, then `cd ios && xcodegen generate && open IGo
 
 ## Versions and updates
 
-The version lives in two places that must match: `APP_VERSION` in `home-work-orders.html` and `versionName` in `android/app/build.gradle.kts`. Raise `versionCode` by one for every new APK, otherwise Android refuses to install it over the old one.
+The version lives in three places that must match: `APP_VERSION` in `home-work-orders.html`, `versionName` in `android/app/build.gradle.kts`, and `ios/project.yml` (`MARKETING_VERSION` is the first three parts, `CURRENT_PROJECT_VERSION` the fourth). Raise `versionCode` by one for every new APK, otherwise Android refuses to install it over the old one.
 
 To release a new version:
 

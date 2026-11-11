@@ -1,6 +1,13 @@
 # Changelog
 
-## Unreleased
+## 2.3.1.2
+
+- "Asset" is now "Equipment" everywhere you see it: tabs, buttons, forms, the PDF report and the CSV export.
+- Tasks get a new status, Further action, and the type Repair is now Corrective maintenance (older Repair tasks show as Corrective).
+- At the bottom of every task: a tick box for "The equipment went to a garage, or a technician came over". Ticking it opens Name, Contact, Save current location and photo attachments for the location. The CSV export includes these.
+- Corrective tasks with High priority get a red ! mark in the lists and on the task. If one is set to Further action and is still waiting 3 days later, the phone apps send a notification (Android and iPhone; the dashboard shows a Follow-up needed list in every version).
+- Android: asks for notification and location permission only when you first use those features. Reminders survive a restart.
+- iPhone and iPad app project (`ios/`) and the installable web app (`docs/`), see below.
 
 - Installable web app (`docs/`, served by GitHub Pages): open the link in Safari, then Share > Add to Home Screen. It has its own icon, runs full screen and works offline. Records stay on the device, in IndexedDB.
 - iOS app project added (`ios/`): the same page in a WKWebView, with the camera and photo library for attachments, the share sheet for saving PDF and CSV files, a swipe in from the left edge as Back, and a second copy of your records kept in the app's own storage. See the README for how to build it.
