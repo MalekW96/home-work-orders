@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.0.0.0
+
+Redesign. Same records, same numbering, a cleaner look.
+
+- Slim header: logo, title and the settings gear. New work order is now a round + button at the bottom right on phones (the header buttons stay on wide screens).
+- PDF report moved into Settings on phones.
+- Dashboard: Spent is a large card; Open, Overdue and Assets sit in a small row. Overdue only turns red when something is late.
+- Work orders: one search bar with a Filters button, and quick chips for Active, Open, In progress, Done and All. Asset and year filters are under Filters.
+- Rows are soft cards with an icon for the asset type, a status dot and the amount.
+- Rounder cards and buttons, press feedback, and a small illustration on empty screens.
+
 ## 1.0.0.5
 
 - Fix: the top of the app was drawn under the camera and status bar. The page now sits inside a wrapper that carries the padding, because the web view ignores its own padding.
