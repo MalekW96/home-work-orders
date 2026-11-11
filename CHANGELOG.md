@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.0.1
+
+- Nothing is required any more when adding an asset, except a name or brand to call it by (and the parent, for an accessory).
+- Photos are now Attachments: add as many as you like (up to 8), each with its own caption such as "Number plate" or "Car card". Existing photos move over with captions.
+- Vehicles: make and model share one field, and the notes and meter fields are gone.
+
 ## 2.1.0.1
 
 - Adding a vehicle now needs brand, make, model, colour, number plate, VIN, a photo of the plate and a photo of the car card. A photo of the car is optional.

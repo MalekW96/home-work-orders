@@ -216,7 +216,11 @@ textarea{min-height:76px;resize:vertical}
 .apic-b{padding:0;border:0;background:none;flex:none}
 .apic{width:56px;height:56px;border-radius:12px;object-fit:cover;display:block;border:1px solid var(--line2)}
 #lb{position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;padding:12px}
-#lb img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px}
+#lb figure{margin:0;max-width:100%;max-height:100%;display:flex;flex-direction:column;align-items:center;gap:10px}
+#lb img{max-width:100%;max-height:calc(100vh - 90px);object-fit:contain;border-radius:8px}
+#lb figcaption{color:#fff;font-size:15px;text-align:center}
+.atts{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
+.att{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center}
 
 /* table */
 .tablewrap{overflow-x:auto;border:0;border-radius:var(--r);background:var(--panel);box-shadow:var(--shadow)}
@@ -329,11 +333,11 @@ const CATEGORIES=['Vehicle','Air conditioner','TV / Radio','Gaming console','Ele
 /* first letter of a work order number, from the nature of the installed parent machine */
 const WO_CODES={'Vehicle':'V','Air conditioner':'C','TV / Radio':'E','Gaming console':'E','Electrical':'E'};
 const WO_CODE_DEFAULT='G';
-const MAX_PHOTOS=4;
+const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
-const APP_VERSION='2.1.0.1';
+const APP_VERSION='2.2.0.1';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const IS_APP=!!window.AndroidBridge;
 const CURRENCIES=['SAR','AED','KWD','QAR','BHD','OMR','EGP','JOD','USD','EUR','GBP','INR','PKR','TRY'];
@@ -383,7 +387,12 @@ function assetCat(id){ return effCat(S.assets.get(id)); }
 function woCode(id){ return WO_CODES[assetCat(id)]||WO_CODE_DEFAULT; }
 const joinUniq=parts=>{ const seen=new Set(); return parts.map(x=>String(x||'').trim()).filter(x=>{ const k=x.toLowerCase(); if(!x||seen.has(k)) return false; seen.add(k); return true; }).join(' '); };
 const kidsOf=id=>[...S.assets.values()].filter(x=>x.parentId===id&&!x.archived);
-function photoOf(a){ return a.carPhoto||(a.photos&&a.photos[0])||a.platePhoto||''; }
+function attsOf(a){
+  if(Array.isArray(a.attachments)) return a.attachments.filter(x=>x&&x.src).map(x=>({src:x.src,caption:x.caption||''}));
+  const o=[]; if(a.platePhoto) o.push({src:a.platePhoto,caption:'Number plate'}); if(a.cardPhoto) o.push({src:a.cardPhoto,caption:'Car card'}); if(a.carPhoto) o.push({src:a.carPhoto,caption:'Car'});
+  (a.photos||[]).forEach(x=>{ if(x) o.push({src:x,caption:''}); }); return o;
+}
+function photoOf(a){ const l=attsOf(a); return l.length?l[0].src:''; }
 async function shrink(file,max,q){
   const url=URL.createObjectURL(file);
   try{
@@ -393,9 +402,9 @@ async function shrink(file,max,q){
     return c.toDataURL('image/jpeg',q);
   } finally { URL.revokeObjectURL(url); }
 }
-function showPhoto(src){
+function showPhoto(src,cap){
   if(!src) return; closePhoto();
-  const d=document.createElement('div'); d.id='lb'; d.setAttribute('role','dialog'); d.setAttribute('aria-label','Photo'); d.innerHTML='<img alt="">'; d.firstChild.src=src;
+  const d=document.createElement('div'); d.id='lb'; d.setAttribute('role','dialog'); d.setAttribute('aria-label','Attachment'); d.innerHTML='<figure><img alt=""><figcaption></figcaption></figure>'; d.querySelector('img').src=src; const fc=d.querySelector('figcaption'); fc.textContent=cap||''; fc.hidden=!cap;
   d.addEventListener('click',closePhoto); document.body.appendChild(d);
 }
 function closePhoto(){ const d=document.getElementById('lb'); if(d){ d.remove(); return true; } return false; }
@@ -680,7 +689,7 @@ function assetsView(){
     const s=stats.get(a.id)||{n:0,open:0,spent:0,last:'',meter:null};
     const kids=kidsOf(a.id); const par=a.parentId?S.assets.get(a.parentId):null; const pic=photoOf(a);
     const ident=[a.plate?['Number plate',a.plate]:null,a.vin?['VIN',a.vin]:null,(a.brand||a.model)&&a.category!=='Vehicle'?['Brand / model',joinUniq([a.brand,a.model])]:null,a.serial?['Serial',a.serial]:null].filter(Boolean);
-    return `<article class="panel acard${a.archived?' arch':''}"><div class="ahead">${pic?`<button type="button" class="apic-b" data-action="view-photo" data-id="${esc(a.id)}" data-k="${a.carPhoto?'carPhoto':(a.photos&&a.photos[0]?'photos':'platePhoto')}" data-i="0" aria-label="View photo"><img class="apic" src="${pic}" alt=""></button>`:icoFor(effCat(a))}<div><p class="tagline">${esc(effCat(a)||'Other')}${par?' · Accessory':''}${a.archived?' · Archived':''}</p><h3>${esc(a.name)}</h3>${par?`<p class="muted">Accessory of ${esc(par.name)}</p>`:''}${a.details?`<p class="muted">${esc(a.details)}</p>`:''}</div></div>
+    return `<article class="panel acard${a.archived?' arch':''}"><div class="ahead">${pic?`<button type="button" class="apic-b" data-action="view-photo" data-id="${esc(a.id)}" data-k="att" data-i="0" aria-label="View attachment"><img class="apic" src="${pic}" alt=""></button>`:icoFor(effCat(a))}<div><p class="tagline">${esc(effCat(a)||'Other')}${par?' · Accessory':''}${a.archived?' · Archived':''}</p><h3>${esc(a.name)}</h3>${par?`<p class="muted">Accessory of ${esc(par.name)}</p>`:''}${a.details?`<p class="muted">${esc(a.details)}</p>`:''}</div></div>
       <dl class="facts">${ident.map(r=>`<dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd>`).join('')}${kids.length?`<dt>Accessories</dt><dd>${esc(kids.map(k=>k.name).join(', '))}</dd>`:''}<dt>Work orders</dt><dd>${s.n}${s.open?` (${s.open} open)`:''}</dd><dt>Total spent</dt><dd>${money(s.spent)}</dd><dt>Last service</dt><dd>${s.last?fmtDate(s.last):'—'}</dd>${a.meterUnit?`<dt>Last reading</dt><dd>${fmtMeter(s.meter,a.meterUnit)}</dd>`:''}</dl>
       <div class="acts"><button type="button" class="btn sm" data-action="asset-history" data-id="${esc(a.id)}">History</button><button type="button" class="btn sm" data-action="asset-wo" data-id="${esc(a.id)}"${canWrite()&&!a.archived?'':' disabled'}>New work order</button><button type="button" class="btn sm ghost" data-action="edit-asset" data-id="${esc(a.id)}">Edit</button></div></article>`;
   }).join('')}</div>`;
@@ -817,18 +826,19 @@ async function saveWO(){
 const ASSET_TEXT=['name','brand','make','model','colour','plate','vin','serial','details','notes'];
 function openAsset(id,fromWO){
   const a=id?S.assets.get(id):null;
-  const base={isNew:!a,id:a?a.id:'',category:a&&a.category||'Vehicle',role:a&&a.parentId?'child':'parent',parentId:a&&a.parentId||'',meterUnit:a?(a.meterUnit||''):'km',
-    platePhoto:a&&a.platePhoto||'',cardPhoto:a&&a.cardPhoto||'',carPhoto:a&&a.carPhoto||'',photos:(a&&a.photos||[]).slice(),
-    archived:!!(a&&a.archived),sample:!!(a&&a.sample),structured:!!(a&&a.structured),confirmDelete:false};
+  const base={isNew:!a,id:a?a.id:'',category:a&&a.category||'Vehicle',role:a&&a.parentId?'child':'parent',parentId:a&&a.parentId||'',meterUnit:a?(a.meterUnit||''):'',
+    attachments:a?attsOf(a):[],archived:!!(a&&a.archived),sample:!!(a&&a.sample),structured:!!(a&&a.structured),confirmDelete:false};
   ASSET_TEXT.forEach(k=>{ base[k]=a&&a[k]?String(a[k]):''; });
+  if(a&&a.category==='Vehicle'&&!a.parentId&&a.model){ base.make=joinUniq([a.make,a.model]); base.model=''; }
   S.asset=base; S.asset.fromWO=!!fromWO; renderAsset(a?null:'as-cat');
 }
-function photoField(key,label,req){
-  const a=S.asset; const src=a[key];
-  return `<div class="fld"><span>${label}${req?'<em class="req">required</em>':'<em class="opt">optional</em>'}</span><div class="ph">
-   ${src?`<button type="button" class="thumb" data-action="view-photo" data-k="${key}" aria-label="View ${esc(label)}"><img src="${src}" alt=""></button>`:''}
-   <label class="btn sm"><input type="file" accept="image/*" data-photo="${key}" hidden>${src?'Retake or replace':'Take or add photo'}</label>
-   ${src?`<button type="button" class="btn sm ghost" data-action="del-photo" data-k="${key}">Remove</button>`:''}</div></div>`;
+function attachField(){
+  const a=S.asset;
+  return `<div class="fld"><span>Attachments</span><div class="atts">
+   ${a.attachments.map((x,i)=>`<div class="att"><button type="button" class="thumb" data-action="view-photo" data-k="att" data-i="${i}" aria-label="View attachment ${i+1}"><img src="${x.src}" alt=""></button>
+     <input id="as-cap-${i}" class="capin" data-cap="${i}" type="text" value="${esc(x.caption)}" placeholder="Caption, e.g. Number plate" autocomplete="off" aria-label="Caption for attachment ${i+1}">
+     <button type="button" class="icon" data-action="del-photo" data-k="att" data-i="${i}" aria-label="Remove attachment ${i+1}">&times;</button></div>`).join('')}</div>
+   ${a.attachments.length<MAX_ATT?`<div class="ph"><label class="btn sm"><input type="file" accept="image/*" data-photo="att" hidden>Add attachment</label></div>`:`<span class="hint">Up to ${MAX_ATT} attachments.</span>`}</div>`;
 }
 function renderAsset(focusId){
   const host=$('#modal2'); const a=S.asset;
@@ -842,38 +852,35 @@ function renderAsset(focusId){
   const parents=[...S.assets.values()].filter(x=>!x.parentId&&x.id!==a.id&&(!x.archived||x.id===a.parentId)).sort(byName);
   const par=child&&a.parentId?S.assets.get(a.parentId):null;
   const code=WO_CODES[child?(par?effCat(par):''):a.category]||WO_CODE_DEFAULT;
-  const f=(k,label,ph,extra)=>`<label class="fld"><span>${label}${extra===false?'':'<em class="req">required</em>'}</span><input id="as-${k}" data-af="${k}" type="text" value="${esc(a[k])}" placeholder="${esc(ph||'')}" autocomplete="off"${k==='vin'||k==='plate'?' autocapitalize="characters"':''}></label>`;
+  const f=(k,label,ph)=>`<label class="fld"><span>${label}</span><input id="as-${k}" data-af="${k}" type="text" value="${esc(a[k])}" placeholder="${esc(ph||'')}" autocomplete="off"${k==='vin'||k==='plate'?' autocapitalize="characters"':''}></label>`;
   let body='';
   if(!veh){
     body+=`<label class="fld"><span>This is</span><select id="as-role" data-af="role">${opt([['parent','The main machine or instrument (parent)'],['child','An accessory of a machine (child)']],a.role)}</select></label>`;
   }
   if(child){
-    body+=`<label class="fld"><span>Belongs to<em class="req">required</em></span><select id="as-parent" data-af="parentId">${opt([['','Choose the parent machine…']].concat(parents.map(x=>[x.id,x.name])),a.parentId)}</select></label>`;
+    body+=`<label class="fld"><span>Belongs to</span><select id="as-parent" data-af="parentId">${opt([['','Choose the parent machine…']].concat(parents.map(x=>[x.id,x.name])),a.parentId)}</select></label>`;
     if(!parents.length) body+=`<p class="hint">There is no parent machine yet. Add the main machine first, then add its accessories.</p>`;
   } else {
     body+=`<label class="fld"><span>Category</span><select id="as-cat" data-af="category">${opt(CATEGORIES.map(c=>[c,c]),a.category)}</select></label>`;
   }
   if(veh){
-    body+=`<div class="grid">${f('brand','Brand','Toyota')}${f('make','Make','Toyota')}${f('model','Model','Land Cruiser')}${f('colour','Colour','White')}</div>
-     <p class="hint">Name: <b>${esc(joinUniq([a.brand,a.make,a.model,a.colour])||'built from the four fields above')}</b></p>
-     <div class="grid">${f('plate','Number plate','ABC 1234')}${f('vin','VIN number','17 characters')}</div>
-     ${photoField('platePhoto','Photo of the number plate',true)}
-     ${photoField('cardPhoto','Photo of the car card',true)}
-     ${photoField('carPhoto','Photo of the car',false)}`;
+    body+=`<div class="grid">${f('brand','Brand','Toyota')}${f('make','Make and model','Land Cruiser GXR')}${f('colour','Colour','White')}</div>
+     <p class="hint">Name: <b>${esc(joinUniq([a.brand,a.make,a.colour])||'built from the fields above')}</b></p>
+     <div class="grid">${f('plate','Number plate','ABC 1234')}${f('vin','VIN number','17 characters')}</div>`;
   } else {
-    body+=`<label class="fld"><span>Name<em class="opt">optional</em></span><input id="as-name" data-af="name" type="text" value="${esc(a.name)}" placeholder="${child?'UPS, Soundbar':'Living room AC, Bedroom TV'}" autocomplete="off"></label>
+    body+=`<label class="fld"><span>Name</span><input id="as-name" data-af="name" type="text" value="${esc(a.name)}" placeholder="${child?'UPS, Soundbar':'Living room AC, Bedroom TV'}" autocomplete="off"></label>
      <div class="grid">${f('brand','Brand','Samsung')}${f('model','Model number','AR24TYHYC')}</div>
-     ${f('serial','Serial number','')}
-     <div class="fld"><span>Pictures<em class="opt">optional</em></span><div class="ph">
-       ${a.photos.map((src,i)=>`<span class="thumbx"><button type="button" class="thumb" data-action="view-photo" data-k="photos" data-i="${i}" aria-label="View picture ${i+1}"><img src="${src}" alt=""></button><button type="button" class="x" data-action="del-photo" data-k="photos" data-i="${i}" aria-label="Remove picture ${i+1}">&times;</button></span>`).join('')}
-       ${a.photos.length<MAX_PHOTOS?`<label class="btn sm"><input type="file" accept="image/*" data-photo="photos" hidden>Take or add picture</label>`:`<span class="hint">Up to ${MAX_PHOTOS} pictures.</span>`}</div></div>`;
+     ${f('serial','Serial number','')}`;
   }
-  body+=`<label class="fld"><span>Notes<em class="opt">optional</em></span><textarea id="as-notes" data-af="notes" placeholder="Purchase date, warranty, anything worth remembering">${esc(a.notes)}</textarea></label>`;
-  if(!child) body+=`<label class="fld"><span>Meter<em class="opt">optional</em></span><select id="as-meter" data-af="meterUnit">${opt(METERS,a.meterUnit)}</select></label>`;
+  body+=attachField();
+  if(!veh){
+    body+=`<label class="fld"><span>Notes</span><textarea id="as-notes" data-af="notes" placeholder="Purchase date, warranty, anything worth remembering">${esc(a.notes)}</textarea></label>`;
+    if(!child) body+=`<label class="fld"><span>Meter</span><select id="as-meter" data-af="meterUnit">${opt(METERS,a.meterUnit)}</select></label>`;
+  }
   if(a.details&&!a.structured) body+=`<label class="fld"><span>Older details</span><input id="as-details" data-af="details" type="text" value="${esc(a.details)}" autocomplete="off"></label>`;
   host.innerHTML=`<div class="scrim" data-action="close-modal2"></div>
   <section class="sheet narrow" role="dialog" aria-modal="true" aria-labelledby="as-h">
-   <header class="sheet-h"><div><h2 id="as-h">${a.isNew?'Add new asset':esc(a.name||joinUniq([a.brand,a.make,a.model,a.colour])||'Asset')}</h2></div><button type="button" class="icon" data-action="close-modal2" aria-label="Close">&times;</button></header>
+   <header class="sheet-h"><div><h2 id="as-h">${a.isNew?'Add new asset':esc(a.name||joinUniq([a.brand,a.make,a.colour])||'Asset')}</h2></div><button type="button" class="icon" data-action="close-modal2" aria-label="Close">&times;</button></header>
    <div class="sheet-b">${body}
     ${!a.isNew?`<div class="confirmrow">${a.archived?`<button type="button" class="btn sm" data-action="archive-asset">Restore asset</button>`:`<button type="button" class="btn sm" data-action="archive-asset">Archive asset</button>`}
       ${used?`<span class="hint">${kids?'Has accessories':'Has work orders'}, so it can be archived but not deleted.</span>`:(a.confirmDelete?`<button type="button" class="btn sm danger" data-action="delete-asset">Confirm delete</button><span class="hint">This cannot be undone.</span>`:`<button type="button" class="btn sm danger" data-action="delete-asset">Delete asset</button>`)}</div>`:''}
@@ -884,31 +891,21 @@ function renderAsset(focusId){
   if(focusId){ const el=document.getElementById(focusId); if(el) el.focus(); }
 }
 async function addPhoto(input){
-  const a=S.asset; const key=input.dataset.photo; const file=input.files&&input.files[0]; input.value='';
+  const a=S.asset; const file=input.files&&input.files[0]; input.value='';
   if(!a||!file) return;
   try{
-    const url=await shrink(file,key==='platePhoto'?1000:1280,.72);
+    const url=await shrink(file,1280,.72);
     if(!S.asset) return;
-    if(key==='photos'){ if(a.photos.length<MAX_PHOTOS) a.photos.push(url); } else a[key]=url;
-    renderAsset();
-  }catch(e){ toast(e&&e.message?e.message:'The picture could not be added.',true); }
+    if(a.attachments.length<MAX_ATT) a.attachments.push({src:url,caption:''});
+    renderAsset('as-cap-'+(a.attachments.length-1));
+  }catch(e){ toast(e&&e.message?e.message:'The attachment could not be added.',true); }
 }
 function assetProblem(a){
-  const need=(k,label)=>String(a[k]||'').trim()?null:[label,'as-'+k];
-  let miss=null;
-  if(a.role==='child'){
-    if(!a.parentId||!S.assets.has(a.parentId)) return ['Choose the parent machine this belongs to.','as-parent'];
-  }
-  if(!(a.isNew||a.structured)) return null;
-  if(a.category==='Vehicle'&&a.role==='parent'){
-    miss=need('brand','the brand')||need('make','the make')||need('model','the model')||need('colour','the colour')||need('plate','the number plate')||need('vin','the VIN number');
-    if(miss) return ['Add '+miss[0]+'.',miss[1]];
-    if(!a.platePhoto) return ['Add a photo of the number plate.',null];
-    if(!a.cardPhoto) return ['Add a photo of the car card.',null];
-    return null;
-  }
-  miss=need('brand','the brand')||need('model','the model number')||need('serial','the serial number');
-  return miss?['Add '+miss[0]+'.',miss[1]]:null;
+  if(a.role==='child'&&(!a.parentId||!S.assets.has(a.parentId))) return ['Choose the parent machine this belongs to.','as-parent'];
+  const veh=a.category==='Vehicle'&&a.role==='parent';
+  const t=k=>String(a[k]||'').trim();
+  const has=veh?(t('brand')||t('make')||t('colour')||t('plate')):(t('name')||t('brand')||t('model'));
+  return has?null:['Give the asset a name or a brand first.',veh?'as-brand':'as-name'];
 }
 async function saveAsset(){
   const a=S.asset; if(!a) return;
@@ -917,10 +914,10 @@ async function saveAsset(){
   const veh=a.category==='Vehicle'&&a.role==='parent'; const child=a.role==='child';
   const par=child?S.assets.get(a.parentId):null;
   const t=k=>String(a[k]||'').trim();
-  const name=veh?joinUniq([t('brand'),t('make'),t('model'),t('colour')]):(t('name')||joinUniq([t('brand'),t('model')])||'Asset');
+  const name=veh?(joinUniq([t('brand'),t('make'),t('colour')])||t('plate')):(t('name')||joinUniq([t('brand'),t('model')])||'Asset');
   const doc={name,category:child?effCat(par):a.category,details:t('details'),meterUnit:child?'':a.meterUnit,notes:t('notes'),archived:!!a.archived,sample:!!a.sample,structured:true,updatedAt:new Date().toISOString(),
-    brand:t('brand'),model:t('model'),serial:veh?'':t('serial'),make:veh?t('make'):'',colour:veh?t('colour'):'',plate:veh?t('plate'):'',vin:veh?t('vin').toUpperCase():'',
-    platePhoto:veh?a.platePhoto:'',cardPhoto:veh?a.cardPhoto:'',carPhoto:veh?a.carPhoto:'',photos:veh?[]:a.photos.slice(),parentId:child?a.parentId:''};
+    brand:t('brand'),model:veh?'':t('model'),serial:veh?'':t('serial'),make:veh?t('make'):'',colour:veh?t('colour'):'',plate:veh?t('plate'):'',vin:veh?t('vin').toUpperCase():'',
+    attachments:a.attachments.map(x=>({src:x.src,caption:String(x.caption||'').trim()})),parentId:child?a.parentId:''};
   try{
     let id=a.id;
     if(a.isNew){ doc.createdAt=doc.updatedAt; const ref=await S.db.collection('assets').add(doc); id=ref.id; }
@@ -1253,8 +1250,8 @@ document.addEventListener('click',e=>{
     case 'del-line': if(S.wo){ S.wo.lines.splice(+el.dataset.i,1); renderWO(); } break;
     case 'new-asset': if(canWrite()) openAsset(null,false); break;
     case 'edit-asset': openAsset(id,false); break;
-    case 'view-photo': { const src=id?S.assets.get(id):S.asset; const k=el.dataset.k; if(src){ const v=k==='photos'?(src.photos||[])[+el.dataset.i||0]:src[k]; showPhoto(v); } break; }
-    case 'del-photo': if(S.asset){ const k=el.dataset.k; if(k==='photos') S.asset.photos.splice(+el.dataset.i||0,1); else S.asset[k]=''; renderAsset(); } break;
+    case 'view-photo': { const src=id?S.assets.get(id):S.asset; if(src){ const l=id?attsOf(src):src.attachments; const x=l[+el.dataset.i||0]; if(x) showPhoto(x.src,x.caption); } break; }
+    case 'del-photo': if(S.asset){ S.asset.attachments.splice(+el.dataset.i||0,1); renderAsset(); } break;
     case 'asset-history': S.f={status:'all',asset:id,year:'',q:''}; setView('orders'); break;
     case 'asset-wo': if(canWrite()) openWO(null,{assetId:id}); break;
     case 'save-asset': saveAsset(); break;
@@ -1276,9 +1273,10 @@ document.addEventListener('click',e=>{
 });
 function onInput(e){
   const t=e.target; if(!t||!t.id&&!t.dataset) return;
+  if(t.dataset&&t.dataset.cap!==undefined&&S.asset){ const x=S.asset.attachments[+t.dataset.cap]; if(x) x.caption=t.value; return; }
   if(t.dataset&&t.dataset.af!==undefined&&S.asset){
     const k=t.dataset.af; S.asset[k]=t.value;
-    if(k==='category'){ if(t.value==='Vehicle'){ S.asset.role='parent'; S.asset.parentId=''; if(S.asset.isNew&&!S.asset.meterUnit) S.asset.meterUnit='km'; } else if(S.asset.isNew&&S.asset.meterUnit==='km') S.asset.meterUnit=''; renderAsset(t.id); }
+    if(k==='category'){ if(t.value==='Vehicle'){ S.asset.role='parent'; S.asset.parentId=''; } renderAsset(t.id); }
     else if(k==='role'){ if(t.value==='parent') S.asset.parentId=''; renderAsset(t.id); }
     else if(k==='parentId'){ renderAsset(t.id); }
     return;
