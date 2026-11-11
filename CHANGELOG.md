@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.0.1
+
+- New name: I Got This. It shows under the icon, in the header and on the PDF report.
+- New app icon: a blue wrench with a green tick badge on a light tile.
+
 ## 2.0.0.0
 
 Redesign. Same records, same numbering, a cleaner look.
