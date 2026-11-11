@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.3.1.1
+
+- "Work order" is now "Task" everywhere you see it: the tab, the + menu (Create new task), buttons, messages, the PDF and the CSV export. Task numbers still start with WO-, so existing numbers do not change.
+- The PDF report is only available once at least one task is completed. Completed tasks also get a PDF report button of their own, which opens the report for that task's asset.
+
 ## 2.3.0.1
 
 - One + button in the header, next to the settings gear. It opens a small menu: Add new asset or New work order.

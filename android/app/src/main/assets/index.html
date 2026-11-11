@@ -303,13 +303,13 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
       <button type="button" class="btn iconbtn" id="btn-settings" data-action="settings" aria-label="Settings and updates" title="Settings and updates"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.56-1.11 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.01a1.7 1.7 0 0 0 1.03-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.01a1.7 1.7 0 0 0 1.56 1.03H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1.03z"/></svg></button>
       <div class="addmenu" id="addmenu" role="menu" hidden>
         <button type="button" role="menuitem" data-action="new-asset">Add new asset</button>
-        <button type="button" role="menuitem" data-action="new-wo">New work order</button>
+        <button type="button" role="menuitem" data-action="new-wo">Create new task</button>
       </div>
     </div>
   </header>
   <nav class="tabs" role="tablist" aria-label="Sections">
     <button type="button" class="tab" role="tab" id="tab-dashboard" data-action="tab" data-view="dashboard">Dashboard</button>
-    <button type="button" class="tab" role="tab" id="tab-orders" data-action="tab" data-view="orders">Work orders<span class="n" id="n-orders"></span></button>
+    <button type="button" class="tab" role="tab" id="tab-orders" data-action="tab" data-view="orders">Tasks<span class="n" id="n-orders"></span></button>
     <button type="button" class="tab" role="tab" id="tab-assets" data-action="tab" data-view="assets">Assets<span class="n" id="n-assets"></span></button>
     <button type="button" class="tab" role="tab" id="tab-parts" data-action="tab" data-view="parts">Parts</button>
   </nav>
@@ -339,14 +339,14 @@ const STATUSES=['Open','In progress','Completed','Cancelled'];
 const TYPES=['Preventive maintenance','Repair','Inspection','Improvement','Other'];
 const PRIORITIES=['Low','Normal','High'];
 const CATEGORIES=['Vehicle','Air conditioner','TV / Radio','Gaming console','Electrical','Appliance','Home','Garden & outdoor','Tools & equipment','Other'];
-/* first letter of a work order number, from the nature of the installed parent machine */
+/* first letter of a task number, from the nature of the installed parent machine */
 const WO_CODES={'Vehicle':'V','Air conditioner':'C','TV / Radio':'E','Gaming console':'E','Electrical':'E'};
 const WO_CODE_DEFAULT='G';
 const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
-const APP_VERSION='2.3.0.1';
+const APP_VERSION='2.3.1.1';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const IS_APP=!!window.AndroidBridge;
 const CURRENCIES=['SAR','AED','KWD','QAR','BHD','OMR','EGP','JOD','USD','EUR','GBP','INR','PKR','TRY'];
@@ -563,7 +563,7 @@ function renderChrome(){
   $('#n-orders').textContent=open?String(open):'';
   $('#n-assets').textContent=S.assets.size?String([...S.assets.values()].filter(a=>!a.archived).length):'';
   $('#btn-add').disabled=!canWrite(); if(!canWrite()) closeAddMenu();
-  $('#btn-report').disabled=!(S.db&&S.downloads&&S.ready.orders&&S.ready.assets);
+  $('#btn-report').disabled=!reportReady(); $('#btn-report').title=hasDone()?'':'Available once a task is completed';
   const b=$('#banner'); let h='';
   const hasSamples=S.orders.some(o=>o.sample)||[...S.assets.values()].some(a=>a.sample);
   if(S.noStore) h=`<div class="banner warn"><p>Records can't be loaded or saved in this view. Open the page from your Claude artifacts while signed in to use it.</p></div>`;
@@ -585,8 +585,8 @@ function renderView(){
 
 function emptyIntro(loading){
   return `<div class="empty">${emptyArt()}<h2>${loading?'Loading your records':'Nothing to show here'}</h2>
-  <p>Work orders, assets, parts and costs appear here. Start with an asset such as a car, a room or an appliance, then open a numbered work order against it.</p>
-  <ol class="steps"><li><span>Add an asset to track.</span></li><li><span>Open a work order. It gets the next number, like WO-V-${new Date().getFullYear()}-0001.</span></li><li><span>Log parts, labour and cost, then mark it completed.</span></li></ol></div>`;
+  <p>Tasks, assets, parts and costs appear here. Start with an asset such as a car, a room or an appliance, then open a numbered task against it.</p>
+  <ol class="steps"><li><span>Add an asset to track.</span></li><li><span>Open a task. It gets the next number, like WO-V-${new Date().getFullYear()}-0001.</span></li><li><span>Log parts, labour and cost, then mark it completed.</span></li></ol></div>`;
 }
 
 /* dashboard */
@@ -604,8 +604,8 @@ function orderRow(o){
 }
 function dashboardView(){
   if(!S.assets.size){
-    return `<div class="empty">${emptyArt()}<h2>Start with your first asset</h2><p>An asset is anything you maintain: the car, the kitchen, the air conditioner, the water heater. Every work order is opened against one, so its history and cost stay together.</p>
-    <ol class="steps"><li><span>Add an asset.</span></li><li><span>Open a work order. It is numbered automatically from the kind of machine, like WO-V-${new Date().getFullYear()}-0001.</span></li><li><span>Log parts, labour and cost, then mark it completed.</span></li></ol>
+    return `<div class="empty">${emptyArt()}<h2>Start with your first asset</h2><p>An asset is anything you maintain: the car, the kitchen, the air conditioner, the water heater. Every task is opened against one, so its history and cost stay together.</p>
+    <ol class="steps"><li><span>Add an asset.</span></li><li><span>Open a task. It is numbered automatically from the kind of machine, like WO-V-${new Date().getFullYear()}-0001.</span></li><li><span>Log parts, labour and cost, then mark it completed.</span></li></ol>
     <div class="btns"><button type="button" class="btn primary" data-action="new-asset"${canWrite()?'':' disabled'}>Add new asset</button></div></div>`;
   }
   const start=rangeStart(); const inR=o=>o.status!=='Cancelled'&&(!start||orderDate(o)>=start);
@@ -620,7 +620,7 @@ function dashboardView(){
   const rl={year:'This year','12m':'Last 12 months',all:'All time'}[S.range];
   const rows=[...byAsset.entries()].sort((a,b)=>b[1].sum-a[1].sum).slice(0,6);
   const max=rows.length?Math.max(...rows.map(r=>r[1].sum)):0;
-  const bars=rows.filter(r=>r[1].sum>0).map(r=>`<li title="${esc(assetName(r[0]))}: ${esc(money(r[1].sum))}"><span class="bar-l">${esc(assetName(r[0]))}<em>${r[1].n} work order${r[1].n===1?'':'s'}</em></span><span class="bar-t"><span class="bar-f" style="width:${Math.max(2,Math.round(r[1].sum/max*100))}%"></span></span><span class="bar-v">${money(r[1].sum)}</span></li>`).join('');
+  const bars=rows.filter(r=>r[1].sum>0).map(r=>`<li title="${esc(assetName(r[0]))}: ${esc(money(r[1].sum))}"><span class="bar-l">${esc(assetName(r[0]))}<em>${r[1].n} task${r[1].n===1?'':'s'}</em></span><span class="bar-t"><span class="bar-f" style="width:${Math.max(2,Math.round(r[1].sum/max*100))}%"></span></span><span class="bar-v">${money(r[1].sum)}</span></li>`).join('');
   const kinfo=[['Parts',kinds.part,'--c1'],['Labour',kinds.labour,'--c2'],['Other',kinds.other,'--c3']];
   const kbar=kinfo.filter(k=>k[1]>0).map(k=>`<i style="flex:${k[1]};background:var(${k[2]})" title="${k[0]}: ${esc(money(k[1]))}"></i>`).join('');
   const klegend=kinfo.map(k=>`<li><b style="background:var(${k[2]})"></b><span>${k[0]}</span><span>${money(k[1])}</span></li>`).join('');
@@ -633,7 +633,7 @@ function dashboardView(){
     <section class="group"><h2 class="sec-h">Needs attention</h2>
       ${attention.length?`<div class="tickets">${attention.map(orderRow).join('')}</div>`:`<p class="muted" style="margin:0 4px">Nothing open. New jobs you start will be listed here, overdue ones first.</p>`}</section>
     <section class="group"><h2 class="sec-h">Recently completed</h2>
-      ${recent.length?`<div class="tickets">${recent.map(orderRow).join('')}</div>`:`<p class="muted" style="margin:0 4px">Completed work orders show up here.</p>`}</section>
+      ${recent.length?`<div class="tickets">${recent.map(orderRow).join('')}</div>`:`<p class="muted" style="margin:0 4px">Completed tasks show up here.</p>`}</section>
   </div><div class="stack">
     <section class="panel"><div class="panel-h"><h2>Spend by asset</h2>
       <div class="seg" role="group" aria-label="Period">${[['year','This year'],['12m','12 months'],['all','All time']].map(r=>`<button type="button" data-action="range" data-range="${r[0]}" aria-pressed="${S.range===r[0]}">${r[1]}</button>`).join('')}</div></div>
@@ -643,7 +643,7 @@ function dashboardView(){
   </div></div>`;
 }
 
-/* work orders list */
+/* tasks list */
 function filteredOrders(){
   const q=S.f.q.trim().toLowerCase();
   return S.orders.filter(o=>{
@@ -659,7 +659,7 @@ function ordersView(){
   const assets=[...S.assets.values()].sort(byName);
   const extra=(S.f.asset?1:0)+(S.f.year?1:0);
   const chips=[['active','Active'],['Open','Open'],['In progress','In progress'],['Completed','Done'],['all','All']];
-  return `<div class="searchrow"><input id="f-q" type="search" value="${esc(S.f.q)}" placeholder="Search number, title, part, notes" aria-label="Search work orders" autocomplete="off"><button type="button" class="fbtn" data-action="toggle-filters" aria-expanded="${!!S.showFilters}">Filters${extra?`<b>${extra}</b>`:''}</button></div>
+  return `<div class="searchrow"><input id="f-q" type="search" value="${esc(S.f.q)}" placeholder="Search number, title, part, notes" aria-label="Search tasks" autocomplete="off"><button type="button" class="fbtn" data-action="toggle-filters" aria-expanded="${!!S.showFilters}">Filters${extra?`<b>${extra}</b>`:''}</button></div>
   <div class="chips" role="group" aria-label="Status">${chips.map(c=>`<button type="button" class="chip" data-action="chip" data-status="${esc(c[0])}" aria-pressed="${S.f.status===c[0]}">${c[1]}</button>`).join('')}</div>
   ${S.showFilters?`<div class="fpanel">
     <label class="fld"><span>Status</span><select id="f-status">${opt([['active','Open and in progress'],['all','All statuses']].concat(STATUSES.map(s=>[s,s])),S.f.status)}</select></label>
@@ -669,10 +669,10 @@ function ordersView(){
 }
 function ordersResults(){
   const list=filteredOrders();
-  if(!S.orders.length) return `<div class="empty small"><h2>No work orders yet</h2><p>Open the first one with the + button. Each gets the next number automatically.</p></div>`;
-  if(!list.length) return `<div class="empty small"><h2>No matches</h2><p>No work orders fit these filters. Try "All statuses" or clear the search.</p></div>`;
+  if(!S.orders.length) return `<div class="empty small"><h2>No tasks yet</h2><p>Open the first one with the + button. Each gets the next number automatically.</p></div>`;
+  if(!list.length) return `<div class="empty small"><h2>No matches</h2><p>No tasks fit these filters. Try "All statuses" or clear the search.</p></div>`;
   const total=list.filter(o=>o.status!=='Cancelled').reduce((s,o)=>s+orderTotals(o).all,0);
-  return `<p class="sumline"><span><b>${list.length}</b> work order${list.length===1?'':'s'}</span><span><b>${list.filter(isActive).length}</b> open</span><span>Cost <b>${money(total)}</b></span></p><div class="tickets">${list.map(orderRow).join('')}</div>`;
+  return `<p class="sumline"><span><b>${list.length}</b> task${list.length===1?'':'s'}</span><span><b>${list.filter(isActive).length}</b> open</span><span>Cost <b>${money(total)}</b></span></p><div class="tickets">${list.map(orderRow).join('')}</div>`;
 }
 
 /* assets */
@@ -693,14 +693,14 @@ function assetsView(){
   const list=all.filter(a=>S.showArchived||!a.archived);
   const archivedCount=all.filter(a=>a.archived).length;
   const head=`<div class="toolbar"><div>${archivedCount?`<button type="button" class="btn sm ghost" data-action="toggle-archived">${S.showArchived?'Hide':'Show'} archived (${archivedCount})</button>`:''}</div></div>`;
-  if(!list.length) return head+`<div class="empty small"><h2>No assets yet</h2><p>Add the things you maintain: a car, a room, an appliance. Work orders are opened against them.</p></div>`;
+  if(!list.length) return head+`<div class="empty small"><h2>No assets yet</h2><p>Add the things you maintain: a car, a room, an appliance. Tasks are opened against them.</p></div>`;
   return head+`<div class="cards">${list.map(a=>{
     const s=stats.get(a.id)||{n:0,open:0,spent:0,last:'',meter:null};
     const kids=kidsOf(a.id); const par=a.parentId?S.assets.get(a.parentId):null; const pic=photoOf(a);
     const ident=[a.plate?['Number plate',a.plate]:null,a.vin?['VIN',a.vin]:null,(a.brand||a.model)&&a.category!=='Vehicle'?['Brand / model',joinUniq([a.brand,a.model])]:null,a.serial?['Serial',a.serial]:null].filter(Boolean);
     return `<article class="panel acard${a.archived?' arch':''}"><div class="ahead">${pic?`<button type="button" class="apic-b" data-action="view-photo" data-id="${esc(a.id)}" data-k="att" data-i="0" aria-label="View attachment"><img class="apic" src="${pic}" alt=""></button>`:icoFor(effCat(a))}<div><p class="tagline">${esc(effCat(a)||'Other')}${par?' · Accessory':''}${a.archived?' · Archived':''}</p><h3>${esc(a.name)}</h3>${par?`<p class="muted">Accessory of ${esc(par.name)}</p>`:''}${a.details?`<p class="muted">${esc(a.details)}</p>`:''}</div></div>
-      <dl class="facts">${ident.map(r=>`<dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd>`).join('')}${kids.length?`<dt>Accessories</dt><dd>${esc(kids.map(k=>k.name).join(', '))}</dd>`:''}<dt>Work orders</dt><dd>${s.n}${s.open?` (${s.open} open)`:''}</dd><dt>Total spent</dt><dd>${money(s.spent)}</dd><dt>Last service</dt><dd>${s.last?fmtDate(s.last):'—'}</dd>${a.meterUnit?`<dt>Last reading</dt><dd>${fmtMeter(s.meter,a.meterUnit)}</dd>`:''}</dl>
-      <div class="acts"><button type="button" class="btn sm" data-action="asset-history" data-id="${esc(a.id)}">History</button><button type="button" class="btn sm" data-action="asset-wo" data-id="${esc(a.id)}"${canWrite()&&!a.archived?'':' disabled'}>New work order</button><button type="button" class="btn sm ghost" data-action="edit-asset" data-id="${esc(a.id)}">Edit</button></div></article>`;
+      <dl class="facts">${ident.map(r=>`<dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd>`).join('')}${kids.length?`<dt>Accessories</dt><dd>${esc(kids.map(k=>k.name).join(', '))}</dd>`:''}<dt>Tasks</dt><dd>${s.n}${s.open?` (${s.open} open)`:''}</dd><dt>Total spent</dt><dd>${money(s.spent)}</dd><dt>Last service</dt><dd>${s.last?fmtDate(s.last):'—'}</dd>${a.meterUnit?`<dt>Last reading</dt><dd>${fmtMeter(s.meter,a.meterUnit)}</dd>`:''}</dl>
+      <div class="acts"><button type="button" class="btn sm" data-action="asset-history" data-id="${esc(a.id)}">History</button><button type="button" class="btn sm" data-action="asset-wo" data-id="${esc(a.id)}"${canWrite()&&!a.archived?'':' disabled'}>New task</button><button type="button" class="btn sm ghost" data-action="edit-asset" data-id="${esc(a.id)}">Edit</button></div></article>`;
   }).join('')}</div>`;
 }
 
@@ -716,13 +716,13 @@ function partsView(){
 }
 function partsResults(){
   const rows=partRows();
-  if(!rows.length) return `<div class="empty small"><h2>${S.partsQ?'No matching parts':'No parts logged yet'}</h2><p>${S.partsQ?'Try a different name or part number.':'Parts you add to a work order are collected here, with part numbers, suppliers and prices, so you can find what you bought last time.'}</p></div>`;
+  if(!rows.length) return `<div class="empty small"><h2>${S.partsQ?'No matching parts':'No parts logged yet'}</h2><p>${S.partsQ?'Try a different name or part number.':'Parts you add to a task are collected here, with part numbers, suppliers and prices, so you can find what you bought last time.'}</p></div>`;
   const total=rows.reduce((s,r)=>s+lineTotal(r.l),0);
   return `<p class="sumline"><span><b>${rows.length}</b> part line${rows.length===1?'':'s'}</span><span>Parts cost <b>${money(total)}</b></span></p>
-  <div class="tablewrap"><table><thead><tr><th>Date</th><th>Part</th><th>Part no.</th><th class="num">Qty</th><th class="num">Unit cost</th><th class="num">Total</th><th>Supplier</th><th>Asset</th><th>Work order</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(fmtDate(orderDate(r.o)))}</td><td>${esc(r.l.name)}</td><td class="mono">${esc(r.l.partNo||'')}</td><td class="num">${esc(num(r.l.qty))}</td><td class="num">${money(num(r.l.unitCost))}</td><td class="num">${money(lineTotal(r.l))}</td><td>${esc(r.l.supplier||'')}</td><td>${esc(assetName(r.o.assetId))}</td><td><button type="button" class="linkbtn" data-action="open-wo" data-id="${esc(r.o.id)}">${esc(r.o.number||r.o.id)}</button></td></tr>`).join('')}</tbody></table></div>`;
+  <div class="tablewrap"><table><thead><tr><th>Date</th><th>Part</th><th>Part no.</th><th class="num">Qty</th><th class="num">Unit cost</th><th class="num">Total</th><th>Supplier</th><th>Asset</th><th>Task</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(fmtDate(orderDate(r.o)))}</td><td>${esc(r.l.name)}</td><td class="mono">${esc(r.l.partNo||'')}</td><td class="num">${esc(num(r.l.qty))}</td><td class="num">${money(num(r.l.unitCost))}</td><td class="num">${money(lineTotal(r.l))}</td><td>${esc(r.l.supplier||'')}</td><td>${esc(assetName(r.o.assetId))}</td><td><button type="button" class="linkbtn" data-action="open-wo" data-id="${esc(r.o.id)}">${esc(r.o.number||r.o.id)}</button></td></tr>`).join('')}</tbody></table></div>`;
 }
 
-/* ---------- work order sheet ---------- */
+/* ---------- task sheet ---------- */
 function blankWO(p){
   p=p||{};
   return {isNew:true,number:'',title:p.title||'',assetId:p.assetId||'',type:p.type||'Preventive maintenance',priority:'Normal',status:'Open',openedOn:todayISO(),dueOn:'',completedOn:'',meter:'',doneBy:'Me',description:'',notes:'',lines:[],followUpOf:p.followUpOf||''};
@@ -759,7 +759,7 @@ function renderWO(focusId){
   host.hidden=false;
   host.innerHTML=`<div class="scrim" data-action="close-modal"></div>
   <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="wo-h">
-   <header class="sheet-h"><div><p class="eyebrow">Work order${w.followUpOf?' · follow-up to '+esc(w.followUpOf):''}</p><h2 id="wo-h">${w.isNew?'<span class="tag pending">'+(w.assetId?'Number WO-'+woCode(w.assetId)+'-… assigned when you save':'Number assigned when you save')+'</span>':`<span class="tag">${esc(w.number)}</span>`}</h2></div>
+   <header class="sheet-h"><div><p class="eyebrow">Task${w.followUpOf?' · follow-up to '+esc(w.followUpOf):''}</p><h2 id="wo-h">${w.isNew?'<span class="tag pending">'+(w.assetId?'Number WO-'+woCode(w.assetId)+'-… assigned when you save':'Number assigned when you save')+'</span>':`<span class="tag">${esc(w.number)}</span>`}</h2></div>
    <button type="button" class="icon" data-action="close-modal" aria-label="Close">&times;</button></header>
    <div class="sheet-b">
     <div class="grid">
@@ -781,7 +781,7 @@ function renderWO(focusId){
     <label class="fld"><span>Notes</span><textarea id="wo-notes" data-f="notes" placeholder="Warranty, next service, things to remember">${esc(w.notes)}</textarea></label>
    </div>
    <footer class="sheet-f"><div class="tot"><span>Order total</span><strong id="wo-total">${money(total)}</strong></div>
-    <div class="acts">${!w.isNew&&w.status==='Completed'?'<button type="button" class="btn" data-action="followup">Create follow-up</button>':''}<button type="button" class="btn" data-action="close-modal">Cancel</button><button type="button" class="btn primary" data-action="save-wo"${S.saving?' disabled':''}>${w.isNew?'Create work order':'Save changes'}</button></div></footer></section>`;
+    <div class="acts">${!w.isNew&&w.status==='Completed'?'<button type="button" class="btn" data-action="report-task">PDF report</button><button type="button" class="btn" data-action="followup">Create follow-up</button>':''}<button type="button" class="btn" data-action="close-modal">Cancel</button><button type="button" class="btn primary" data-action="save-wo"${S.saving?' disabled':''}>${w.isNew?'Create task':'Save changes'}</button></div></footer></section>`;
   keepStill(host,was);
   const sb=$('.sheet-b',host); if(sb) sb.scrollTop=scroll;
   syncInert();
@@ -807,7 +807,7 @@ function onWoInput(e){
 }
 async function saveWO(){
   const w=S.wo; if(!w||S.saving) return;
-  if(!w.title.trim()){ toast('Give the work order a title.',true); $('#wo-title')&&$('#wo-title').focus(); return; }
+  if(!w.title.trim()){ toast('Give the task a title.',true); $('#wo-title')&&$('#wo-title').focus(); return; }
   if(!w.assetId||!S.assets.has(w.assetId)){ toast('Choose the asset this work is for.',true); $('#wo-asset')&&$('#wo-asset').focus(); return; }
   if(w.meter!==''&&!isFinite(Number(w.meter))){ toast('The reading must be a number.',true); return; }
   const lines=w.lines.filter(l=>l.name.trim()||num(l.unitCost)).map(l=>({kind:l.kind,name:l.name.trim(),partNo:(l.partNo||'').trim(),supplier:(l.supplier||'').trim(),qty:num(l.qty===''?1:l.qty),unitCost:num(l.unitCost)}));
@@ -892,9 +892,9 @@ function renderAsset(focusId){
    <header class="sheet-h"><div><h2 id="as-h">${a.isNew?'Add new asset':esc(a.name||joinUniq([a.brand,a.make,a.colour])||'Asset')}</h2></div><button type="button" class="icon" data-action="close-modal2" aria-label="Close">&times;</button></header>
    <div class="sheet-b">${body}
     ${!a.isNew?`<div class="confirmrow">${a.archived?`<button type="button" class="btn sm" data-action="archive-asset">Restore asset</button>`:`<button type="button" class="btn sm" data-action="archive-asset">Archive asset</button>`}
-      ${used?`<span class="hint">${kids?'Has accessories':'Has work orders'}, so it can be archived but not deleted.</span>`:(a.confirmDelete?`<button type="button" class="btn sm danger" data-action="delete-asset">Confirm delete</button><span class="hint">This cannot be undone.</span>`:`<button type="button" class="btn sm danger" data-action="delete-asset">Delete asset</button>`)}</div>`:''}
+      ${used?`<span class="hint">${kids?'Has accessories':'Has tasks'}, so it can be archived but not deleted.</span>`:(a.confirmDelete?`<button type="button" class="btn sm danger" data-action="delete-asset">Confirm delete</button><span class="hint">This cannot be undone.</span>`:`<button type="button" class="btn sm danger" data-action="delete-asset">Delete asset</button>`)}</div>`:''}
    </div>
-   <footer class="sheet-f"><span class="hint">${child&&!par?'':`Work orders will be numbered WO-${code}-…`}${a.meterUnit&&!child?' and ask for a reading.':''}</span><div class="acts"><button type="button" class="btn" data-action="close-modal2">Cancel</button><button type="button" class="btn primary" data-action="save-asset">${a.isNew?'Add asset':'Save changes'}</button></div></footer></section>`;
+   <footer class="sheet-f"><span class="hint">${child&&!par?'':`Tasks will be numbered WO-${code}-…`}${a.meterUnit&&!child?' and ask for a reading.':''}</span><div class="acts"><button type="button" class="btn" data-action="close-modal2">Cancel</button><button type="button" class="btn primary" data-action="save-asset">${a.isNew?'Add asset':'Save changes'}</button></div></footer></section>`;
   keepStill(host,was);
   syncInert();
   if(focusId){ const el=document.getElementById(focusId); if(el) el.focus(); }
@@ -966,9 +966,9 @@ function renderSettings(){
     ${aboutBlock()}
     <label class="fld"><span>Currency code</span><input id="st-cur" list="st-curlist" type="text" maxlength="3" value="${esc(S.settings.currency||'SAR')}" autocomplete="off" ${canWrite()?'':'disabled'}><datalist id="st-curlist">${CURRENCIES.map(c=>`<option value="${c}"></option>`).join('')}</datalist></label>
     <p class="hint">Three-letter code such as SAR, USD or EUR. It changes how amounts are shown, not the numbers.</p>
-    <div><h3 class="sec-h">Report</h3><div class="addrow"><button type="button" class="btn sm" id="st-report" data-action="report"${S.db&&S.downloads&&S.ready.orders&&S.ready.assets?'':' disabled'}>PDF report</button></div></div>
+    <div><h3 class="sec-h">Report</h3><div class="addrow"><button type="button" class="btn sm" id="st-report" data-action="report"${reportReady()?'':' disabled'}>PDF report</button>${hasDone()?'':'<span class="hint">Available once a task is completed.</span>'}</div></div>
     <div><h3 class="sec-h">Download your records</h3>
-     ${S.downloads?`<div class="addrow"><button type="button" class="btn sm" data-action="export" data-what="orders">Work orders (CSV)</button><button type="button" class="btn sm" data-action="export" data-what="lines">Cost lines (CSV)</button><button type="button" class="btn sm" data-action="export" data-what="json">Full backup (JSON)</button></div>`:`<p class="hint">Downloads aren't available in this view.</p>`}</div>
+     ${S.downloads?`<div class="addrow"><button type="button" class="btn sm" data-action="export" data-what="orders">Tasks (CSV)</button><button type="button" class="btn sm" data-action="export" data-what="lines">Cost lines (CSV)</button><button type="button" class="btn sm" data-action="export" data-what="json">Full backup (JSON)</button></div>`:`<p class="hint">Downloads aren't available in this view.</p>`}</div>
     <div><h3 class="sec-h">Restore from a backup</h3>${canWrite()?`<label class="fld"><span>Backup file (JSON)</span><input id="st-restore" type="file" accept="application/json,.json"></label>${S.restore?`<p class="hint">${esc(S.restore.msg)}</p>${S.restore.ok?`<button type="button" class="btn sm primary" data-action="do-restore" style="margin-top:8px">Restore these records</button>`:''}`:`<p class="hint">Pick a Full backup file made by this app, for example to move your records from the web version to the phone.</p>`}`:`<p class="hint">Restoring is not available in this view.</p>`}</div>
     
    </div>
@@ -1035,7 +1035,7 @@ function readRestore(file){
       const assets=Array.isArray(j.assets)?j.assets.filter(a=>a&&a.id&&a.name):[];
       const orders=Array.isArray(j.workOrders)?j.workOrders.filter(o=>o&&(o.number||o.id)&&o.title):[];
       if(!assets.length&&!orders.length) throw new Error('empty');
-      S.restore={ok:true,assets,orders,msg:'Found '+assets.length+' asset'+(assets.length===1?'':'s')+' and '+orders.length+' work order'+(orders.length===1?'':'s')+' in '+file.name+'. Records with the same number are replaced.'};
+      S.restore={ok:true,assets,orders,msg:'Found '+assets.length+' asset'+(assets.length===1?'':'s')+' and '+orders.length+' task'+(orders.length===1?'':'s')+' in '+file.name+'. Records with the same number are replaced.'};
     }catch(e){ S.restore={ok:false,msg:'That file is not a backup made by this app.'}; }
     renderSettings();
   };
@@ -1052,7 +1052,7 @@ async function doRestore(){
       const m=/^WO-(?:([A-Z])-)?(\d{4})-(\d+)$/.exec(no); if(m){ doc.year=Number(m[2]); doc.seq=Number(m[3]); if(m[1]) doc.code=m[1]; }
       await S.db.doc('workorders/'+no).set(doc);
     }
-    toast('Restored '+r.assets.length+' asset'+(r.assets.length===1?'':'s')+' and '+r.orders.length+' work order'+(r.orders.length===1?'':'s')); S.restore=null;
+    toast('Restored '+r.assets.length+' asset'+(r.assets.length===1?'':'s')+' and '+r.orders.length+' task'+(r.orders.length===1?'':'s')); S.restore=null;
   }catch(e){ fail(e,'Not restored'); }
   S.saving=false; renderSettings();
 }
@@ -1072,12 +1072,12 @@ async function exportData(what){
   let filename,data;
   if(what==='orders'){
     filename='work-orders-'+todayISO()+'.csv';
-    data=toCSV([['Work order','Title','Asset','Category','Type','Priority','Status','Opened','Due','Completed','Reading','Unit','Done by','Parts','Labour','Other','Total','Work performed','Notes']].concat(orders.map(o=>{
+    data=toCSV([['Task','Title','Asset','Category','Type','Priority','Status','Opened','Due','Completed','Reading','Unit','Done by','Parts','Labour','Other','Total','Work performed','Notes']].concat(orders.map(o=>{
       const a=S.assets.get(o.assetId)||{}; const t=orderTotals(o);
       return [o.number,o.title,a.name,a.category,o.type,o.priority,o.status,o.openedOn,o.dueOn,o.completedOn,o.meter,a.meterUnit,o.doneBy,t.part.toFixed(2),t.labour.toFixed(2),t.other.toFixed(2),t.all.toFixed(2),o.description,o.notes];
     })));
   } else if(what==='lines'){
-    filename='cost-lines-'+todayISO()+'.csv'; const rows=[['Work order','Date','Asset','Type','Description','Part no.','Supplier','Qty','Unit cost','Line total']];
+    filename='cost-lines-'+todayISO()+'.csv'; const rows=[['Task','Date','Asset','Type','Description','Part no.','Supplier','Qty','Unit cost','Line total']];
     orders.forEach(o=>(o.lines||[]).forEach(l=>rows.push([o.number,orderDate(o),assetName(o.assetId),l.kind,l.name,l.partNo,l.supplier,l.qty,num(l.unitCost).toFixed(2),lineTotal(l).toFixed(2)])));
     data=toCSV(rows);
   } else {
@@ -1133,7 +1133,7 @@ function buildReportPDF(deps,opt){
     e.n++; e.part+=t.part; e.labour+=t.labour; e.other+=t.other; e.all+=t.all; byAsset.set(o.assetId,e);
   }
   let y=44;
-  const figs=[['Total cost',pdfMoney(tot.all)],['Work orders',String(list.length)],['Completed',String(done)],['Open',String(open)]];
+  const figs=[['Total cost',pdfMoney(tot.all)],['Tasks',String(list.length)],['Completed',String(done)],['Open',String(open)]];
   const cw=(W-2*M)/figs.length;
   figs.forEach((f,i)=>{
     const x=M+i*cw;
@@ -1163,7 +1163,7 @@ function buildReportPDF(deps,opt){
       showFoot:'lastPage',columnStyles:right});
   }
 
-  section('Work orders');
+  section('Tasks');
   table({head:[['No.','Date','Asset','Title','Status','Cost']],
     body:list.map(o=>[o.number||o.id,pdfDate(orderDate(o)),pdfText(assetName(o.assetId)),pdfText(o.title),o.status,pdfMoney(orderTotals(o).all)]),
     columnStyles:{0:{cellWidth:28},1:{cellWidth:23},2:{cellWidth:34},4:{cellWidth:22},5:{cellWidth:28,halign:'right'}}});
@@ -1172,7 +1172,7 @@ function buildReportPDF(deps,opt){
     const prow=[]; for(const o of list) for(const l of (o.lines||[])) if(l.kind==='part') prow.push([pdfDate(orderDate(o)),pdfText(l.name),pdfText(l.partNo),String(num(l.qty)),pdfMoney(num(l.unitCost)),pdfMoney(lineTotal(l)),pdfText(l.supplier),o.number||o.id]);
     if(prow.length){
       section('Parts used');
-      table({head:[['Date','Part','Part no.','Qty','Unit cost','Total','Supplier','Work order']],body:prow,
+      table({head:[['Date','Part','Part no.','Qty','Unit cost','Total','Supplier','Task']],body:prow,
         styles:{font:'helvetica',fontSize:8,cellPadding:1.6,textColor:INK,overflow:'linebreak'},
         columnStyles:{0:{cellWidth:19},2:{cellWidth:22},3:{cellWidth:10,halign:'right'},4:{cellWidth:22,halign:'right'},5:{cellWidth:22,halign:'right'},7:{cellWidth:27}}});
     }
@@ -1180,16 +1180,18 @@ function buildReportPDF(deps,opt){
   const n=doc.getNumberOfPages();
   for(let i=1;i<=n;i++){
     doc.setPage(i); doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(MUT[0],MUT[1],MUT[2]);
-    doc.text('Cancelled work orders are not included.',M,H-8); doc.text('Page '+i+' of '+n,W-M,H-8,{align:'right'});
+    doc.text('Cancelled tasks are not included.',M,H-8); doc.text('Page '+i+' of '+n,W-M,H-8,{align:'right'});
   }
   return doc;
 }
 /* REPORT-END */
-function openReport(){ if(!S.report) S.report={period:'year',asset:'',parts:true}; S.sheet='report'; renderReport(); }
+const hasDone=()=>S.orders.some(o=>o.status==='Completed');
+const reportReady=()=>!!(S.db&&S.downloads&&S.ready.orders&&S.ready.assets&&hasDone());
+function openReport(pre){ if(!hasDone()){ toast('The PDF report is available once a task is completed.',true); return; }  if(!S.report) S.report={period:'year',asset:'',parts:true}; if(pre&&pre.asset!==undefined) S.report.asset=pre.asset; S.sheet='report'; renderReport(); }
 function updateReportCount(){
   const c=$('#rp-count'); if(!c||!S.report) return;
   const n=reportData(S.report).list.length;
-  c.textContent=n?n+' work order'+(n===1?'':'s')+' will be included.':'No work orders match these choices.';
+  c.textContent=n?n+' task'+(n===1?'':'s')+' will be included.':'No tasks match these choices.';
 }
 function renderReport(){
   const host=$('#modal'); const was=!host.hidden&&!!host.querySelector('#rp-h'); host.hidden=false; const r=S.report;
@@ -1202,7 +1204,7 @@ function renderReport(){
     <label class="fld"><span>Asset</span><select id="rp-asset">${opt([['','All assets']].concat(assets.map(a=>[a.id,a.name])),r.asset)}</select></label>
     <label class="chk"><input id="rp-parts" type="checkbox"${r.parts?' checked':''}><span>Include the list of parts used</span></label>
     <p class="hint" id="rp-count"></p>
-    <p class="hint">Cancelled work orders are left out. Text outside the Latin alphabet shows as "?" in the PDF.</p>
+    <p class="hint">Cancelled tasks are left out. Text outside the Latin alphabet shows as "?" in the PDF.</p>
    </div>
    <footer class="sheet-f"><span></span><div class="acts"><button type="button" class="btn" data-action="close-modal">Cancel</button><button type="button" class="btn primary" data-action="make-report"${S.saving?' disabled':''}>${S.saving?'Creating…':'Create PDF'}</button></div></footer></section>`;
   keepStill(host,was); syncInert(); updateReportCount();
@@ -1212,7 +1214,7 @@ async function makeReport(){
   const jp=window.jspdf&&window.jspdf.jsPDF;
   if(!jp){ toast('The PDF library did not load. Check your connection and reload the page.',true); return; }
   if(!S.downloads){ toast('Downloads are not available in this view.',true); return; }
-  if(!reportData(S.report).list.length){ toast('No work orders match these choices.',true); return; }
+  if(!reportData(S.report).list.length){ toast('No tasks match these choices.',true); return; }
   S.saving=true; renderReport();
   try{
     const doc=buildReportPDF({JsPDF:jp,autoTable:window.jspdf.autoTable},S.report);
@@ -1274,6 +1276,7 @@ document.addEventListener('click',e=>{
     case 'settings': openSettings(); break;
     case 'export': exportData(el.dataset.what); break;
     case 'report': openReport(); break;
+    case 'report-task': { const aid=S.wo&&S.wo.assetId; closeSheet('wo'); openReport({asset:aid||''}); break; }
     case 'do-restore': doRestore(); break;
     case 'check-update': S.dl=null; checkUpdate(); break;
     case 'install-update': startInstall(); break;
