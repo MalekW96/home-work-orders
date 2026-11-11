@@ -9,6 +9,7 @@ ASSETS=android/app/src/main/assets
 GRADLE=android/app/build.gradle.kts
 IOS_WEB=ios/IGotThis/Web
 IOS_YML=ios/project.yml
+PWA=docs
 
 page_ver=$(grep -o "APP_VERSION='[^']*'" "$SRC" | head -1 | sed "s/APP_VERSION='//;s/'//")
 apk_ver=$(grep -o 'versionName = "[^"]*"' "$GRADLE" | head -1 | sed 's/versionName = "//;s/"//')
@@ -40,4 +41,23 @@ fi
 rm -rf "$IOS_WEB"; mkdir -p "$IOS_WEB"
 cp "$ASSETS/index.html" "$IOS_WEB/index.html"
 cp -r "$ASSETS/libs" "$IOS_WEB/libs"
-echo "Synced $SRC (v$page_ver) to $ASSETS/index.html and $IOS_WEB/"
+# Installable web app (GitHub Pages serves docs/).
+rm -rf "$PWA/libs"; mkdir -p "$PWA/libs"
+cp "$ASSETS/libs/"* "$PWA/libs/"
+python3 - "$ASSETS/index.html" "$PWA/index.html" <<'PY'
+import sys
+src=open(sys.argv[1]).read()
+head=('<link rel="manifest" href="manifest.webmanifest">'
+ '<link rel="apple-touch-icon" href="apple-touch-icon.png">'
+ '<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">'
+ '<meta name="apple-mobile-web-app-title" content="I Got This"><meta name="apple-mobile-web-app-status-bar-style" content="default">'
+ '<meta name="theme-color" content="#eef1f4" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#0e131a" media="(prefers-color-scheme: dark)">'
+ '<style>html{padding-top:env(safe-area-inset-top,0px)}</style>'
+ '<script>window.HWO_WEB=true;if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>')
+marker='<style>[hidden]{display:none!important}</style>'
+assert marker in src
+open(sys.argv[2],'w').write(src.replace(marker,marker+head,1))
+PY
+sed "s/__VERSION__/$page_ver/g" scripts/sw.template.js > "$PWA/sw.js"
+touch "$PWA/.nojekyll"
+echo "Synced $SRC (v$page_ver) to $ASSETS/index.html $IOS_WEB/ and $PWA/"

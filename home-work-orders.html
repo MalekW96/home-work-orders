@@ -350,6 +350,7 @@ const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
 const IS_IOS=!!window.IOSBridge;
 const IS_APP=!!BRIDGE;
+const IS_WEB=!!window.HWO_WEB&&!IS_APP; /* the installable web app (Add to Home Screen): same local records as the phone apps, kept in IndexedDB */
 const CURRENCIES=['SAR','AED','KWD','QAR','BHD','OMR','EGP','JOD','USD','EUR','GBP','INR','PKR','TRY'];
 
 const S={db:null,user:null,downloads:null,noStore:false,readOnly:false,timedOut:false,
@@ -452,16 +453,17 @@ async function allocateNumber(code){
 }
 
 /* ---- phone app only: records kept on the device, same calls as the artifact store ---- */
-function makeLocalDb(){
+function makeLocalDb(opts){
   const KEY='hwo:db:v1';
   let store={};
-  try{ store=JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ store={}; }
+  if(opts&&opts.initial) store=opts.initial;
+  else try{ store=JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ store={}; }
   const subs=new Set();
   const clone=v=>JSON.parse(JSON.stringify(v));
   const seg=p=>p.split('/');
   const has=p=>Object.prototype.hasOwnProperty.call(store,p);
   const newId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
-  function persist(){ try{ localStorage.setItem(KEY,JSON.stringify(store)); }catch(e){ throw {code:'quota_exceeded',message:'The phone has no room left for this app\'s records.'}; } }
+  function persist(){ if(opts&&opts.write){ opts.write(store); return; } try{ localStorage.setItem(KEY,JSON.stringify(store)); }catch(e){ throw {code:'quota_exceeded',message:'The phone has no room left for this app\'s records.'}; } }
   function notify(){ subs.forEach(f=>{ try{ f(); }catch(e){} }); }
   function snapDoc(path){ const ex=has(path); const d=ex?clone(store[path]):undefined; return {id:seg(path).pop(),exists:ex,data:()=>d,metadata:{fromCache:false,hasPendingWrites:false}}; }
   function cmp(a,op,b){
@@ -510,6 +512,53 @@ function makeLocalDb(){
   }
   return {doc:docRef,collection:colRef};
 }
+/* ---- installable web app: records live in IndexedDB (far more room than localStorage, which photos would fill) ---- */
+function idbOpen(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open('hwo',1);
+    r.onupgradeneeded=()=>r.result.createObjectStore('kv');
+    r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);
+  });
+}
+async function webStore(){
+  const db=await idbOpen();
+  const get=()=>new Promise((res,rej)=>{ const q=db.transaction('kv').objectStore('kv').get('db'); q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); });
+  const put=v=>new Promise((res,rej)=>{ const t=db.transaction('kv','readwrite'); t.objectStore('kv').put(v,'db'); t.oncomplete=()=>res(); t.onerror=()=>rej(t.error); t.onabort=()=>rej(t.error); });
+  let initial=await get();
+  if(!initial){ try{ initial=JSON.parse(localStorage.getItem('hwo:db:v1')||'null'); }catch(e){} }
+  let busy=false,again=null;
+  const write=snapshot=>{
+    again=JSON.parse(JSON.stringify(snapshot));
+    if(busy) return; busy=true;
+    (async()=>{
+      while(again){ const v=again; again=null;
+        try{ await put(v); }catch(e){ try{ toast('This device has no room left for the records. Save a backup.',true); }catch(_){} }
+      }
+      busy=false;
+    })();
+  };
+  try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persist(); }catch(e){}
+  return {initial:initial||{},write};
+}
+function makeWebDownloads(){
+  const types={pdf:'application/pdf',csv:'text/csv',json:'application/json'};
+  return {save:async function(req){
+    const ext=String(req.filename).split('.').pop().toLowerCase();
+    const type=types[ext]||'application/octet-stream';
+    const blob=new Blob([req.data],{type});
+    try{
+      const file=new File([blob],req.filename,{type});
+      if(navigator.canShare&&navigator.canShare({files:[file]})){
+        try{ await navigator.share({files:[file]}); return {status:'saved'}; }
+        catch(e){ if(e&&e.name==='AbortError') throw {code:'declined'}; }
+      }
+    }catch(e){ if(e&&e.code==='declined') throw e; }
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=req.filename;
+    document.body.appendChild(a); a.click();
+    setTimeout(()=>{ a.remove(); URL.revokeObjectURL(a.href); },4000);
+    return {status:'saved'};
+  }};
+}
 function makeBridgeDownloads(){
   return {save:async function(req){
     const data=req.data; let bytes;
@@ -528,6 +577,7 @@ async function boot(){
   const verEl=$('#app-ver'); if(verEl) verEl.textContent='v'+APP_VERSION;
   let db=null,user=null,dl=null;
   if(IS_APP){ db=makeLocalDb(); dl=makeBridgeDownloads(); }
+  else if(IS_WEB){ try{ const ws=await webStore(); db=makeLocalDb({initial:ws.initial,write:ws.write}); dl=makeWebDownloads(); }catch(e){ db=null; } }
   else{
     const c=window.claude;
     if(!c||!c.use){ S.noStore=true; render(); return; }

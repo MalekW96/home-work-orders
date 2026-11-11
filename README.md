@@ -47,6 +47,12 @@ Build it:
 2. Build > Build Bundle(s) / APK(s) > Build APK(s). The APK ends up in `android/app/build/outputs/apk/debug/`.
 3. Copy it to the phone and install it. Android 10 or newer is required.
 
+## Web app (Add to Home Screen)
+
+`docs/` is an installable web version of the page, served by GitHub Pages at https://malekw96.github.io/home-work-orders/. On an iPhone open it in Safari, tap Share, then Add to Home Screen. Android Chrome: menu, Install app. It runs full screen, works offline after the first visit and updates itself when you open it online. Records stay on that device (IndexedDB) and are not synced with the other versions; use Settings > Full backup and Restore to move them. PDF and CSV files open the share sheet on iPhone.
+
+`docs/` is generated: run `scripts/sync-web.sh` after changing the page, then commit and push.
+
 ## iPhone / iPad app
 
 `ios/` is the same page in a WKWebView (Swift, iOS 15 or newer). Like the Android app, records stay on the device and are not synced with the web version; use Settings > Full backup and Restore to move them.

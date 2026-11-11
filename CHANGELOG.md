@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Installable web app (`docs/`, served by GitHub Pages): open the link in Safari, then Share > Add to Home Screen. It has its own icon, runs full screen and works offline. Records stay on the device, in IndexedDB.
 - iOS app project added (`ios/`): the same page in a WKWebView, with the camera and photo library for attachments, the share sheet for saving PDF and CSV files, a swipe in from the left edge as Back, and a second copy of your records kept in the app's own storage. See the README for how to build it.
 
 ## 2.3.1.1
