@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.3.1.3
+
+- Fix: the iPhone web app (Add to Home Screen) had no way to check for updates. Settings now has Check for updates and Update now, and the app checks quietly each time it opens. The saved copy is also refreshed properly instead of lagging a few minutes behind.
+- Fix: in the iPhone app, Update now downloads the newest screens inside the app instead of opening the web page. Your records stay on the phone. Changes to the iPhone app itself still need a new install.
+
 ## 2.3.1.2
 
 - "Asset" is now "Equipment" everywhere you see it: tabs, buttons, forms, the PDF report and the CSV export.

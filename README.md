@@ -61,7 +61,7 @@ What differs from Android:
 
 - PDF and CSV files open the iOS share sheet (Save to Files, AirDrop, Mail) instead of going straight to Downloads.
 - Swiping in from the left edge works as Back.
-- There is no in-app updater; Apple does not allow it. A new version is a new build you install over the old one.
+- Settings > Check for updates compares with the web app, and Update now downloads the newest screens inside the app (your records stay). Anything that changes the app itself (new permissions, notification code) still needs a new `.ipa`, because Apple does not allow an app to install itself.
 - A second copy of the records is kept in the app's own storage and put back if iOS ever clears the web view's storage.
 
 The unsigned `.ipa` is also attached to each GitHub release automatically (the `iOS build` workflow runs when a release is published). Building needs a Mac with Xcode, or the GitHub Actions workflow `iOS build` (Actions tab > iOS build > Run workflow), which compiles the app on a Mac runner and produces an unsigned `IGotThis-unsigned.ipa`. Sideloadly or AltStore (both run on Windows) can sign that with your own Apple ID and install it on an iPhone; a free Apple ID's signature lasts 7 days, a paid Apple Developer account's a year, and TestFlight or the App Store needs the paid account.

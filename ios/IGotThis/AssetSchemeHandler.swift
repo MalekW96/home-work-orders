@@ -8,12 +8,47 @@ final class AssetSchemeHandler: NSObject, WKURLSchemeHandler {
     static let startURL = URL(string: "igotthis://app/index.html")!
 
     private let root: URL
+    private let updated: URL
+
+    /// Where a downloaded update of the page is kept. It is used instead of the bundled page
+    /// until a newer build of the app is installed.
+    static var updateFolder: URL {
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        return base.appendingPathComponent("WebUpdate", isDirectory: true).standardizedFileURL
+    }
+
+    static func version(inPageAt url: URL) -> [Int]? {
+        guard let data = try? Data(contentsOf: url), let text = String(data: data, encoding: .utf8),
+              let r = text.range(of: "APP_VERSION='[0-9.]+'", options: .regularExpression) else { return nil }
+        let v = text[r].dropFirst("APP_VERSION='".count).dropLast()
+        return v.split(separator: ".").compactMap { Int($0) }
+    }
+
+    static func isNewer(_ a: [Int], than b: [Int]) -> Bool {
+        for i in 0..<max(a.count, b.count) {
+            let x = i < a.count ? a[i] : 0, y = i < b.count ? b[i] : 0
+            if x != y { return x > y }
+        }
+        return false
+    }
 
     override init() {
         root = (Bundle.main.resourceURL ?? Bundle.main.bundleURL)
             .appendingPathComponent("Web", isDirectory: true)
             .standardizedFileURL
+        updated = AssetSchemeHandler.updateFolder
         super.init()
+        // Forget a downloaded page once the installed app is as new or newer.
+        let fm = FileManager.default
+        if fm.fileExists(atPath: updated.path) {
+            let bundled = AssetSchemeHandler.version(inPageAt: root.appendingPathComponent("index.html")) ?? [0]
+            if let u = AssetSchemeHandler.version(inPageAt: updated.appendingPathComponent("index.html")),
+               AssetSchemeHandler.isNewer(u, than: bundled) {
+                // keep it
+            } else {
+                try? fm.removeItem(at: updated)
+            }
+        }
     }
 
     func webView(_ webView: WKWebView, start urlSchemeTask: WKURLSchemeTask) {
@@ -23,10 +58,13 @@ final class AssetSchemeHandler: NSObject, WKURLSchemeHandler {
         }
         var path = url.path
         if path.isEmpty || path == "/" { path = "/index.html" }
-        let file = root.appendingPathComponent(String(path.dropFirst())).standardizedFileURL
+        let rel = String(path.dropFirst())
+        var base = root
+        if FileManager.default.fileExists(atPath: updated.appendingPathComponent(rel).path) { base = updated }
+        let file = base.appendingPathComponent(rel).standardizedFileURL
 
-        // Stay inside the Web folder.
-        guard file.path.hasPrefix(root.path + "/"),
+        // Stay inside the Web (or update) folder.
+        guard file.path.hasPrefix(base.path + "/"),
               let data = try? Data(contentsOf: file) else {
             respond(urlSchemeTask, url: url, status: 404, type: "text/plain", data: Data())
             return

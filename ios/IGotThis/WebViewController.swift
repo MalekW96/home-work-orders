@@ -105,7 +105,8 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
           window.IOSBridge={
             saveFile:function(name,b64){ post({t:'save',name:String(name),data:String(b64)}); return 'ok'; },
             setReminders:function(json){ post({t:'reminders',v:String(json)}); return 'ok'; },
-            requestLocation:function(){ post({t:'location'}); }
+            requestLocation:function(){ post({t:'location'}); },
+            updateContent:function(){ post({t:'update'}); }
           };
         })();
         """
@@ -126,8 +127,55 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
             if let json = body["v"] as? String { scheduleReminders(json) }
         case "location":
             startLocation()
+        case "update":
+            updateContent()
         default:
             break
+        }
+    }
+
+    // MARK: In-app update of the page
+
+    /// Downloads the newest page (and its PDF libraries) from the project's web app and keeps it next to the app.
+    private func updateContent() {
+        let base = "https://malekw96.github.io/home-work-orders/"
+        let files = ["index.html", "libs/jspdf.umd.min.js", "libs/jspdf.plugin.autotable.min.js"]
+        Task {
+            var failure: String? = nil
+            let fm = FileManager.default
+            let staging = fm.temporaryDirectory.appendingPathComponent("webupdate-" + UUID().uuidString, isDirectory: true)
+            do {
+                for f in files {
+                    var req = URLRequest(url: URL(string: base + f)!)
+                    req.cachePolicy = .reloadIgnoringLocalCacheData
+                    req.timeoutInterval = 30
+                    let (data, resp) = try await URLSession.shared.data(for: req)
+                    guard (resp as? HTTPURLResponse)?.statusCode == 200, !data.isEmpty else {
+                        throw URLError(.badServerResponse)
+                    }
+                    let dest = staging.appendingPathComponent(f)
+                    try fm.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
+                    try data.write(to: dest)
+                }
+                guard AssetSchemeHandler.version(inPageAt: staging.appendingPathComponent("index.html")) != nil else {
+                    throw URLError(.cannotParseResponse)
+                }
+                let target = AssetSchemeHandler.updateFolder
+                try fm.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try? fm.removeItem(at: target)
+                try fm.moveItem(at: staging, to: target)
+            } catch {
+                try? fm.removeItem(at: staging)
+                failure = "The update could not be downloaded. Check your connection and try again."
+            }
+            await MainActor.run {
+                if let failure = failure {
+                    let q = (try? JSONEncoder().encode(failure)).flatMap { String(data: $0, encoding: .utf8) } ?? "\"\""
+                    self.webView.evaluateJavaScript("window.__iosUpdate && window.__iosUpdate(false,\(q))", completionHandler: nil)
+                } else {
+                    self.webView.evaluateJavaScript("window.__iosUpdate && window.__iosUpdate(true,'')", completionHandler: nil)
+                }
+            }
         }
     }
 
