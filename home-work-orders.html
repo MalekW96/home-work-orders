@@ -390,7 +390,7 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
-const APP_VERSION='2.6.0.0';
+const APP_VERSION='2.6.1.0';
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -685,7 +685,7 @@ const SB_KEY='sb_publishable_Pipdd-JaiAseFdA_MbCYIA_WV9E2Qbf';
 const SYNC_KEY='hwo:sync:v1', SB_SESSION='hwo:sb:v1';
 const lsGet=(k,d)=>{ try{ return JSON.parse(localStorage.getItem(k)||'null')||d; }catch(e){ return d; } };
 const lsSet=(k,v)=>{ try{ if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,JSON.stringify(v)); }catch(e){} };
-const SY={st:lsGet(SYNC_KEY,{cursor:null,dirty:{},known:{},init:false}),sess:lsGet(SB_SESSION,null),p:null,busy:false,again:false,err:'',last:lsGet('hwo:sync:last',null),timer:null};
+const SY={st:lsGet(SYNC_KEY,{cursor:null,dirty:{},known:{},init:false}),sess:lsGet(SB_SESSION,null),p:null,busy:false,again:false,err:'',msg:'',mode:'in',last:lsGet('hwo:sync:last',null),timer:null};
 const syncOn=()=>!!(S.db&&S.db._x&&!S.readOnly);
 const syStore=()=>lsSet(SYNC_KEY,SY.st);
 function syPaint(){ if(S.sheet!=='settings') return; const a=document.activeElement; if(a&&/^sy-/.test(a.id||'')&&(SY.sess||SY.busy||SY.err)) a.blur(); renderSettings(); }
@@ -707,15 +707,54 @@ async function sbToken(){
     SY.sess={access:j.access_token,refresh:j.refresh_token,exp:Date.now()+j.expires_in*1000,email:s.email}; lsSet(SB_SESSION,SY.sess); return SY.sess.access;
   }catch(e){ if(e.status===400||e.status===401){ SY.sess=null; lsSet(SB_SESSION,null); SY.err='Please sign in again.'; } throw e; }
 }
+function sbSession(j,email){
+  const m=(j.user&&j.user.user_metadata)||{};
+  const name=[m.first_name||'',m.last_name||''].join(' ').trim()||m.full_name||m.name||'';
+  SY.sess={access:j.access_token,refresh:j.refresh_token,exp:Date.now()+(j.expires_in||3600)*1000,email:(j.user&&j.user.email)||email||'',name};
+  lsSet(SB_SESSION,SY.sess);
+}
+const syNetErr=e=>(e.name==='AbortError'||e instanceof TypeError)?'Could not reach the sync service. Check your connection.':'';
 async function sbSignIn(email,pw){
-  SY.email=email; SY.err=''; SY.busy=true; syPaint();
+  SY.email=email; SY.err=''; SY.msg=''; SY.busy=true; syPaint();
   try{
     const j=await sbReq('/auth/v1/token?grant_type=password',{method:'POST',anon:true,body:JSON.stringify({email,password:pw})});
-    SY.sess={access:j.access_token,refresh:j.refresh_token,exp:Date.now()+j.expires_in*1000,email:(j.user&&j.user.email)||email}; lsSet(SB_SESSION,SY.sess);
+    sbSession(j,email);
     SY.busy=false; syPaint(); await syncNow(true);
   }catch(e){
-    SY.busy=false; SY.err=e.status===400?'Wrong email or password.':(e.name==='AbortError'||e instanceof TypeError)?'Could not reach the sync service. Check your connection.':'Could not sign in: '+e.message; syPaint();
+    SY.busy=false; SY.err=e.status===400?'Wrong email or password.':syNetErr(e)||('Could not sign in: '+e.message); syPaint();
   }
+}
+async function sbSignUp(first,last,email,pw){
+  SY.email=email; SY.err=''; SY.msg=''; SY.busy=true; syPaint();
+  try{
+    const j=await sbReq('/auth/v1/signup',{method:'POST',anon:true,body:JSON.stringify({email,password:pw,data:{first_name:first,last_name:last,full_name:(first+' '+last).trim()}})});
+    SY.busy=false;
+    if(j&&j.access_token){ sbSession(j,email); syPaint(); await syncNow(true); return; }
+    if(j&&j.user&&Array.isArray(j.user.identities)&&j.user.identities.length===0){ SY.mode='in'; SY.err='That email already has an account. Sign in instead.'; syPaint(); return; }
+    SY.mode='in'; SY.msg='Account created. Check your email to confirm it, then sign in.'; syPaint();
+  }catch(e){
+    SY.busy=false; SY.err=syNetErr(e)||(e.status===422||e.status===400?e.message:'Could not sign up: '+e.message); syPaint();
+  }
+}
+/* Google sign in: web version only. Google does not allow its sign-in page inside an app's embedded browser. */
+function sbGoogle(){
+  if(IS_APP){ SY.err='Google sign in works in the web version. In this app, use your email and password (create the account with Sign up).'; syPaint(); return; }
+  SY.err=''; SY.msg='';
+  try{ location.href=SB_URL+'/auth/v1/authorize?provider=google&redirect_to='+encodeURIComponent(location.origin+location.pathname); }catch(e){ SY.err='Could not open Google sign in.'; syPaint(); }
+}
+async function sbOAuthReturn(){
+  const h=location.hash||''; if(h.indexOf('access_token=')<0&&h.indexOf('error_description=')<0) return;
+  const q=new URLSearchParams(h.replace(/^#/,''));
+  try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
+  if(q.get('error_description')){ SY.err='Google sign in failed: '+q.get('error_description').replace(/\+/g,' '); S.sheet='settings'; renderSettings(); return; }
+  SY.sess={access:q.get('access_token'),refresh:q.get('refresh_token'),exp:Date.now()+(+q.get('expires_in')||3600)*1000,email:'',name:''};
+  lsSet(SB_SESSION,SY.sess);
+  try{
+    const u=await sbReq('/auth/v1/user'); const m=u.user_metadata||{};
+    SY.sess.email=u.email||''; SY.sess.name=m.full_name||m.name||[m.first_name,m.last_name].filter(Boolean).join(' ');
+    lsSet(SB_SESSION,SY.sess);
+  }catch(e){}
+  S.sheet='settings'; renderSettings(); syncNow(true);
 }
 function sbSignOut(){ SY.sess=null; lsSet(SB_SESSION,null); SY.st={cursor:null,dirty:SY.st.dirty,known:{},init:false}; syStore(); SY.err=''; syPaint(); }
 function syncNow(manual){
@@ -787,14 +826,22 @@ function syncBlock(){
   if(SY.sess){
     const pend=Object.keys(SY.st.dirty).length;
     return `<div><h3 class="sec-h">Account sync</h3>
-     <p class="hint">Signed in as <b>${esc(SY.sess.email)}</b>. ${SY.busy?'Syncing…':SY.err?esc(SY.err):SY.last?'Last synced '+esc(fmtDT(SY.last))+'.':'Not synced yet.'}${pend&&!SY.busy?' '+pend+' change'+(pend===1?'':'s')+' waiting to send.':''}</p>
+     <p class="hint">Signed in as <b>${esc(SY.sess.name?SY.sess.name+' ('+SY.sess.email+')':SY.sess.email)}</b>. ${SY.busy?'Syncing…':SY.err?esc(SY.err):SY.last?'Last synced '+esc(fmtDT(SY.last))+'.':'Not synced yet.'}${pend&&!SY.busy?' '+pend+' change'+(pend===1?'':'s')+' waiting to send.':''}</p>
      <div class="addrow"><button type="button" class="btn sm" data-action="sync-now"${SY.busy?' disabled':''}>Sync now</button><button type="button" class="btn sm ghost" data-action="sync-out">Sign out</button></div></div>`;
   }
+  const up=SY.mode==='up', dis=SY.busy?' disabled':'';
   return `<div><h3 class="sec-h">Account sync</h3>
    <p class="hint">Sign in to keep this device in step with your other devices. The records also stay on this device.</p>
-   <label class="fld"><span>Email</span><input id="sy-email" type="email" autocomplete="username" autocapitalize="off" spellcheck="false" value="${esc(SY.email||'')}"></label>
-   <label class="fld"><span>Password</span><input id="sy-pass" type="password" autocomplete="current-password"></label>
-   <div class="addrow"><button type="button" class="btn sm primary" data-action="sync-in"${SY.busy?' disabled':''}>${SY.busy?'Signing in…':'Sign in'}</button></div>
+   <div class="addrow"><button type="button" class="btn wide" data-action="sync-google"${dis}><b aria-hidden="true">G</b>&nbsp; Continue with Google</button></div>
+   <p class="hint" style="text-align:center;margin:10px 0">or use your email</p>
+   <div class="seg" role="group" aria-label="Account"><button type="button" data-action="sync-mode" data-mode="in" aria-pressed="${!up}">Sign in</button><button type="button" data-action="sync-mode" data-mode="up" aria-pressed="${up}">Sign up</button></div>
+   ${up?`<label class="fld"><span>Name</span><input id="sy-first" type="text" autocomplete="given-name" required></label>
+   <label class="fld"><span>Surname</span><input id="sy-last" type="text" autocomplete="family-name" required></label>`:''}
+   <label class="fld"><span>Email</span><input id="sy-email" type="email" autocomplete="username" autocapitalize="off" spellcheck="false" required value="${esc(SY.email||'')}"></label>
+   <label class="fld"><span>${up?'Create a password':'Password'}</span><input id="sy-pass" type="password" autocomplete="${up?'new-password':'current-password'}" required${up?' minlength="8"':''}></label>
+   ${up?'<p class="hint">At least 8 characters.</p>':''}
+   <div class="addrow"><button type="button" class="btn sm primary" data-action="${up?'sync-up':'sync-in'}"${dis}>${SY.busy?(up?'Creating account…':'Signing in…'):(up?'Sign up':'Sign in')}</button></div>
+   ${SY.msg?`<p class="hint">${esc(SY.msg)}</p>`:''}
    ${SY.err?`<p class="hint" style="color:var(--danger)">${esc(SY.err)}</p>`:''}</div>`;
 }
 
@@ -1707,6 +1754,14 @@ document.addEventListener('click',e=>{
     case 'check-update': S.dl=null; checkUpdate(); break;
     case 'apply-web-update': applyWebUpdate(); break;
     case 'sync-in': { const em=$('#sy-email'), pw=$('#sy-pass'); if(!em||!pw||!em.value.trim()||!pw.value){ SY.err='Enter your email and password.'; syPaint(); break; } sbSignIn(em.value.trim(),pw.value); break; }
+    case 'sync-up': {
+      const f=$('#sy-first'), l=$('#sy-last'), em=$('#sy-email'), pw=$('#sy-pass');
+      if(!f||!l||!em||!pw||!f.value.trim()||!l.value.trim()||!em.value.trim()||!pw.value){ SY.err='Enter your name, surname, email and a password.'; syPaint(); break; }
+      if(!/^\S+@\S+\.\S+$/.test(em.value.trim())){ SY.err='Enter a valid email address.'; syPaint(); break; }
+      if(pw.value.length<8){ SY.err='The password needs at least 8 characters.'; syPaint(); break; }
+      sbSignUp(f.value.trim(),l.value.trim(),em.value.trim(),pw.value); break; }
+    case 'sync-google': sbGoogle(); break;
+    case 'sync-mode': SY.mode=el.dataset.mode==='up'?'up':'in'; SY.err=''; SY.msg=''; syPaint(); break;
     case 'sync-now': syncNow(true); break;
     case 'sync-out': sbSignOut(); break;
     case 'install-update': startInstall(); break;
@@ -1765,6 +1820,7 @@ window.__back=function(){
   return false;
 };
 boot();
+sbOAuthReturn();
 if(IS_WEB||IS_IOS){ try{ if(/^\?u=/.test(location.search)) history.replaceState(null,'',location.pathname+location.hash); }catch(e){} setTimeout(()=>{ if(navigator.onLine!==false) checkWebUpdate(true); },4000); }
 })();
 </script>

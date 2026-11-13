@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.6.1.0
+
+- Account sign in now has three options: Continue with Google, Sign in, and Sign up.
+- Sign up asks for name, surname, email and a password (at least 8 characters); all four are required.
+- Google sign in works in the web version. In the Android and iPhone apps, use email and password, because Google does not allow its sign-in page inside an app.
+
 ## 2.6.0.0
 
 - Settings is tidier: one "Settings" title, a General section (account sign in, currency, restore from a backup) and an Updates section with the installed version at the bottom.
