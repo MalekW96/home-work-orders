@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.5.0.3
+
+- Account sync: in Settings, sign in with your account and this device keeps its records in step with your other devices (phone, tablet and the desktop website). Records still stay on the device too, work offline, and send when you are back online. The most recent edit wins. If two devices create a task at the same time with the same number, one of them is renumbered.
+
 ## 2.4.3.3
 
 - Desktop layout: on a wide screen (about 1100 px and up) the app now has a side menu, uses the full width, and shows the task list as a table (WO number, equipment, priority, started, status). Phones and narrow windows look exactly as before.
