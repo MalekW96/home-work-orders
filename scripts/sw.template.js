@@ -14,6 +14,8 @@ self.addEventListener('fetch',e=>{
   if(url.origin===location.origin){
     // Pages: try the network first so a new version arrives, fall back to the saved copy when offline.
     if(req.mode==='navigate'){
+      // Only the app itself is kept for offline use. Other pages on this site (such as /site/) load normally.
+      const root=new URL('./',location).pathname; if(url.pathname!==root&&url.pathname!==root+'index.html') return;
       e.respondWith(fetch(req.url,{cache:'no-cache'}).then(r=>{ const copy=r.clone(); caches.open(CACHE).then(c=>c.put('index.html',copy)); return r; }).catch(()=>caches.match('index.html')));
       return;
     }

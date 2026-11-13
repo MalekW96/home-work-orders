@@ -1,5 +1,5 @@
-/* I Got This service worker (generated into docs/sw.js by scripts/sync-web.sh). Version: 2.4.2.3 */
-const CACHE='igotthis-2.4.2.3';
+/* I Got This service worker (generated into docs/sw.js by scripts/sync-web.sh). Version: 2.4.3.3 */
+const CACHE='igotthis-2.4.3.3';
 const CORE=['./','index.html','manifest.webmanifest','apple-touch-icon.png','icon-192.png','icon-512.png','libs/jspdf.umd.min.js','libs/jspdf.plugin.autotable.min.js'];
 
 self.addEventListener('install',e=>{
@@ -14,6 +14,8 @@ self.addEventListener('fetch',e=>{
   if(url.origin===location.origin){
     // Pages: try the network first so a new version arrives, fall back to the saved copy when offline.
     if(req.mode==='navigate'){
+      // Only the app itself is kept for offline use. Other pages on this site (such as /site/) load normally.
+      const root=new URL('./',location).pathname; if(url.pathname!==root&&url.pathname!==root+'index.html') return;
       e.respondWith(fetch(req.url,{cache:'no-cache'}).then(r=>{ const copy=r.clone(); caches.open(CACHE).then(c=>c.put('index.html',copy)); return r; }).catch(()=>caches.match('index.html')));
       return;
     }

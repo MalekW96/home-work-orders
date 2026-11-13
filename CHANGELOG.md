@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.4.3.3
+
+- Desktop layout: on a wide screen (about 1100 px and up) the app now has a side menu, uses the full width, and shows the task list as a table (WO number, equipment, priority, started, status). Phones and narrow windows look exactly as before.
+- New landing page for the project at /site/ on the web address, with screenshots, the feature list and download links.
+- The offline copy in the home-screen app now only keeps the app itself, so other pages on the site can't replace it.
+
 ## 2.4.2.3
 
 - The task header now shows the vehicle's number plate, or the equipment's serial number, next to the word TASK.

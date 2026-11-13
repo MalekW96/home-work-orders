@@ -309,6 +309,30 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:4px;z-index:90;max-width:min(92vw,32rem);box-shadow:0 8px 24px rgba(0,0,0,.3);font-size:14px}
 .toast.bad{background:var(--danger);color:#fff}
 @media(prefers-reduced-motion:no-preference){.sheet{animation:rise .16s ease-out}@keyframes rise{from{transform:translateY(8px);opacity:.4}to{transform:none;opacity:1}}}
+
+/* ---------- desktop layout: side navigation and a table for tasks (wide screens only) ---------- */
+.tkthead{display:none}
+@media(min-width:1100px){
+  .app{max-width:1560px;display:grid;grid-template-columns:232px minmax(0,1fr);grid-template-areas:"brand actions" "side banner" "side main";column-gap:36px;align-items:start}
+  .top{display:contents}
+  .brand{grid-area:brand;padding:6px 0 14px}
+  .actions{grid-area:actions;justify-self:end;align-self:center}
+  .tabs{grid-area:side;flex-direction:column;gap:4px;border:0;overflow:visible;margin:0;position:sticky;top:18px}
+  .tab{display:flex;justify-content:space-between;align-items:center;text-align:left;border:0;border-radius:12px;padding:13px 16px;font-size:15px}
+  .tab:hover{background:var(--panel2)}
+  .tab[aria-selected="true"]{background:var(--panel);box-shadow:var(--shadow);border:0}
+  #banner{grid-area:banner;min-width:0}
+  #view{grid-area:main;min-width:0}
+  .sheet{max-width:900px}
+  .tbl .tkthead,.tbl .tkt{grid-template-columns:40px minmax(130px,1.1fr) minmax(0,1.5fr) 110px minmax(0,1.4fr) 140px;gap:16px}
+  .tbl .tkthead{display:grid;padding:0 14px 2px;font:600 11px/1.2 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .tbl .tkt{padding:10px 14px}
+  .tbl .tkt-main,.tbl .tkt-meta.wrap{display:contents}
+  .tbl .tkt-title{font-size:14.5px}
+  .tbl .c-w{display:none}
+  .tbl .tkt-meta{font-size:13.5px;color:var(--ink2)}
+  .tbl .tkt-r{justify-self:start}
+}
 </style>
 
 <div class="app" id="app">
@@ -367,7 +391,7 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
-const APP_VERSION='2.4.2.3';
+const APP_VERSION='2.4.3.3';
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -688,7 +712,7 @@ function orderRow(o){
   const st=startedAtOf(o); const od=isOverdue(o); const pr=o.priority||'Normal';
   return `<button type="button" class="tkt" data-action="open-wo" data-id="${esc(o.id)}">
     ${icoFor(assetCat(o.assetId))}
-    <span class="tkt-main"><span class="tkt-title">${bang(o)}${esc(fmtNo(o.number||o.id))}</span><span class="tkt-meta">${esc(assetName(o.assetId))}</span><span class="tkt-meta wrap"><span class="${pr==='High'?'pri-high':''}">${esc(pr)} priority</span> · ${st?'Started '+esc(fmtDT(st)):'Not started yet'}</span></span>
+    <span class="tkt-main"><span class="tkt-title">${bang(o)}${esc(fmtNo(o.number||o.id))}</span><span class="tkt-meta">${esc(assetName(o.assetId))}</span><span class="tkt-meta wrap"><span class="c-pri ${pr==='High'?'pri-high':''}">${esc(pr)}<span class="c-w"> priority</span></span><span class="c-w"> · </span><span class="c-start">${st?'<span class="c-w">Started </span>'+esc(fmtDT(st)):'Not started yet'}</span></span></span>
     <span class="tkt-r">${stDot(o.status)}${od?'<span class="st over"><i></i>Overdue</span>':''}</span></button>`;
 }
 function dashboardView(){
@@ -760,7 +784,7 @@ function ordersResults(){
   if(!S.orders.length) return `<div class="empty small"><h2>No tasks yet</h2><p>Open the first one with the + button. Each gets the next number automatically.</p></div>`;
   if(!list.length) return `<div class="empty small"><h2>Nothing here</h2><p>No tasks match. Try another filter or clear the search.</p></div>`;
   const total=list.filter(o=>o.status!=='Cancelled').reduce((s,o)=>s+orderTotals(o).all,0);
-  return `<p class="sumline"><span><b>${list.length}</b> task${list.length===1?'':'s'}</span><span><b>${list.filter(isActive).length}</b> open</span><span>Cost <b>${money(total)}</b></span></p><div class="tickets">${list.map(orderRow).join('')}</div>`;
+  return `<p class="sumline"><span><b>${list.length}</b> task${list.length===1?'':'s'}</span><span><b>${list.filter(isActive).length}</b> open</span><span>Cost <b>${money(total)}</b></span></p><div class="tickets tbl"><div class="tkthead" aria-hidden="true"><span></span><span>WO number</span><span>Equipment</span><span>Priority</span><span>Started</span><span>Status</span></div>${list.map(orderRow).join('')}</div>`;
 }
 
 /* assets */

@@ -16,8 +16,8 @@ android {
         // Keep versionName in step with APP_VERSION in home-work-orders.html
         // (scripts/sync-web.sh refuses to run if they differ). Raise versionCode
         // by one for every new APK so Android accepts it as an update.
-        versionCode = 16
-        versionName = "2.4.2.3"
+        versionCode = 17
+        versionName = "2.4.3.3"
     }
 
     buildTypes {

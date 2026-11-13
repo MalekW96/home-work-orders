@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>I Got This: home and car maintenance tracker</title>
+<meta name="description" content="Numbered maintenance tasks for your car, your home and your equipment, with checklists, costs, photos and PDF reports. On the web, Android and iPhone.">
+<meta name="theme-color" content="#1f5fbf">
+<link rel="icon" href="../icon-192.png">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<style>
+:root{
+  --bg:#edf1f5; --panel:#ffffff; --ink:#14202e; --ink2:#44566a; --muted:#66727f; --line:#d9e0e8;
+  --accent:#1f5fbf; --accent-ink:#ffffff; --accent-soft:#e3edfb; --hero1:#1f5fbf; --hero2:#16479a;
+  --shadow:0 1px 2px rgba(20,32,46,.06),0 6px 20px rgba(20,32,46,.07);
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e151d; --panel:#16202b; --ink:#e9eff5; --ink2:#b3c0cd; --muted:#8c9aa8; --line:#263443;
+  --accent:#6ea3f0; --accent-ink:#0b1420; --accent-soft:#1b2c44; --hero1:#1b4d9c; --hero2:#12356c;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35); color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0e151d; --panel:#16202b; --ink:#e9eff5; --ink2:#b3c0cd; --muted:#8c9aa8; --line:#263443;
+  --accent:#6ea3f0; --accent-ink:#0b1420; --accent-soft:#1b2c44; --hero1:#1b4d9c; --hero2:#12356c;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35); color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+img{max-width:100%;height:auto;display:block}
+.wrap{max-width:1160px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+h1,h2,h3{line-height:1.12;margin:0;text-wrap:balance;letter-spacing:-.02em}
+.eyebrow{font:600 12px/1.2 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 22px;border-radius:14px;font-weight:600;text-decoration:none;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.btn:hover{filter:brightness(.97)}
+.btn:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+header.nav{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:18px}
+.brand{display:flex;align-items:center;gap:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;text-decoration:none;color:var(--ink)}
+.brand img{width:38px;height:38px;border-radius:10px}
+.nav a.link{color:var(--ink2);text-decoration:none;font-weight:500;margin-right:20px}
+.nav .right{display:flex;align-items:center}
+@media(max-width:640px){.nav a.link{display:none}}
+
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:48px;align-items:center;padding-block:40px 64px}
+.hero h1{font-size:clamp(38px,5.4vw,64px);font-weight:750}
+.hero p.lead{font-size:clamp(17px,1.6vw,20px);color:var(--ink2);margin:20px 0 28px;max-width:34em}
+.cta{display:flex;flex-wrap:wrap;gap:12px}
+.fine{font-size:13.5px;color:var(--muted);margin-top:14px}
+.shots{position:relative;padding-bottom:36px}
+.frame{background:var(--panel);border-radius:16px;box-shadow:0 24px 60px rgba(20,32,46,.22);overflow:hidden;border:1px solid var(--line)}
+.frame .bar{display:flex;gap:7px;padding:11px 14px;border-bottom:1px solid var(--line);background:var(--bg)}
+.frame .bar i{width:10px;height:10px;border-radius:50%;background:var(--line)}
+.phone{position:absolute;right:-8px;bottom:0;width:30%;min-width:120px;border-radius:22px;border:6px solid #101820;box-shadow:0 24px 50px rgba(20,32,46,.35);background:#101820;overflow:hidden}
+@media(max-width:900px){.hero{grid-template-columns:minmax(0,1fr);gap:36px;padding-block:20px 48px}.phone{right:8px}}
+
+section{padding-block:64px}
+section h2{font-size:clamp(28px,3.4vw,40px);font-weight:720;max-width:20em}
+section .sub{color:var(--ink2);font-size:18px;max-width:38em;margin:14px 0 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,17.5rem),1fr));gap:16px;margin-top:36px}
+.card{background:var(--panel);border-radius:18px;box-shadow:var(--shadow);padding:22px;min-width:0}
+.card h3{font-size:19px;margin-bottom:8px;letter-spacing:-.01em}
+.card p{margin:0;color:var(--ink2);font-size:15.5px}
+.ico{width:42px;height:42px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:14px}
+.ico svg{width:22px;height:22px}
+.wo{font:600 14px var(--mono);border:2px solid var(--ink);border-radius:6px;padding:2px 8px;display:inline-block;margin-bottom:12px}
+
+.band{background:var(--panel);border-block:1px solid var(--line)}
+.steps{counter-reset:s;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,15rem),1fr));gap:28px;margin:36px 0 0;padding:0;list-style:none}
+.steps li{counter-increment:s;position:relative;padding-top:48px}
+.steps li::before{content:counter(s);position:absolute;top:0;left:0;width:36px;height:36px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-weight:700}
+.steps b{display:block;font-size:18px;margin-bottom:4px}
+.steps span{color:var(--ink2);font-size:15.5px}
+
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:center}
+@media(max-width:900px){.two{grid-template-columns:minmax(0,1fr)}}
+.plat{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr));gap:16px;margin-top:36px}
+.plat .card{display:flex;flex-direction:column;gap:12px}
+.plat .card .btn{margin-top:auto;align-self:flex-start}
+.tag{display:inline-block;font:600 11.5px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+footer{padding-block:40px 56px;color:var(--muted);font-size:14px}
+footer .row{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-between;border-top:1px solid var(--line);padding-top:24px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="nav">
+    <a class="brand" href="./"><img src="../icon-192.png" alt="" width="38" height="38"><span>I Got This</span></a>
+    <div class="right">
+      <a class="link" href="#features">Features</a>
+      <a class="link" href="#get">Get the app</a>
+      <a class="btn primary" href="../">Open the app</a>
+    </div>
+  </header>
+
+  <div class="hero">
+    <div>
+      <p class="eyebrow">Home and car maintenance</p>
+      <h1>Every repair and service, written down.</h1>
+      <p class="lead">Give each car, appliance and room its own record. Open a numbered task, tick the checklist, log the parts and the cost, and keep the PDF. It works the same on a phone and on a desktop.</p>
+      <div class="cta">
+        <a class="btn primary" href="../">Open the web app</a>
+        <a class="btn" href="#get">Download for Android</a>
+      </div>
+      <p class="fine">Free. No account needed. Your records stay on your own device.</p>
+    </div>
+    <div class="shots">
+      <div class="frame"><div class="bar"><i></i><i></i><i></i></div><img src="img/desktop-dashboard.png" width="1360" height="820" alt="The I Got This dashboard on a desktop: spend so far this year, tasks that need attention, and where the money goes."></div>
+      <img class="phone" src="img/phone-tasks.png" width="780" height="1560" alt="The Tasks list on a phone, with WO numbers, equipment, priority and start time.">
+    </div>
+  </div>
+</div>
+
+<section id="features">
+  <div class="wrap">
+    <p class="eyebrow">What it does</p>
+    <h2>Built around the job, not the paperwork.</h2>
+    <p class="sub">Everything you would write on the back of an envelope, in one place you can search, total up and print.</p>
+    <div class="grid">
+      <div class="card"><span class="wo">WO-V20260001</span><h3>Numbered tasks</h3><p>Each task gets the next number for its kind of equipment, with the plate or serial number beside it. Find any job in seconds.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h9"/></svg></div><h3>Checklist before closing</h3><p>Start a checklist on any task. It cannot be closed until every step is ticked, and a closed task stays closed.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><h3>Parts, labour and cost</h3><p>Log what you used and what it cost. See the total per task, per piece of equipment and per year.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div><h3>Garage visits</h3><p>Note which garage or technician did the work, save the location and attach photos of the place.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg></div><h3>PDF reports</h3><p>Make a report for one task or for a whole year, and keep a copy attached to the task.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div><h3>Follow-up reminders</h3><p>Set an urgent repair to Further action and the phone apps remind you three days later if it is still waiting.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap two">
+    <div>
+      <p class="eyebrow">On the desktop</p>
+      <h2>Room to see the whole workshop.</h2>
+      <p class="sub">On a wide screen the app gives you a side menu and a task table with the WO number, equipment, priority and start time on one line. On a phone it folds back into a single column.</p>
+      <div class="cta" style="margin-top:24px"><a class="btn primary" href="../">Open the web app</a></div>
+    </div>
+    <div class="frame"><div class="bar"><i></i><i></i><i></i></div><img src="img/desktop-tasks.png" width="1360" height="820" loading="lazy" alt="The Tasks tab on a desktop, shown as a table."></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="eyebrow">How a task works</p>
+    <h2>From first look to closed.</h2>
+    <ol class="steps">
+      <li><b>Add the equipment</b><span>A car, an air conditioner, a mower. Plate or serial number, brand and photos.</span></li>
+      <li><b>Open a task</b><span>It gets its WO number. Choose the type and priority, and start work.</span></li>
+      <li><b>Tick the checklist</b><span>Add the steps, log parts and labour, and attach photos as you go.</span></li>
+      <li><b>Close it</b><span>Once every step is ticked the task closes for good. Print the PDF if you need it.</span></li>
+    </ol>
+  </div>
+</section>
+
+<section id="get" class="band">
+  <div class="wrap">
+    <p class="eyebrow">Get the app</p>
+    <h2>Pick the way you use it.</h2>
+    <div class="plat">
+      <div class="card"><span class="tag">Desktop and phone browser</span><h3>Web app</h3><p>Opens right here, and you can add it to your home screen or install it from the browser. It updates itself.</p><a class="btn primary" href="../">Open the web app</a></div>
+      <div class="card"><span class="tag">Android</span><h3>Android app</h3><p>Download the APK from the latest release and open it on your phone. Android will ask you to allow installs from your browser or files app the first time.</p><a class="btn" href="https://github.com/MalekW96/home-work-orders/releases/latest">Download the APK</a></div>
+      <div class="card"><span class="tag">iPhone</span><h3>iPhone</h3><p>The easiest way is the web app: open it in Safari and choose Add to Home Screen. A native build is also on the releases page, but it is unsigned and has to be installed with a tool such as Sideloadly or AltStore.</p><a class="btn" href="https://github.com/MalekW96/home-work-orders/releases/latest">See the releases</a></div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+  <footer>
+    <div class="row">
+      <span>I Got This. Your records are stored on the device you use them on.</span>
+      <span><a href="https://github.com/MalekW96/home-work-orders">Source and releases</a> · <a href="https://github.com/MalekW96/home-work-orders/blob/main/CHANGELOG.md">What's new</a></span>
+    </div>
+  </footer>
+</div>
+</body>
+</html>
