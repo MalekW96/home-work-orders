@@ -4,6 +4,11 @@ name: Android build
 # Download it from the run's Artifacts, or let it attach to a GitHub release when one is published.
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Optional: attach the built APK to this existing release tag (for example v2.6.0.0)"
+        required: false
+        type: string
   release:
     types: [published]
   push:
@@ -28,6 +33,21 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      # Sign with your own debug key so the APK installs over the one built in Android Studio.
+      # Add the secret DEBUG_KEYSTORE_B64 (base64 of ~/.android/debug.keystore) to enable this;
+      # without it the build uses a throwaway key and phones must reinstall the app.
+      - name: Use your debug key
+        env:
+          KS: ${{ secrets.DEBUG_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS" ]; then
+            mkdir -p ~/.android
+            printf '%s' "$KS" | base64 -d > ~/.android/debug.keystore
+            echo "Using the debug key from the DEBUG_KEYSTORE_B64 secret."
+          else
+            echo "::warning::DEBUG_KEYSTORE_B64 is not set; the APK is signed with a new key and will not update over Android Studio builds."
+          fi
+
       - name: Build the debug APK
         working-directory: android
         run: ./gradlew --no-daemon assembleDebug
@@ -50,3 +70,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "${{ github.event.release.tag_name }}" "${{ steps.apk.outputs.path }}" --clobber
+
+      # Manual run with a tag: attach the APK to that existing release.
+      - name: Attach to an existing release
+        if: github.event_name == 'workflow_dispatch' && inputs.tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ inputs.tag }}" "${{ steps.apk.outputs.path }}" --clobber
