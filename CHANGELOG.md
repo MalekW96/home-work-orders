@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.7.0.0
+
+- Sign in, confirmation emails and record sync moved from Supabase to Firebase (Authentication and Firestore).
+- Sign up with name, surname, email and password; Firebase sends the confirmation email. Syncing starts once the email is confirmed (buttons to resend the email and to check again).
+- Records are kept in a private per-user space; last edit wins, as before. Existing records on a device are uploaded the first time you sign in.
+- Google sign in remains hidden.
+
 ## 2.6.3.2
 
 - Sign in and sign up have a Show/Hide button next to the password.

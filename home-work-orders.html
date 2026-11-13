@@ -390,8 +390,8 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
-const APP_VERSION='2.6.3.2';
-const RELEASE_NOTES=['Show or hide your password when you sign in or sign up.','Clearer messages when sign in or sign up fails, for example an email that is not confirmed yet.','Settings order: sign in, currency, version, then backup and restore.'];
+const APP_VERSION='2.7.0.0';
+const RELEASE_NOTES=['Sign in and sync now run on Firebase, so the confirmation email actually arrives.','Sign up with name, surname, email and password, then confirm your email to start syncing.','Your records are stored in your own private space and stay in step across phone, tablet and computer.'];
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -678,99 +678,121 @@ async function boot(){
   syncStart();
 }
 
-/* ---------- account sync (Supabase) ----------
+/* ---------- account sync (Firebase) ----------
    Records stay on this device as before. When you sign in, each change is also sent to your private
-   table, and changes made on your other devices are pulled in. Last edit wins. */
-const SB_URL='https://dhoulprktdgpnmkfhpsx.supabase.co';
-const SB_KEY='sb_publishable_Pipdd-JaiAseFdA_MbCYIA_WV9E2Qbf';
-const SYNC_KEY='hwo:sync:v1', SB_SESSION='hwo:sb:v1';
+   space in Firestore, and changes made on your other devices are pulled in. Last edit wins.
+   Sign in uses Firebase Authentication; the confirmation email is sent by Firebase. */
+const FB={key:'AIzaSyB8UW2Zjc_L5eDIgXpcWNETpRE6YYoyJQo',project:'igotthis-baf3e'};
+const FS_BASE='https://firestore.googleapis.com/v1/projects/'+FB.project+'/databases/(default)/documents';
+const SYNC_KEY='hwo:sync:fb1', SB_SESSION='hwo:fb:v1';
 const lsGet=(k,d)=>{ try{ return JSON.parse(localStorage.getItem(k)||'null')||d; }catch(e){ return d; } };
 const lsSet=(k,v)=>{ try{ if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,JSON.stringify(v)); }catch(e){} };
-const SY={st:lsGet(SYNC_KEY,{cursor:null,dirty:{},known:{},init:false}),sess:lsGet(SB_SESSION,null),p:null,busy:false,again:false,err:'',msg:'',mode:'in',last:lsGet('hwo:sync:last',null),timer:null};
+const SY={st:lsGet(SYNC_KEY,{cursor:null,dirty:{},known:{},init:false,uid:''}),sess:lsGet(SB_SESSION,null),p:null,busy:false,again:false,err:'',msg:'',mode:'in',last:lsGet('hwo:sync:last',null),timer:null};
 const syncOn=()=>!!(S.db&&S.db._x&&!S.readOnly);
 const syStore=()=>lsSet(SYNC_KEY,SY.st);
 function syPaint(){ if(S.sheet!=='settings') return; const a=document.activeElement; if(a&&/^sy-/.test(a.id||'')&&(SY.sess||SY.busy||SY.err)) a.blur(); renderSettings(); }
-async function sbReq(path,o){
+async function fbFetch(url,o){
   o=o||{}; const ctl=new AbortController(); const to=setTimeout(()=>ctl.abort(),25000);
   try{
-    const tok=o.anon?SB_KEY:(await sbToken());
-    const r=await fetch(SB_URL+path,{method:o.method||'GET',signal:ctl.signal,headers:Object.assign({apikey:SB_KEY,Authorization:'Bearer '+tok,'Content-Type':'application/json'},o.headers||{}),body:o.body});
+    const r=await fetch(url,{method:o.method||'POST',signal:ctl.signal,headers:o.headers||{'Content-Type':'application/json'},body:o.body});
     let j=null; const t=await r.text(); try{ j=t?JSON.parse(t):null; }catch(e){}
-    if(!r.ok){ const e=new Error((j&&(j.msg||j.message||j.error_description))||('HTTP '+r.status)); e.status=r.status; e.body=j; throw e; }
+    if(!r.ok){ const er=(j&&j.error)||{}; const e=new Error(er.message||('HTTP '+r.status)); e.status=r.status; e.fbStatus=er.status||''; e.body=j; throw e; }
     return j;
   } finally{ clearTimeout(to); }
 }
-async function sbToken(){
-  const s=SY.sess; if(!s) throw Object.assign(new Error('Not signed in'),{status:401});
-  if(s.exp-60000>Date.now()) return s.access;
-  try{
-    const j=await sbReq('/auth/v1/token?grant_type=refresh_token',{method:'POST',anon:true,body:JSON.stringify({refresh_token:s.refresh})});
-    SY.sess={access:j.access_token,refresh:j.refresh_token,exp:Date.now()+j.expires_in*1000,email:s.email}; lsSet(SB_SESSION,SY.sess); return SY.sess.access;
-  }catch(e){ if(e.status===400||e.status===401){ SY.sess=null; lsSet(SB_SESSION,null); SY.err='Please sign in again.'; } throw e; }
-}
-function sbSession(j,email){
-  const m=(j.user&&j.user.user_metadata)||{};
-  const name=[m.first_name||'',m.last_name||''].join(' ').trim()||m.full_name||m.name||'';
-  SY.sess={access:j.access_token,refresh:j.refresh_token,exp:Date.now()+(j.expires_in||3600)*1000,email:(j.user&&j.user.email)||email||'',name};
+const idt=(op,body)=>fbFetch('https://identitytoolkit.googleapis.com/v1/accounts:'+op+'?key='+FB.key,{body:JSON.stringify(body)});
+function fbStoreSession(r,more){
+  const old=SY.sess||{};
+  SY.sess=Object.assign({id:r.idToken||r.id_token,refresh:r.refreshToken||r.refresh_token,exp:Date.now()+(+(r.expiresIn||r.expires_in)||3600)*1000,uid:r.localId||r.user_id||old.uid||'',email:r.email||old.email||'',name:old.name||'',verified:!!old.verified},more||{});
   lsSet(SB_SESSION,SY.sess);
 }
-function authMsg(e){
-  const code=String((e.body&&(e.body.error_code||e.body.code))||''), m=e.message||'';
-  if(code==='email_not_confirmed'||/not confirmed/i.test(m)) return 'Your email is not confirmed yet. Open the confirmation email (check spam), then sign in.';
-  if(code==='invalid_credentials'||/invalid login/i.test(m)) return 'Wrong email or password.';
-  if(code==='user_already_exists') return 'That email already has an account. Sign in instead.';
-  if(code==='signup_disabled'||/signups? not allowed/i.test(m)) return 'Sign up is switched off for this app.';
-  if(code==='over_email_send_rate_limit'||e.status===429) return 'Too many emails were sent. Wait a while and try again.';
-  if(/email_address_invalid|invalid.*email/i.test(code+m)) return 'That email address is not accepted.';
-  return m||('Something went wrong (HTTP '+e.status+').');
+async function fbRefresh(){
+  const s=SY.sess; if(!s) throw Object.assign(new Error('Not signed in'),{status:401});
+  try{
+    const j=await fbFetch('https://securetoken.googleapis.com/v1/token?key='+FB.key,{headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=refresh_token&refresh_token='+encodeURIComponent(s.refresh)});
+    fbStoreSession(j);
+  }catch(e){ if(e.status===400||e.status===401){ SY.sess=null; lsSet(SB_SESSION,null); SY.err='Please sign in again.'; } throw e; }
 }
-const syNetErr=e=>(e.name==='AbortError'||e instanceof TypeError)?'Could not reach the sync service. Check your connection.':'';
+async function fbToken(){
+  const s=SY.sess; if(!s) throw Object.assign(new Error('Not signed in'),{status:401});
+  if(s.exp-60000<=Date.now()) await fbRefresh();
+  return SY.sess.id;
+}
+async function fbLookup(){
+  const j=await idt('lookup',{idToken:await fbToken()}); const u=(j.users&&j.users[0])||{};
+  fbStoreSession({idToken:SY.sess.id,refreshToken:SY.sess.refresh,expiresIn:Math.max(60,Math.round((SY.sess.exp-Date.now())/1000))},{email:u.email||SY.sess.email,name:u.displayName||SY.sess.name,verified:!!u.emailVerified});
+}
+function fbMsg(e){
+  const m=String(e.message||''), c=m.split(' ')[0];
+  const map={EMAIL_EXISTS:'That email already has an account. Sign in instead.',INVALID_LOGIN_CREDENTIALS:'Wrong email or password.',INVALID_PASSWORD:'Wrong email or password.',EMAIL_NOT_FOUND:'Wrong email or password.',INVALID_EMAIL:'That email address is not valid.',MISSING_PASSWORD:'Enter a password.',USER_DISABLED:'This account has been disabled.',TOO_MANY_ATTEMPTS_TRY_LATER:'Too many attempts. Wait a few minutes and try again.',OPERATION_NOT_ALLOWED:'Email sign in is switched off for this app.',WEAK_PASSWORD:'The password is too weak. Use at least 8 characters.'};
+  return map[c]||(m||('Something went wrong (HTTP '+e.status+').'));
+}
+const syNetErr=e=>(e.name==='AbortError'||e instanceof TypeError)?'Could not reach the sign in service. Check your connection.':'';
+function fbNewUser(uid){ if(SY.st.uid!==uid){ SY.st={cursor:null,dirty:SY.st.dirty,known:{},init:false,uid}; syStore(); } }
 async function sbSignIn(email,pw){
   SY.email=email; SY.err=''; SY.msg=''; SY.busy=true; syPaint();
   try{
-    const j=await sbReq('/auth/v1/token?grant_type=password',{method:'POST',anon:true,body:JSON.stringify({email,password:pw})});
-    sbSession(j,email);
-    SY.busy=false; syPaint(); await syncNow(true);
-  }catch(e){
-    SY.busy=false; SY.err=syNetErr(e)||authMsg(e); syPaint();
-  }
+    const r=await idt('signInWithPassword',{email,password:pw,returnSecureToken:true});
+    fbNewUser(r.localId); SY.sess=null; fbStoreSession(r,{name:r.displayName||'',verified:false}); await fbLookup();
+    SY.busy=false; if(!SY.sess.verified){ SY.msg='Confirm your email to start syncing. We sent a confirmation email when you signed up; you can send it again below.'; syPaint(); return; }
+    syPaint(); await syncNow(true);
+  }catch(e){ SY.busy=false; SY.err=syNetErr(e)||fbMsg(e); syPaint(); }
 }
 async function sbSignUp(first,last,email,pw){
   SY.email=email; SY.err=''; SY.msg=''; SY.busy=true; syPaint();
   try{
-    const j=await sbReq('/auth/v1/signup',{method:'POST',anon:true,body:JSON.stringify({email,password:pw,data:{first_name:first,last_name:last,full_name:(first+' '+last).trim()}})});
-    SY.busy=false;
-    if(j&&j.access_token){ sbSession(j,email); syPaint(); await syncNow(true); return; }
-    if(j&&j.user&&Array.isArray(j.user.identities)&&j.user.identities.length===0){ SY.mode='in'; SY.err='That email already has an account. Sign in instead.'; syPaint(); return; }
-    SY.mode='in'; SY.msg='Account created. Check your email to confirm it, then sign in.'; syPaint();
-  }catch(e){
-    SY.busy=false; SY.err=syNetErr(e)||authMsg(e); syPaint();
-  }
+    const r=await idt('signUp',{email,password:pw,returnSecureToken:true});
+    fbNewUser(r.localId); SY.sess=null; fbStoreSession(r,{name:(first+' '+last).trim(),verified:false});
+    try{ await idt('update',{idToken:SY.sess.id,displayName:(first+' '+last).trim(),returnSecureToken:false}); }catch(e){}
+    let sent=true; try{ await idt('sendOobCode',{requestType:'VERIFY_EMAIL',idToken:SY.sess.id}); }catch(e){ sent=false; }
+    SY.busy=false; SY.mode='in';
+    SY.msg=sent?'Account created. We sent a confirmation email to '+email+'. Open it (check spam), then press "I confirmed my email".':'Account created, but the confirmation email could not be sent. Press "Send the email again".';
+    syPaint();
+  }catch(e){ SY.busy=false; SY.err=syNetErr(e)||fbMsg(e); syPaint(); }
 }
-const GOOGLE_SIGNIN=false; /* switch to true once Google is enabled in the Supabase project */
-/* Google sign in: web version only. Google does not allow its sign-in page inside an app's embedded browser. */
-function sbGoogle(){
-  if(IS_APP){ SY.err='Google sign in works in the web version. In this app, use your email and password (create the account with Sign up).'; syPaint(); return; }
-  SY.err=''; SY.msg='';
-  try{ location.href=SB_URL+'/auth/v1/authorize?provider=google&redirect_to='+encodeURIComponent(location.origin+location.pathname); }catch(e){ SY.err='Could not open Google sign in.'; syPaint(); }
+async function fbResend(){
+  if(!SY.sess) return; SY.err=''; SY.msg=''; SY.busy=true; syPaint();
+  try{ await idt('sendOobCode',{requestType:'VERIFY_EMAIL',idToken:await fbToken()}); SY.msg='Confirmation email sent to '+SY.sess.email+'. Check your inbox and spam.'; }
+  catch(e){ SY.err=syNetErr(e)||(/TOO_MANY/.test(e.message)?'Too many emails sent. Wait a few minutes.':fbMsg(e)); }
+  SY.busy=false; syPaint();
 }
-async function sbOAuthReturn(){
-  const h=location.hash||''; if(h.indexOf('access_token=')<0&&h.indexOf('error_description=')<0) return;
-  const q=new URLSearchParams(h.replace(/^#/,''));
-  try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
-  if(q.get('error_description')){ SY.err='Google sign in failed: '+q.get('error_description').replace(/\+/g,' '); S.sheet='settings'; renderSettings(); return; }
-  SY.sess={access:q.get('access_token'),refresh:q.get('refresh_token'),exp:Date.now()+(+q.get('expires_in')||3600)*1000,email:'',name:''};
-  lsSet(SB_SESSION,SY.sess);
-  try{
-    const u=await sbReq('/auth/v1/user'); const m=u.user_metadata||{};
-    SY.sess.email=u.email||''; SY.sess.name=m.full_name||m.name||[m.first_name,m.last_name].filter(Boolean).join(' ');
-    lsSet(SB_SESSION,SY.sess);
-  }catch(e){}
-  S.sheet='settings'; renderSettings(); syncNow(true);
+async function fbConfirmed(){
+  if(!SY.sess) return; SY.err=''; SY.msg=''; SY.busy=true; syPaint();
+  try{ await fbRefresh(); await fbLookup(); SY.busy=false; if(SY.sess.verified){ syPaint(); await syncNow(true); return; } SY.err='Not confirmed yet. Open the link in the email first.'; }
+  catch(e){ SY.err=syNetErr(e)||fbMsg(e); }
+  SY.busy=false; syPaint();
 }
-function sbSignOut(){ SY.sess=null; lsSet(SB_SESSION,null); SY.st={cursor:null,dirty:SY.st.dirty,known:{},init:false}; syStore(); SY.err=''; syPaint(); }
+function sbSignOut(){ SY.sess=null; lsSet(SB_SESSION,null); SY.st={cursor:null,dirty:SY.st.dirty,known:{},init:false,uid:''}; syStore(); SY.err=''; SY.msg=''; syPaint(); }
+const fsDocId=p=>encodeURIComponent(p);
+const fsUser=()=>'/users/'+SY.sess.uid;
+async function fsReq(path,body,method){
+  const tok=await fbToken();
+  return fbFetch(FS_BASE+path,{method:method||'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:body?JSON.stringify(body):undefined});
+}
+function fsRow(doc){
+  const f=doc.fields||{}; let data=null; try{ data=f.data&&f.data.stringValue?JSON.parse(f.data.stringValue):null; }catch(e){}
+  return {path:(f.path&&f.path.stringValue)||'',data,deleted:!!(f.deleted&&f.deleted.booleanValue),updated_at:doc.updateTime,_t:f.updated_at&&f.updated_at.timestampValue,_n:doc.name};
+}
+async function fsPull(cursor){
+  const q={from:[{collectionId:'records'}],orderBy:[{field:{fieldPath:'updated_at'},direction:'ASCENDING'},{field:{fieldPath:'__name__'},direction:'ASCENDING'}],limit:200};
+  if(cursor&&cursor.t&&cursor.n) q.startAt={values:[{timestampValue:cursor.t},{referenceValue:cursor.n}],before:false};
+  const res=await fsReq(fsUser()+':runQuery',{structuredQuery:q});
+  return (res||[]).filter(r=>r.document).map(r=>fsRow(r.document)).filter(r=>r.path&&r._t);
+}
+async function fsGet(p){
+  try{ return fsRow(await fsReq(fsUser()+'/records/'+encodeURIComponent(fsDocId(p)),null,'GET')); }
+  catch(e){ if(e.status===404) return null; throw e; }
+}
+async function fsPush(p,data,del,fresh){
+  const name='projects/'+FB.project+'/databases/(default)/documents'+fsUser()+'/records/'+fsDocId(p);
+  const fields={path:{stringValue:p},deleted:{booleanValue:!!del}}; if(!del) fields.data={stringValue:JSON.stringify(data)};
+  const w={update:{name,fields},updateMask:{fieldPaths:['path','data','deleted']},updateTransforms:[{fieldPath:'updated_at',setToServerValue:'REQUEST_TIME'}]};
+  if(fresh) w.currentDocument={exists:false};
+  const res=await fsReq(':commit',{writes:[w]});
+  return res&&res.writeResults&&res.writeResults[0]&&res.writeResults[0].updateTime||null;
+}
 function syncNow(manual){
-  if(!SY.sess||!syncOn()) return Promise.resolve();
+  if(!SY.sess||!SY.sess.verified||!syncOn()) return Promise.resolve();
   if(SY.p){ SY.again=true; return SY.p; }
   SY.p=syncRun(manual).finally(()=>{ SY.p=null; if(SY.again){ SY.again=false; setTimeout(()=>syncNow(),300); } });
   return SY.p;
@@ -795,10 +817,8 @@ async function syncRun(manual){
     if(!st.init){ x.keys().forEach(p=>{ if(p!=='meta/numbering'&&!st.dirty[p]) st.dirty[p]={ts:0,del:false}; }); st.init=true; syStore(); }
     /* pull */
     for(let guard=0;guard<500;guard++){
-      let q='/rest/v1/records?select=path,data,deleted,updated_at&order=updated_at.asc,path.asc&limit=200';
-      if(st.cursor) q+='&or='+encodeURIComponent('(updated_at.gt."'+st.cursor.t+'",and(updated_at.eq."'+st.cursor.t+'",path.gt."'+st.cursor.p+'"))');
-      const rows=await sbReq(q);
-      rows.forEach(r=>{ applyRemote(r); st.cursor={t:r.updated_at,p:r.path}; });
+      const rows=await fsPull(st.cursor);
+      rows.forEach(r=>{ applyRemote(r); st.cursor={t:r._t,n:r._n}; });
       syStore(); if(rows.length<200) break;
     }
     for(const doc of moved){
@@ -808,13 +828,12 @@ async function syncRun(manual){
     /* push */
     for(const p of Object.keys(st.dirty)){
       const d=st.dirty[p]; const loc=x.get(p); const del=d.del||loc===undefined; const fresh=!st.known[p];
-      const res=await sbReq('/rest/v1/records?on_conflict=user_id,path&select=updated_at',{method:'POST',headers:{Prefer:(fresh?'resolution=ignore-duplicates':'resolution=merge-duplicates')+',return=representation'},body:JSON.stringify([{path:p,data:del?null:loc,deleted:del}])});
-      if(res&&res.length){ st.known[p]=res[0].updated_at; if(st.dirty[p]===d) delete st.dirty[p]; }
+      let ut=null, clash=false;
+      try{ ut=await fsPush(p,del?null:loc,del,fresh); }
+      catch(e){ if(fresh&&(e.status===409||/ALREADY_EXISTS|FAILED_PRECONDITION/.test(e.fbStatus||''))) clash=true; else throw e; }
+      if(!clash&&ut){ st.known[p]=ut; if(st.dirty[p]===d) delete st.dirty[p]; }
       else if(del){ if(st.dirty[p]===d) delete st.dirty[p]; }
-      else{
-        const g=await sbReq('/rest/v1/records?select=path,data,deleted,updated_at&path=eq.'+encodeURIComponent(p));
-        if(g&&g[0]){ delete st.known[p]; applyRemote(g[0]); SY.again=true; }
-      }
+      else if(clash){ const g=await fsGet(p); if(g){ delete st.known[p]; applyRemote(g); SY.again=true; } }
       syStore();
     }
     SY.last=new Date().toISOString(); lsSet('hwo:sync:last',SY.last); SY.err='';
@@ -824,17 +843,24 @@ async function syncRun(manual){
     if(manual) toast(SY.err,true);
   }finally{ SY.busy=false; syStore(); syPaint(); }
 }
-function syncSoon(){ if(!SY.sess) return; clearTimeout(SY.timer); SY.timer=setTimeout(()=>syncNow(),2500); }
+function syncSoon(){ if(!SY.sess||!SY.sess.verified) return; clearTimeout(SY.timer); SY.timer=setTimeout(()=>syncNow(),2500); }
 function syncStart(){
   if(!S.db||!S.db._x) return;
   S.db._x.onWrite((p,del)=>{ if(p==='meta/numbering') return; SY.st.dirty[p]={ts:Date.now(),del:!!del}; syStore(); syncSoon(); });
-  if(SY.sess){ setTimeout(()=>syncNow(),1200); }
+  if(SY.sess&&SY.sess.verified){ setTimeout(()=>syncNow(),1200); }
   setInterval(()=>{ if(document.visibilityState==='visible') syncNow(); },60000);
   document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') syncNow(); });
   window.addEventListener('online',()=>syncNow());
 }
 function syncBlock(){
   if(!S.db||!S.db._x) return '';
+  if(SY.sess&&!SY.sess.verified){
+    return `<div><h3 class="sec-h">Account sync</h3>
+     <p class="hint">Signed in as <b>${esc(SY.sess.email)}</b>. Confirm your email to start syncing: open the link we sent (check spam), then press the button below.</p>
+     <div class="addrow"><button type="button" class="btn sm primary" data-action="sync-confirmed"${SY.busy?' disabled':''}>I confirmed my email</button><button type="button" class="btn sm" data-action="sync-resend"${SY.busy?' disabled':''}>Send the email again</button><button type="button" class="btn sm ghost" data-action="sync-out">Sign out</button></div>
+     ${SY.msg?`<p class="hint">${esc(SY.msg)}</p>`:''}
+     ${SY.err?`<p class="hint" style="color:var(--danger)">${esc(SY.err)}</p>`:''}</div>`;
+  }
   if(SY.sess){
     const pend=Object.keys(SY.st.dirty).length;
     return `<div><h3 class="sec-h">Account sync</h3>
@@ -844,8 +870,7 @@ function syncBlock(){
   const up=SY.mode==='up', dis=SY.busy?' disabled':'';
   return `<div><h3 class="sec-h">Account sync</h3>
    <p class="hint">Sign in to keep this device in step with your other devices. The records also stay on this device.</p>
-   ${GOOGLE_SIGNIN?`<div class="addrow"><button type="button" class="btn wide" data-action="sync-google"${dis}><b aria-hidden="true">G</b>&nbsp; Continue with Google</button></div>
-   <p class="hint" style="text-align:center;margin:10px 0">or use your email</p>`:''}
+
    <div class="seg" role="group" aria-label="Account"><button type="button" data-action="sync-mode" data-mode="in" aria-pressed="${!up}">Sign in</button><button type="button" data-action="sync-mode" data-mode="up" aria-pressed="${up}">Sign up</button></div>
    ${up?`<label class="fld"><span>Name</span><input id="sy-first" type="text" autocomplete="given-name" required></label>
    <label class="fld"><span>Surname</span><input id="sy-last" type="text" autocomplete="family-name" required></label>`:''}
@@ -1779,7 +1804,8 @@ document.addEventListener('click',e=>{
       if(!/^\S+@\S+\.\S+$/.test(em.value.trim())){ SY.err='Enter a valid email address.'; syPaint(); break; }
       if(pw.value.length<8){ SY.err='The password needs at least 8 characters.'; syPaint(); break; }
       sbSignUp(f.value.trim(),l.value.trim(),em.value.trim(),pw.value); break; }
-    case 'sync-google': sbGoogle(); break;
+    case 'sync-resend': fbResend(); break;
+    case 'sync-confirmed': fbConfirmed(); break;
     case 'pw-toggle': { const pw=$('#sy-pass'); if(!pw) break; const show=pw.type==='password'; pw.type=show?'text':'password'; el.textContent=show?'Hide':'Show'; el.setAttribute('aria-pressed',String(show)); el.setAttribute('aria-label',show?'Hide password':'Show password'); break; }
     case 'sync-mode': SY.mode=el.dataset.mode==='up'?'up':'in'; SY.err=''; SY.msg=''; syPaint(); break;
     case 'sync-now': syncNow(true); break;
@@ -1840,7 +1866,6 @@ window.__back=function(){
   return false;
 };
 boot();
-sbOAuthReturn();
 if(IS_WEB||IS_IOS){ try{ if(/^\?u=/.test(location.search)) history.replaceState(null,'',location.pathname+location.hash); }catch(e){} setTimeout(()=>{ if(navigator.onLine!==false) checkWebUpdate(true); },4000); }
 })();
 </script>

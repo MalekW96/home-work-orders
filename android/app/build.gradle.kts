@@ -16,8 +16,8 @@ android {
         // Keep versionName in step with APP_VERSION in home-work-orders.html
         // (scripts/sync-web.sh refuses to run if they differ). Raise versionCode
         // by one for every new APK so Android accepts it as an update.
-        versionCode = 23
-        versionName = "2.6.3.2"
+        versionCode = 24
+        versionName = "2.7.0.0"
     }
 
     // CI sets HWO_KEYSTORE to the owner's debug keystore so the APK is signed with the same key as
