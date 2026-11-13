@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.6.0.0
+
+- Settings is tidier: one "Settings" title, a General section (account sign in, currency, restore from a backup) and an Updates section with the installed version at the bottom.
+- The PDF report button and the "Download your records" buttons are no longer in Settings. The PDF report is still available from the main screen and from a closed task.
+
 ## 2.5.0.3
 
 - Account sync: in Settings, sign in with your account and this device keeps its records in step with your other devices (phone, tablet and the desktop website). Records still stay on the device too, work offline, and send when you are back online. The most recent edit wins. If two devices create a task at the same time with the same number, one of them is renumbered.

@@ -9,8 +9,8 @@ settings:
     SWIFT_VERSION: "5.0"
     # Marketing version = first three parts of APP_VERSION in the page; build number = the fourth.
     # scripts/sync-web.sh checks both.
-    MARKETING_VERSION: "2.5.0"
-    CURRENT_PROJECT_VERSION: "3"
+    MARKETING_VERSION: "2.6.0"
+    CURRENT_PROJECT_VERSION: "0"
 targets:
   IGotThis:
     type: application
