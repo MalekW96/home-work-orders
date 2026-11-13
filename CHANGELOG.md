@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.4.1.3
+
+- Every task now has a checklist. A button at the bottom of the task starts one for that WO number, and you add the steps. A task cannot be closed until the checklist has at least one step and every step is ticked.
+- WO numbers now have a single dash, after WO: WO-V20260001. Older numbers display the same way.
+- A closed task can no longer be re-opened or changed. You can still view it, make its PDF report and create a follow-up.
+- Tasks tab: three filter buttons only, Open, Not started and Closed. Open means In progress or Further action. Statuses are now Not started, In progress, Further action and Closed.
+- The task list shows the WO number, the equipment, the priority, and the date and time the task was started.
+
 ## 2.3.1.3
 
 - Fix: the iPhone web app (Add to Home Screen) had no way to check for updates. Settings now has Check for updates and Update now, and the app checks quietly each time it opens. The saved copy is also refreshed properly instead of lagging a few minutes behind.

@@ -182,6 +182,17 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none;color:var(--in
 .searchrow input{flex:1;min-width:0;border:0;box-shadow:var(--shadow);border-radius:14px;min-height:44px;padding:0 14px}
 .fbtn{border:0;box-shadow:var(--shadow);background:var(--panel);color:var(--accent);font-weight:600;border-radius:14px;padding:0 16px;min-height:44px;display:inline-flex;align-items:center;gap:6px}
 .fbtn b{background:var(--accent);color:var(--accent-ink);border-radius:99px;min-width:18px;height:18px;font-size:11px;display:grid;place-items:center;padding:0 5px}
+.lockednote{margin:0 0 12px;padding:10px 12px;border-radius:12px;background:var(--panel);box-shadow:var(--shadow);font-size:13.5px;color:var(--ink2)}
+.ckbox{display:flex;flex-direction:column;gap:12px;padding-top:12px;border-top:1px solid var(--line)}
+.ck-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.ck-list{display:flex;flex-direction:column;gap:6px}
+.ck-i{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ck-i .chk{flex:1;min-width:0}
+.ckd{text-decoration:line-through;color:var(--muted)}
+.ckadd{display:flex;gap:10px;align-items:flex-end}
+.ckadd .fld{flex:1;min-width:0}
+.tkt-meta.wrap{white-space:normal;overflow:visible}
+.pri-high{color:var(--danger,#c0392b);font-weight:600}
 .chips{display:flex;gap:8px;overflow-x:auto;margin-bottom:12px;scrollbar-width:none;padding:2px 1px 4px}
 .chips::-webkit-scrollbar{display:none}
 .chip{border:0;background:var(--panel);box-shadow:var(--shadow);color:var(--ink2);border-radius:99px;padding:8px 14px;font-size:13px;white-space:nowrap;transition:transform .08s ease}
@@ -344,7 +355,7 @@ const localISO=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const todayISO=()=>localISO(new Date());
 function parseD(s){ if(!s) return null; const p=String(s).split('-').map(Number); return new Date(p[0],p[1]-1,p[2]); }
 function fmtDate(s){ const d=parseD(s); return d?d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'—'; }
-const STATUSES=['Open','In progress','Further action','Completed','Cancelled'];
+const STATUSES=['Open','In progress','Further action','Completed'];
 const TYPES=['Preventive maintenance','Corrective maintenance','Inspection','Improvement','Other'];
 const PRIORITIES=['Low','Normal','High'];
 const CATEGORIES=['Vehicle','Air conditioner','TV / Radio','Gaming console','Electrical','Appliance','Home','Garden & outdoor','Tools & equipment','Other'];
@@ -355,7 +366,7 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
-const APP_VERSION='2.3.1.3';
+const APP_VERSION='2.4.1.3';
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -366,7 +377,7 @@ const CURRENCIES=['SAR','AED','KWD','QAR','BHD','OMR','EGP','JOD','USD','EUR','G
 
 const S={db:null,user:null,downloads:null,noStore:false,readOnly:false,timedOut:false,
   assets:new Map(),orders:[],settings:{currency:'SAR'},ready:{assets:false,orders:false},
-  view:'dashboard',range:'year',f:{status:'active',asset:'',year:'',q:''},partsQ:'',showArchived:false,showFilters:false,
+  view:'dashboard',range:'year',f:{status:'open',asset:'',year:'',q:''},partsQ:'',showArchived:false,showFilters:false,
   wo:null,asset:null,saving:false,confirmClear:false,sheet:'',report:null,restore:null,upd:null};
 const HOLDER='h'+Math.random().toString(36).slice(2,10);
 
@@ -393,6 +404,16 @@ const followUpAt=o=>{ if(!isUrgent(o)||o.status!=='Further action'||!o.furtherAt
 const followUpDue=o=>{ const t=followUpAt(o); return t!==null&&t<=Date.now(); };
 const bang=o=>isUrgent(o)?'<span class="bang" title="High-priority corrective task" aria-label="High priority">!</span>':'';
 const isOverdue=o=>isActive(o)&&o.dueOn&&o.dueOn<todayISO();
+/* what the person sees: stored values stay 'Open' and 'Completed' so older records keep working */
+const STATUS_LABEL={'Open':'Not started','Completed':'Closed'};
+const statusLabel=s=>STATUS_LABEL[s]||s;
+const isClosed=o=>!!o&&(o.status==='Completed'||o.status==='Cancelled');
+/* WO numbers show with one dash only, after WO. Older numbers like WO-V-2026-0001 are shown as WO-V20260001. */
+const fmtNo=n=>String(n==null?'':n).replace(/^(WO-)(.*)$/,(m,a,b)=>a+b.replace(/-/g,''));
+const ckItems=o=>(o&&o.checklist&&Array.isArray(o.checklist.items))?o.checklist.items:[];
+const ckGate=o=>{ const i=ckItems(o); if(!o||!o.checklist||!i.length) return 'Start the checklist and add at least one step before closing this task.'; if(!i.every(x=>x.done)) return 'Complete every checklist step before closing this task.'; return ''; };
+const startedAtOf=o=>o.startedAt||(o.status!=='Open'?(o.createdAt||o.openedOn||''):'');
+function fmtDT(v){ if(!v) return ''; const dateOnly=String(v).length<=10; const d=new Date(dateOnly?v+'T12:00:00':v); if(!isFinite(d.getTime())) return ''; const a=d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}); return dateOnly?a:a+', '+d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}); }
 const assetName=id=>{ const a=S.assets.get(id); return a?a.name:'Unknown equipment'; };
 const byName=(a,b)=>String(a.name).localeCompare(String(b.name));
 const byNumberDesc=(a,b)=>(num(b.year)-num(a.year))||(a.createdAt&&b.createdAt&&a.createdAt!==b.createdAt?String(b.createdAt).localeCompare(String(a.createdAt)):0)||(num(b.seq)-num(a.seq))||String(b.id).localeCompare(String(a.id));
@@ -437,9 +458,9 @@ function showPhoto(src,cap){
   d.addEventListener('click',closePhoto); document.body.appendChild(d);
 }
 function closePhoto(){ const d=document.getElementById('lb'); if(d){ d.remove(); return true; } return false; }
-function stDot(status){ const c={'Open':'','In progress':'prog','Further action':'further','Completed':'done','Cancelled':'cancel'}[status]||''; const l={'Completed':'Done'}[status]||status; return `<span class="st ${c}"><i></i>${esc(l)}</span>`; }
+function stDot(status){ const c={'Open':'','In progress':'prog','Further action':'further','Completed':'done','Cancelled':'cancel'}[status]||''; const l=statusLabel(status); return `<span class="st ${c}"><i></i>${esc(l)}</span>`; }
 function emptyArt(){ return `<svg class="art" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 30 32 11l24 19"/><path d="M13 27v25h38V27"/><path d="M26 52V37h12v15"/><path d="M47 14v8"/></svg>`; }
-function pill(status){ const c={'Open':'open','In progress':'prog','Further action':'further','Completed':'done','Cancelled':'cancel'}[status]||'open'; return `<span class="pill ${c}">${esc(status)}</span>`; }
+function pill(status){ const c={'Open':'open','In progress':'prog','Further action':'further','Completed':'done','Cancelled':'cancel'}[status]||'open'; return `<span class="pill ${c}">${esc(statusLabel(status))}</span>`; }
 
 let toastTimer=null;
 function toast(msg,bad){ const t=$('#toast'); t.textContent=msg; t.className='toast'+(bad?' bad':''); t.hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>{t.hidden=true;},bad?6000:3200); }
@@ -467,7 +488,7 @@ async function allocateNumber(code){
   const snap=await S.db.collection('workorders').where('year','==',year).get();
   let top=0; snap.docs.forEach(d=>{ const x=d.data(); if((x.code||'')===code) top=Math.max(top,num(x.seq)); });
   const seq=top+1;
-  return {year,seq,code,number:'WO-'+code+'-'+year+'-'+String(seq).padStart(4,'0')};
+  return {year,seq,code,number:'WO-'+code+year+String(seq).padStart(4,'0')};
 }
 
 /* ---- phone app only: records kept on the device, same calls as the artifact store ---- */
@@ -655,27 +676,22 @@ function renderView(){
 function emptyIntro(loading){
   return `<div class="empty">${emptyArt()}<h2>${loading?'Loading your records':'Nothing to show here'}</h2>
   <p>Tasks, equipment, parts and costs appear here. Start with equipment such as a car, a room or an appliance, then open a numbered task against it.</p>
-  <ol class="steps"><li><span>Add equipment to track.</span></li><li><span>Open a task. It gets the next number, like WO-V-${new Date().getFullYear()}-0001.</span></li><li><span>Log parts, labour and cost, then mark it completed.</span></li></ol></div>`;
+  <ol class="steps"><li><span>Add equipment to track.</span></li><li><span>Open a task. It gets the next number, like WO-V${new Date().getFullYear()}0001.</span></li><li><span>Log parts, labour and cost, then mark it completed.</span></li></ol></div>`;
 }
 
 /* dashboard */
 function rangeStart(){ const d=new Date(); if(S.range==='year') return d.getFullYear()+'-01-01'; if(S.range==='12m'){ d.setFullYear(d.getFullYear()-1); return localISO(d); } return ''; }
 function orderRow(o){
-  const t=orderTotals(o); const od=isOverdue(o);
-  let dt;
-  if(o.status==='Completed') dt='Done '+fmtDate(o.completedOn);
-  else if(o.status==='Further action'&&o.furtherAt) dt='Further action since '+fmtDate(String(o.furtherAt).slice(0,10))+(followUpDue(o)?' · follow-up due':'');
-  else if(o.status!=='Cancelled'&&o.dueOn) dt='Due '+fmtDate(o.dueOn);
-  else dt='Opened '+fmtDate(o.openedOn);
+  const st=startedAtOf(o); const od=isOverdue(o); const pr=o.priority||'Normal';
   return `<button type="button" class="tkt" data-action="open-wo" data-id="${esc(o.id)}">
     ${icoFor(assetCat(o.assetId))}
-    <span class="tkt-main"><span class="tkt-no">${bang(o)}${esc(o.number||o.id)}</span><span class="tkt-title">${esc(o.title)}</span><span class="tkt-meta">${esc(assetName(o.assetId))} · ${esc(dt)}</span></span>
-    <span class="tkt-r">${stDot(o.status)}${od?'<span class="st over"><i></i>Overdue</span>':''}<span class="tkt-cost">${t.all?money(t.all):'—'}</span></span></button>`;
+    <span class="tkt-main"><span class="tkt-title">${bang(o)}${esc(fmtNo(o.number||o.id))}</span><span class="tkt-meta">${esc(assetName(o.assetId))}</span><span class="tkt-meta wrap"><span class="${pr==='High'?'pri-high':''}">${esc(pr)} priority</span> · ${st?'Started '+esc(fmtDT(st)):'Not started yet'}</span></span>
+    <span class="tkt-r">${stDot(o.status)}${od?'<span class="st over"><i></i>Overdue</span>':''}</span></button>`;
 }
 function dashboardView(){
   if(!S.assets.size){
     return `<div class="empty">${emptyArt()}<h2>Start with your first piece of equipment</h2><p>Equipment is anything you maintain: the car, the kitchen, the air conditioner, the water heater. Every task is opened against one, so its history and cost stay together.</p>
-    <ol class="steps"><li><span>Add the equipment.</span></li><li><span>Open a task. It is numbered automatically from the kind of machine, like WO-V-${new Date().getFullYear()}-0001.</span></li><li><span>Log parts, labour and cost, then mark it completed.</span></li></ol>
+    <ol class="steps"><li><span>Add the equipment.</span></li><li><span>Open a task. It is numbered automatically from the kind of machine, like WO-V${new Date().getFullYear()}0001.</span></li><li><span>Log parts, labour and cost, then mark it completed.</span></li></ol>
     <div class="btns"><button type="button" class="btn primary" data-action="new-asset"${canWrite()?'':' disabled'}>Add new equipment</button></div></div>`;
   }
   const start=rangeStart(); const inR=o=>o.status!=='Cancelled'&&(!start||orderDate(o)>=start);
@@ -719,30 +735,27 @@ function dashboardView(){
 function filteredOrders(){
   const q=S.f.q.trim().toLowerCase();
   return S.orders.filter(o=>{
-    if(S.f.status==='active'){ if(!isActive(o)) return false; } else if(S.f.status!=='all'&&o.status!==S.f.status) return false;
+    if(S.f.status!=='all'&&FGROUPS[S.f.status]&&!FGROUPS[S.f.status](o)) return false;
     if(S.f.asset&&o.assetId!==S.f.asset) return false;
     if(S.f.year&&String(orderDate(o)).slice(0,4)!==S.f.year) return false;
-    if(q){ const hay=[o.number,o.title,o.description,o.notes,o.doneBy,o.type,assetName(o.assetId)].concat((o.lines||[]).map(l=>[l.name,l.partNo,l.supplier].join(' '))).join(' ').toLowerCase(); if(hay.indexOf(q)<0) return false; }
+    if(q){ const hay=[o.number,fmtNo(o.number),o.title,o.description,o.notes,o.doneBy,o.type,assetName(o.assetId)].concat((o.lines||[]).map(l=>[l.name,l.partNo,l.supplier].join(' '))).join(' ').toLowerCase(); if(hay.indexOf(q)<0) return false; }
     return true;
   }).sort(byNumberDesc);
 }
+/* the Tasks tab has three filters. Open = In progress or Further action. */
+const FGROUPS={open:o=>o.status==='In progress'||o.status==='Further action',notstarted:o=>o.status==='Open',closed:o=>isClosed(o)};
 function ordersView(){
-  const yrs=[...new Set(S.orders.map(o=>String(orderDate(o)).slice(0,4)).filter(Boolean))].sort().reverse();
-  const assets=[...S.assets.values()].sort(byName);
-  const extra=(S.f.asset?1:0)+(S.f.year?1:0);
-  const chips=[['active','Active'],['Open','Open'],['In progress','In progress'],['Further action','Further action'],['Completed','Done'],['all','All']];
-  return `<div class="searchrow"><input id="f-q" type="search" value="${esc(S.f.q)}" placeholder="Search number, title, part, notes" aria-label="Search tasks" autocomplete="off"><button type="button" class="fbtn" data-action="toggle-filters" aria-expanded="${!!S.showFilters}">Filters${extra?`<b>${extra}</b>`:''}</button></div>
-  <div class="chips" role="group" aria-label="Status">${chips.map(c=>`<button type="button" class="chip" data-action="chip" data-status="${esc(c[0])}" aria-pressed="${S.f.status===c[0]}">${c[1]}</button>`).join('')}</div>
-  ${S.showFilters?`<div class="fpanel">
-    <label class="fld"><span>Status</span><select id="f-status">${opt([['active','All active'],['all','All statuses']].concat(STATUSES.map(s=>[s,s])),S.f.status)}</select></label>
-    <label class="fld"><span>Equipment</span><select id="f-asset">${opt([['','All equipment']].concat(assets.map(a=>[a.id,a.name])),S.f.asset)}</select></label>
-    <label class="fld"><span>Year</span><select id="f-year">${opt([['','All years']].concat(yrs.map(y=>[y,y])),S.f.year)}</select></label></div>`:''}
+  const base=S.orders.filter(o=>!S.f.asset||o.assetId===S.f.asset);
+  const chips=[['open','Open'],['notstarted','Not started'],['closed','Closed']];
+  return `<div class="searchrow"><input id="f-q" type="search" value="${esc(S.f.q)}" placeholder="Search number, equipment, notes" aria-label="Search tasks" autocomplete="off"></div>
+  <div class="chips" role="group" aria-label="Show tasks">${chips.map(c=>`<button type="button" class="chip" data-action="chip" data-status="${esc(c[0])}" aria-pressed="${S.f.status===c[0]}">${c[1]} · ${base.filter(FGROUPS[c[0]]).length}</button>`).join('')}</div>
+  ${S.f.asset?`<p class="sumline"><span>Equipment: <b>${esc(assetName(S.f.asset))}</b></span><button type="button" class="btn sm ghost" data-action="clear-asset">Show all equipment</button></p>`:''}
   <div id="orders-results">${ordersResults()}</div>`;
 }
 function ordersResults(){
   const list=filteredOrders();
   if(!S.orders.length) return `<div class="empty small"><h2>No tasks yet</h2><p>Open the first one with the + button. Each gets the next number automatically.</p></div>`;
-  if(!list.length) return `<div class="empty small"><h2>No matches</h2><p>No tasks fit these filters. Try "All statuses" or clear the search.</p></div>`;
+  if(!list.length) return `<div class="empty small"><h2>Nothing here</h2><p>No tasks match. Try another filter or clear the search.</p></div>`;
   const total=list.filter(o=>o.status!=='Cancelled').reduce((s,o)=>s+orderTotals(o).all,0);
   return `<p class="sumline"><span><b>${list.length}</b> task${list.length===1?'':'s'}</span><span><b>${list.filter(isActive).length}</b> open</span><span>Cost <b>${money(total)}</b></span></p><div class="tickets">${list.map(orderRow).join('')}</div>`;
 }
@@ -780,7 +793,7 @@ function assetsView(){
 function partRows(){
   const q=S.partsQ.trim().toLowerCase(); const rows=[];
   for(const o of S.orders){ if(o.status==='Cancelled') continue; for(const l of (o.lines||[])){ if(l.kind!=='part') continue;
-    if(q&&[l.name,l.partNo,l.supplier,o.number,assetName(o.assetId)].join(' ').toLowerCase().indexOf(q)<0) continue; rows.push({o,l}); } }
+    if(q&&[l.name,l.partNo,l.supplier,o.number,fmtNo(o.number),assetName(o.assetId)].join(' ').toLowerCase().indexOf(q)<0) continue; rows.push({o,l}); } }
   return rows.sort((a,b)=>orderDate(b.o).localeCompare(orderDate(a.o))||byNumberDesc(a.o,b.o));
 }
 function partsView(){
@@ -798,13 +811,13 @@ function partsResults(){
 function blankVisit(){ return {on:false,name:'',contact:'',loc:null,atts:[]}; }
 function blankWO(p){
   p=p||{};
-  return {isNew:true,number:'',title:p.title||'',assetId:p.assetId||'',type:p.type||'Preventive maintenance',priority:'Normal',status:'Open',openedOn:todayISO(),dueOn:'',completedOn:'',meter:'',doneBy:'Me',description:'',notes:'',lines:[],followUpOf:p.followUpOf||'',furtherAt:'',visit:blankVisit()};
+  return {isNew:true,number:'',title:p.title||'',assetId:p.assetId||'',type:p.type||'Preventive maintenance',priority:'Normal',status:'Open',openedOn:todayISO(),dueOn:'',completedOn:'',meter:'',doneBy:'Me',description:'',notes:'',lines:[],followUpOf:p.followUpOf||'',furtherAt:'',startedAt:'',closedAt:'',checklist:null,locked:false,visit:blankVisit()};
 }
 function openWO(id,prefill){
   if(id){
     const o=S.orders.find(x=>x.id===id); if(!o) return;
     const c=JSON.parse(JSON.stringify(o));
-    S.wo=Object.assign(c,{isNew:false,number:o.number||o.id,type:o.type==='Repair'?'Corrective maintenance':(o.type||'Preventive maintenance'),furtherAt:o.furtherAt||'',
+    S.wo=Object.assign(c,{isNew:false,locked:isClosed(o),startedAt:o.startedAt||'',closedAt:o.closedAt||'',checklist:Array.isArray(ckItems(o))&&o.checklist&&Array.isArray(o.checklist.items)?{items:o.checklist.items.map(x=>({id:x.id||('c'+Math.random().toString(36).slice(2,8)),text:x.text||'',done:!!x.done}))}:null,number:o.number||o.id,type:o.type==='Repair'?'Corrective maintenance':(o.type||'Preventive maintenance'),furtherAt:o.furtherAt||'',
       visit:o.visit?{on:true,name:o.visit.name||'',contact:o.visit.contact||'',loc:o.visit.loc||null,atts:(o.visit.atts||[]).map(x=>({src:x.src,caption:x.caption||''}))}:blankVisit(),meter:o.meter==null?'':String(o.meter),dueOn:o.dueOn||'',completedOn:o.completedOn||'',doneBy:o.doneBy||'',description:o.description||'',notes:o.notes||'',
       lines:(o.lines||[]).map(l=>({kind:l.kind||'part',name:l.name||'',partNo:l.partNo||'',supplier:l.supplier||'',qty:String(l.qty==null?'':l.qty),unitCost:String(l.unitCost==null?'':l.unitCost)}))});
   } else S.wo=blankWO(prefill);
@@ -833,15 +846,16 @@ function renderWO(focusId){
   host.hidden=false;
   host.innerHTML=`<div class="scrim" data-action="close-modal"></div>
   <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="wo-h">
-   <header class="sheet-h"><div><p class="eyebrow">Task${w.followUpOf?' · follow-up to '+esc(w.followUpOf):''}</p><h2 id="wo-h">${bang(w)}${w.isNew?'<span class="tag pending">'+(w.assetId?'Number WO-'+woCode(w.assetId)+'-… assigned when you save':'Number assigned when you save')+'</span>':`<span class="tag">${esc(w.number)}</span>`}</h2></div>
+   <header class="sheet-h"><div><p class="eyebrow">Task${w.followUpOf?' · follow-up to '+esc(fmtNo(w.followUpOf)):''}</p><h2 id="wo-h">${bang(w)}${w.isNew?'<span class="tag pending">'+(w.assetId?'Number WO-'+woCode(w.assetId)+'… assigned when you save':'Number assigned when you save')+'</span>':`<span class="tag">${esc(fmtNo(w.number))}</span>`}</h2></div>
    <button type="button" class="icon" data-action="close-modal" aria-label="Close">&times;</button></header>
    <div class="sheet-b">
+    ${w.locked?'<p class="lockednote">This task is closed. A closed task can\'t be re-opened or changed.</p>':''}
     <div class="grid">
      <label class="fld" style="grid-column:1/-1"><span>What needs doing</span><input id="wo-title" data-f="title" type="text" value="${esc(w.title)}" placeholder="Oil and filter change" autocomplete="off"></label>
      <label class="fld"><span>Equipment</span><select id="wo-asset" data-f="assetId">${opt([['','Choose the equipment…']].concat(assets.map(x=>[x.id,x.parentId&&S.assets.get(x.parentId)?x.name+' (accessory of '+S.assets.get(x.parentId).name+')':x.name])).concat([['__new','Add new equipment…']]),w.assetId)}</select></label>
      <label class="fld"><span>Type</span><select id="wo-type" data-f="type">${opt(TYPES.map(t=>[t,t]),w.type)}</select></label>
      <label class="fld"><span>Priority</span><select id="wo-priority" data-f="priority">${opt(PRIORITIES.map(t=>[t,t]),w.priority)}</select></label>
-     <label class="fld"><span>Status</span><select id="wo-status" data-f="status">${opt(STATUSES.map(t=>[t,t]),w.status)}</select></label>
+     <label class="fld"><span>Status</span><select id="wo-status" data-f="status">${opt((w.status==='Cancelled'?STATUSES.concat(['Cancelled']):STATUSES).map(t=>[t,statusLabel(t)]),w.status)}</select></label>
      <label class="fld"><span>Opened</span><input id="wo-opened" data-f="openedOn" type="date" value="${esc(w.openedOn)}"></label>
      <label class="fld"><span>Due</span><input id="wo-due" data-f="dueOn" type="date" value="${esc(w.dueOn)}"></label>
      ${w.status==='Completed'?`<label class="fld"><span>Completed</span><input id="wo-completed" data-f="completedOn" type="date" value="${esc(w.completedOn)}"></label>`:''}
@@ -858,9 +872,11 @@ function renderWO(focusId){
      <label class="chk"><input id="wo-visit-on" type="checkbox" data-vf="on"${w.visit.on?' checked':''}><span>The equipment went to a garage, or a technician came over</span></label>
      ${w.visit.on?visitHTML(w.visit):''}
     </div>
+    ${checklistHTML(w)}
    </div>
    <footer class="sheet-f"><div class="tot"><span>Order total</span><strong id="wo-total">${money(total)}</strong></div>
-    <div class="acts">${!w.isNew&&w.status==='Completed'?'<button type="button" class="btn" data-action="report-task">PDF report</button><button type="button" class="btn" data-action="followup">Create follow-up</button>':''}<button type="button" class="btn" data-action="close-modal">Cancel</button><button type="button" class="btn primary" data-action="save-wo"${S.saving?' disabled':''}>${w.isNew?'Create task':'Save changes'}</button></div></footer></section>`;
+    <div class="acts">${!w.isNew&&w.locked?'<button type="button" class="btn" data-action="report-task">PDF report</button><button type="button" class="btn" data-action="followup">Create follow-up</button>':''}<button type="button" class="btn" data-action="close-modal">${w.locked?'Close':'Cancel'}</button>${w.locked?'':`<button type="button" class="btn primary" data-action="save-wo"${S.saving?' disabled':''}>${w.status==='Completed'?(w.isNew?'Create and close task':'Save and close task'):(w.isNew?'Create task':'Save changes')}</button>`}</div></footer></section>`;
+  if(w.locked) host.querySelectorAll('.sheet-b input,.sheet-b select,.sheet-b textarea,.sheet-b [data-action]:not([data-action="view-photo"])').forEach(el=>{ el.disabled=true; });
   keepStill(host,was);
   const sb=$('.sheet-b',host); if(sb) sb.scrollTop=scroll;
   syncInert();
@@ -935,13 +951,27 @@ function syncReminders(){
     if(!BRIDGE||typeof BRIDGE.setReminders!=='function'||!S.ready.orders||!S.ready.assets) return;
     const items=[];
     S.orders.forEach(o=>{ const t=followUpAt(o); if(t===null) return;
-      items.push({key:(o.number||o.id)+'@'+o.furtherAt,at:t,title:'Follow-up needed',body:(o.number||o.id)+' · '+o.title+' ('+assetName(o.assetId)+') has been waiting for further action for '+FURTHER_DAYS+' days.'}); });
+      items.push({key:(o.number||o.id)+'@'+o.furtherAt,at:t,title:'Follow-up needed',body:fmtNo(o.number||o.id)+' · '+o.title+' ('+assetName(o.assetId)+') has been waiting for further action for '+FURTHER_DAYS+' days.'}); });
     try{ BRIDGE.setReminders(JSON.stringify(items)); }catch(e){}
   },600);
 }
 function updateTotals(){
   let sum=0; S.wo.lines.forEach((l,i)=>{ const v=lineTotal(l); sum+=v; const el=document.getElementById('ln-'+i+'-total'); if(el) el.textContent=money(v); });
   const t=$('#wo-total'); if(t) t.textContent=money(sum);
+}
+function checklistHTML(w){
+  const lock=!!w.locked; const no=w.isNew?'this task':fmtNo(w.number);
+  if(!w.checklist){
+    return lock?'':`<div class="ckbox"><strong>Checklist</strong><p class="hint">A task can only be closed after its checklist is completed.</p><div class="addrow"><button type="button" class="btn" data-action="ck-start">Start checklist for ${esc(no)}</button></div></div>`;
+  }
+  const items=w.checklist.items; const done=items.filter(x=>x.done).length;
+  return `<div class="ckbox"><div class="ck-h"><strong>Checklist · ${esc(no)}</strong><span class="hint" id="ck-count">${done} of ${items.length} done</span></div>
+   <div class="ck-list">${items.length?items.map((x,i)=>`<div class="ck-i"><label class="chk"><input type="checkbox" id="ck-${i}" data-ck="${i}"${x.done?' checked':''}><span class="${x.done?'ckd':''}">${esc(x.text)}</span></label>${lock?'':`<button type="button" class="icon" data-action="ck-del" data-i="${i}" aria-label="Remove this step">&times;</button>`}</div>`).join(''):'<p class="hint">No steps yet. Add the steps to tick off.</p>'}</div>
+   ${lock?'':`<div class="ckadd"><label class="fld"><span>New step</span><input id="ck-new" type="text" placeholder="e.g. Check tyre pressure" autocomplete="off"></label><button type="button" class="btn sm" data-action="ck-add">Add</button></div>`}</div>`;
+}
+function ckAdd(){
+  if(!S.wo||!S.wo.checklist) return; const el=$('#ck-new'); const text=el?el.value.trim():''; if(!text){ toast('Type the step first.',true); el&&el.focus(); return; }
+  S.wo.checklist.items.push({id:'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),text,done:false}); renderWO('ck-new');
 }
 function onWoInput(e){
   const t=e.target; if(!S.wo||!t.closest||!t.closest('#modal')) return;
@@ -956,13 +986,20 @@ function onWoInput(e){
     else S.wo.visit[k]=t.value;
     return;
   }
+  if(t.dataset.ck!==undefined){
+    const it=S.wo.checklist&&S.wo.checklist.items[+t.dataset.ck]; if(!it) return; it.done=!!t.checked;
+    const sp=t.parentNode.querySelector('span'); if(sp) sp.className=it.done?'ckd':'';
+    const c=$('#ck-count'); if(c) c.textContent=S.wo.checklist.items.filter(x=>x.done).length+' of '+S.wo.checklist.items.length+' done';
+    return;
+  }
   if(t.dataset.vcap!==undefined){ const x=S.wo.visit.atts[+t.dataset.vcap]; if(x) x.caption=t.value; return; }
   const f=t.dataset.f; if(!f) return;
   const prev=S.wo[f];
+  if(f==='status'&&t.value==='Completed'&&!S.wo.locked){ const g=ckGate(S.wo); if(g){ toast(g,true); renderWO(t.id); return; } }
   if(f==='assetId'&&t.value==='__new'){ openAsset(null,true); renderWO('wo-asset'); return; }
   S.wo[f]=t.value;
   if(f==='assetId') renderWO(t.id);
-  if(f==='status'){ if(t.value==='Completed'&&!S.wo.completedOn) S.wo.completedOn=todayISO(); S.wo.furtherAt=t.value==='Further action'?(prev==='Further action'&&S.wo.furtherAt?S.wo.furtherAt:new Date().toISOString()):''; renderWO(t.id); }
+  if(f==='status'){ if(t.value!=='Open'&&!S.wo.startedAt) S.wo.startedAt=new Date().toISOString(); if(t.value==='Completed'&&!S.wo.completedOn) S.wo.completedOn=todayISO(); S.wo.furtherAt=t.value==='Further action'?(prev==='Further action'&&S.wo.furtherAt?S.wo.furtherAt:new Date().toISOString()):''; renderWO(t.id); }
   if(f==='type'||f==='priority') renderWO(t.id);
 }
 async function saveWO(){
@@ -970,12 +1007,16 @@ async function saveWO(){
   if(!w.title.trim()){ toast('Give the task a title.',true); $('#wo-title')&&$('#wo-title').focus(); return; }
   if(!w.assetId||!S.assets.has(w.assetId)){ toast('Choose the equipment this work is for.',true); $('#wo-asset')&&$('#wo-asset').focus(); return; }
   if(w.meter!==''&&!isFinite(Number(w.meter))){ toast('The reading must be a number.',true); return; }
+  if(w.locked||(!w.isNew&&isClosed(S.orders.find(x=>x.id===w.id)))){ toast('This task is closed and can\'t be changed.',true); return; }
+  if(w.status==='Completed'){ const g=ckGate(w); if(g){ toast(g,true); return; } }
   const lines=w.lines.filter(l=>l.name.trim()||num(l.unitCost)).map(l=>({kind:l.kind,name:l.name.trim(),partNo:(l.partNo||'').trim(),supplier:(l.supplier||'').trim(),qty:num(l.qty===''?1:l.qty),unitCost:num(l.unitCost)}));
   const now=new Date().toISOString();
   const doc={title:w.title.trim(),assetId:w.assetId,type:w.type,priority:w.priority,status:w.status,openedOn:w.openedOn||todayISO(),dueOn:w.dueOn||'',
     completedOn:w.status==='Completed'?(w.completedOn||todayISO()):'',meter:w.meter===''?null:Number(w.meter),doneBy:w.doneBy.trim(),description:w.description.trim(),notes:w.notes.trim(),lines,
     followUpOf:w.followUpOf||'',sample:!!w.sample,updatedAt:now,
     furtherAt:w.status==='Further action'?(w.furtherAt||now):'',
+    startedAt:w.startedAt||(w.status!=='Open'?(w.isNew?now:(w.createdAt||now)):''),closedAt:w.status==='Completed'?(w.closedAt||now):'',
+    checklist:w.checklist?{items:w.checklist.items.map(x=>({id:x.id,text:x.text,done:!!x.done}))}:null,
     visit:w.visit&&w.visit.on?{name:w.visit.name.trim(),contact:w.visit.contact.trim(),loc:w.visit.loc||null,atts:w.visit.atts}:null};
   S.saving=true; renderWO();
   try{
@@ -983,11 +1024,11 @@ async function saveWO(){
       const n=await allocateNumber(woCode(w.assetId));
       Object.assign(doc,{number:n.number,year:n.year,seq:n.seq,code:n.code,createdAt:now});
       await S.db.doc('workorders/'+n.number).set(doc);
-      toast('Created '+n.number);
+      toast('Created '+fmtNo(n.number));
     } else {
       Object.assign(doc,{number:w.number,year:w.year,seq:w.seq,code:w.code,createdAt:w.createdAt||now});
       await S.db.doc('workorders/'+w.number).set(doc);
-      toast('Saved '+w.number);
+      toast('Saved '+fmtNo(w.number));
     }
     S.saving=false; closeSheet('wo');
   }catch(e){ S.saving=false; renderWO(); fail(e,'Not saved'); }
@@ -1056,7 +1097,7 @@ function renderAsset(focusId){
     ${!a.isNew?`<div class="confirmrow">${a.archived?`<button type="button" class="btn sm" data-action="archive-asset">Restore equipment</button>`:`<button type="button" class="btn sm" data-action="archive-asset">Archive equipment</button>`}
       ${used?`<span class="hint">${kids?'Has accessories':'Has tasks'}, so it can be archived but not deleted.</span>`:(a.confirmDelete?`<button type="button" class="btn sm danger" data-action="delete-asset">Confirm delete</button><span class="hint">This cannot be undone.</span>`:`<button type="button" class="btn sm danger" data-action="delete-asset">Delete equipment</button>`)}</div>`:''}
    </div>
-   <footer class="sheet-f"><span class="hint">${child&&!par?'':`Tasks will be numbered WO-${code}-…`}${a.meterUnit&&!child?' and ask for a reading.':''}</span><div class="acts"><button type="button" class="btn" data-action="close-modal2">Cancel</button><button type="button" class="btn primary" data-action="save-asset">${a.isNew?'Add equipment':'Save changes'}</button></div></footer></section>`;
+   <footer class="sheet-f"><span class="hint">${child&&!par?'':`Tasks will be numbered WO-${code}…`}${a.meterUnit&&!child?' and ask for a reading.':''}</span><div class="acts"><button type="button" class="btn" data-action="close-modal2">Cancel</button><button type="button" class="btn primary" data-action="save-asset">${a.isNew?'Add equipment':'Save changes'}</button></div></footer></section>`;
   keepStill(host,was);
   syncInert();
   if(focusId){ const el=document.getElementById(focusId); if(el) el.focus(); }
@@ -1251,7 +1292,7 @@ async function doRestore(){
     for(const a of r.assets){ const doc=Object.assign({},a); delete doc.id; await S.db.doc('assets/'+a.id).set(doc); }
     for(const o of r.orders){
       const doc=Object.assign({},o); const no=String(o.number||o.id); delete doc.id; doc.number=no;
-      const m=/^WO-(?:([A-Z])-)?(\d{4})-(\d+)$/.exec(no); if(m){ doc.year=Number(m[2]); doc.seq=Number(m[3]); if(m[1]) doc.code=m[1]; }
+      const m=/^WO-(?:([A-Z])-?)?(\d{4})-?(\d{4,})$/.exec(no); if(m){ doc.year=Number(m[2]); doc.seq=Number(m[3]); if(m[1]) doc.code=m[1]; }
       await S.db.doc('workorders/'+no).set(doc);
     }
     toast('Restored '+r.assets.length+' asset'+(r.assets.length===1?'':'s')+' and '+r.orders.length+' task'+(r.orders.length===1?'':'s')); S.restore=null;
@@ -1276,11 +1317,11 @@ async function exportData(what){
     filename='work-orders-'+todayISO()+'.csv';
     data=toCSV([['Task','Title','Equipment','Category','Type','Priority','Status','Opened','Due','Completed','Reading','Unit','Done by','Parts','Labour','Other','Total','Work performed','Notes','Garage / technician','Contact','Location']].concat(orders.map(o=>{
       const a=S.assets.get(o.assetId)||{}; const t=orderTotals(o);
-      return [o.number,o.title,a.name,a.category,o.type,o.priority,o.status,o.openedOn,o.dueOn,o.completedOn,o.meter,a.meterUnit,o.doneBy,t.part.toFixed(2),t.labour.toFixed(2),t.other.toFixed(2),t.all.toFixed(2),o.description,o.notes,o.visit?o.visit.name:'',o.visit?o.visit.contact:'',o.visit&&o.visit.loc?o.visit.loc.lat+', '+o.visit.loc.lng:''];
+      return [fmtNo(o.number),o.title,a.name,a.category,o.type,o.priority,statusLabel(o.status),o.openedOn,o.dueOn,o.completedOn,o.meter,a.meterUnit,o.doneBy,t.part.toFixed(2),t.labour.toFixed(2),t.other.toFixed(2),t.all.toFixed(2),o.description,o.notes,o.visit?o.visit.name:'',o.visit?o.visit.contact:'',o.visit&&o.visit.loc?o.visit.loc.lat+', '+o.visit.loc.lng:''];
     })));
   } else if(what==='lines'){
     filename='cost-lines-'+todayISO()+'.csv'; const rows=[['Task','Date','Equipment','Type','Description','Part no.','Supplier','Qty','Unit cost','Line total']];
-    orders.forEach(o=>(o.lines||[]).forEach(l=>rows.push([o.number,orderDate(o),assetName(o.assetId),l.kind,l.name,l.partNo,l.supplier,l.qty,num(l.unitCost).toFixed(2),lineTotal(l).toFixed(2)])));
+    orders.forEach(o=>(o.lines||[]).forEach(l=>rows.push([fmtNo(o.number),orderDate(o),assetName(o.assetId),l.kind,l.name,l.partNo,l.supplier,l.qty,num(l.unitCost).toFixed(2),lineTotal(l).toFixed(2)])));
     data=toCSV(rows);
   } else {
     filename='home-work-orders-backup-'+todayISO()+'.json';
@@ -1367,7 +1408,7 @@ function buildReportPDF(deps,opt){
 
   section('Tasks');
   table({head:[['No.','Date','Equipment','Title','Status','Cost']],
-    body:list.map(o=>[o.number||o.id,pdfDate(orderDate(o)),pdfText(assetName(o.assetId)),pdfText(o.title),o.status,pdfMoney(orderTotals(o).all)]),
+    body:list.map(o=>[fmtNo(o.number||o.id),pdfDate(orderDate(o)),pdfText(assetName(o.assetId)),pdfText(o.title),statusLabel(o.status),pdfMoney(orderTotals(o).all)]),
     columnStyles:{0:{cellWidth:28},1:{cellWidth:23},2:{cellWidth:34},4:{cellWidth:22},5:{cellWidth:28,halign:'right'}}});
 
   if(opt.parts){
@@ -1488,6 +1529,10 @@ document.addEventListener('click',e=>{
     case 'make-report': makeReport(); break;
     case 'clear-samples': clearSamples(); break;
     case 'chip': S.f.status=el.dataset.status; renderView(); break;
+    case 'clear-asset': S.f.asset=''; if(S.f.status==='all') S.f.status='open'; renderView(); break;
+    case 'ck-start': if(S.wo&&!S.wo.locked){ S.wo.checklist={items:[]}; renderWO('ck-new'); } break;
+    case 'ck-add': ckAdd(); break;
+    case 'ck-del': if(S.wo&&S.wo.checklist&&!S.wo.locked){ S.wo.checklist.items.splice(+el.dataset.i,1); renderWO(); } break;
     case 'toggle-filters': S.showFilters=!S.showFilters; renderView(); break;
     case 'range': S.range=el.dataset.range; render(); break;
     case 'toggle-archived': S.showArchived=!S.showArchived; render(); break;
@@ -1522,7 +1567,7 @@ document.addEventListener('change',e=>{
   if(e.target&&e.target.id==='st-restore'){ readRestore(e.target.files&&e.target.files[0]); return; }
   onInput(e);
 });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&(!$('#modal').hidden||!$('#modal2').hidden||!$('#addmenu').hidden)){ e.preventDefault(); closeTop(); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target&&e.target.id==='ck-new'){ e.preventDefault(); ckAdd(); return; } if(e.key==='Escape'&&(!$('#modal').hidden||!$('#modal2').hidden||!$('#addmenu').hidden)){ e.preventDefault(); closeTop(); } });
 window.addEventListener('hashchange',()=>{ const h=location.hash.slice(1); if(['dashboard','orders','assets','parts'].indexOf(h)>=0&&h!==S.view){ S.view=h; render(); } });
 (function(){ const h=location.hash.slice(1); if(['dashboard','orders','assets','parts'].indexOf(h)>=0) S.view=h; })();
 
