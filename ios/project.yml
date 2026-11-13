@@ -10,7 +10,7 @@ settings:
     # Marketing version = first three parts of APP_VERSION in the page; build number = the fourth.
     # scripts/sync-web.sh checks both.
     MARKETING_VERSION: "2.6.3"
-    CURRENT_PROJECT_VERSION: "1"
+    CURRENT_PROJECT_VERSION: "2"
 targets:
   IGotThis:
     type: application

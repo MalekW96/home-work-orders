@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.6.3.2
+
+- Sign in and sign up have a Show/Hide button next to the password.
+- Clearer messages when sign in or sign up fails (for example "Your email is not confirmed yet" instead of "Wrong email or password").
+
 ## 2.6.3.1
 
 - Settings is reordered: sign in, currency, version, then backup and restore.

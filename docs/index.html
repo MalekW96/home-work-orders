@@ -391,8 +391,8 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
-const APP_VERSION='2.6.3.1';
-const RELEASE_NOTES=['Settings is reordered: sign in, currency, version, then backup and restore.','Back up your records to a file when you are signed in.','The version shows as V2.6.3.1 with the key release notes.'];
+const APP_VERSION='2.6.3.2';
+const RELEASE_NOTES=['Show or hide your password when you sign in or sign up.','Clearer messages when sign in or sign up fails, for example an email that is not confirmed yet.','Settings order: sign in, currency, version, then backup and restore.'];
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -715,6 +715,16 @@ function sbSession(j,email){
   SY.sess={access:j.access_token,refresh:j.refresh_token,exp:Date.now()+(j.expires_in||3600)*1000,email:(j.user&&j.user.email)||email||'',name};
   lsSet(SB_SESSION,SY.sess);
 }
+function authMsg(e){
+  const code=String((e.body&&(e.body.error_code||e.body.code))||''), m=e.message||'';
+  if(code==='email_not_confirmed'||/not confirmed/i.test(m)) return 'Your email is not confirmed yet. Open the confirmation email (check spam), then sign in.';
+  if(code==='invalid_credentials'||/invalid login/i.test(m)) return 'Wrong email or password.';
+  if(code==='user_already_exists') return 'That email already has an account. Sign in instead.';
+  if(code==='signup_disabled'||/signups? not allowed/i.test(m)) return 'Sign up is switched off for this app.';
+  if(code==='over_email_send_rate_limit'||e.status===429) return 'Too many emails were sent. Wait a while and try again.';
+  if(/email_address_invalid|invalid.*email/i.test(code+m)) return 'That email address is not accepted.';
+  return m||('Something went wrong (HTTP '+e.status+').');
+}
 const syNetErr=e=>(e.name==='AbortError'||e instanceof TypeError)?'Could not reach the sync service. Check your connection.':'';
 async function sbSignIn(email,pw){
   SY.email=email; SY.err=''; SY.msg=''; SY.busy=true; syPaint();
@@ -723,7 +733,7 @@ async function sbSignIn(email,pw){
     sbSession(j,email);
     SY.busy=false; syPaint(); await syncNow(true);
   }catch(e){
-    SY.busy=false; SY.err=e.status===400?'Wrong email or password.':syNetErr(e)||('Could not sign in: '+e.message); syPaint();
+    SY.busy=false; SY.err=syNetErr(e)||authMsg(e); syPaint();
   }
 }
 async function sbSignUp(first,last,email,pw){
@@ -735,7 +745,7 @@ async function sbSignUp(first,last,email,pw){
     if(j&&j.user&&Array.isArray(j.user.identities)&&j.user.identities.length===0){ SY.mode='in'; SY.err='That email already has an account. Sign in instead.'; syPaint(); return; }
     SY.mode='in'; SY.msg='Account created. Check your email to confirm it, then sign in.'; syPaint();
   }catch(e){
-    SY.busy=false; SY.err=syNetErr(e)||(e.status===422||e.status===400?e.message:'Could not sign up: '+e.message); syPaint();
+    SY.busy=false; SY.err=syNetErr(e)||authMsg(e); syPaint();
   }
 }
 const GOOGLE_SIGNIN=false; /* switch to true once Google is enabled in the Supabase project */
@@ -841,7 +851,7 @@ function syncBlock(){
    ${up?`<label class="fld"><span>Name</span><input id="sy-first" type="text" autocomplete="given-name" required></label>
    <label class="fld"><span>Surname</span><input id="sy-last" type="text" autocomplete="family-name" required></label>`:''}
    <label class="fld"><span>Email</span><input id="sy-email" type="email" autocomplete="username" autocapitalize="off" spellcheck="false" required value="${esc(SY.email||'')}"></label>
-   <label class="fld"><span>${up?'Create a password':'Password'}</span><input id="sy-pass" type="password" autocomplete="${up?'new-password':'current-password'}" required${up?' minlength="8"':''}></label>
+   <label class="fld"><span>${up?'Create a password':'Password'}</span><span style="display:flex;gap:8px;align-items:center"><input id="sy-pass" type="password" style="flex:1;min-width:0" autocomplete="${up?'new-password':'current-password'}" required${up?' minlength="8"':''}><button type="button" class="btn sm" id="sy-eye" data-action="pw-toggle" aria-pressed="false" aria-label="Show password">Show</button></span></label>
    ${up?'<p class="hint">At least 8 characters.</p>':''}
    <div class="addrow"><button type="button" class="btn sm primary" data-action="${up?'sync-up':'sync-in'}"${dis}>${SY.busy?(up?'Creating account…':'Signing in…'):(up?'Sign up':'Sign in')}</button></div>
    ${SY.msg?`<p class="hint">${esc(SY.msg)}</p>`:''}
@@ -1771,6 +1781,7 @@ document.addEventListener('click',e=>{
       if(pw.value.length<8){ SY.err='The password needs at least 8 characters.'; syPaint(); break; }
       sbSignUp(f.value.trim(),l.value.trim(),em.value.trim(),pw.value); break; }
     case 'sync-google': sbGoogle(); break;
+    case 'pw-toggle': { const pw=$('#sy-pass'); if(!pw) break; const show=pw.type==='password'; pw.type=show?'text':'password'; el.textContent=show?'Hide':'Show'; el.setAttribute('aria-pressed',String(show)); el.setAttribute('aria-label',show?'Hide password':'Show password'); break; }
     case 'sync-mode': SY.mode=el.dataset.mode==='up'?'up':'in'; SY.err=''; SY.msg=''; syPaint(); break;
     case 'sync-now': syncNow(true); break;
     case 'sync-out': sbSignOut(); break;
