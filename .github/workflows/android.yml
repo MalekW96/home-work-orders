@@ -56,9 +56,9 @@ jobs:
       - name: Verify the APK is signed with your key
         if: env.HWO_KEYSTORE != ''
         run: |
-          want=$(keytool -list -keystore "$HWO_KEYSTORE" -storepass android -alias androiddebugkey | grep -i "SHA-256" | sed 's/.*: *//' | tr -d ':' | tr 'A-F' 'a-f')
+          want=$(keytool -list -keystore "$HWO_KEYSTORE" -storepass android -alias androiddebugkey | grep -i "SHA-256" | sed 's/^[^:]*: *//' | tr -d ': ' | tr 'A-F' 'a-f')
           apksigner=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
-          got=$("$apksigner" verify --print-certs android/apk/HomeWorkOrders-v*.apk | grep -i "SHA-256 digest" | head -1 | sed 's/.*: *//' | tr -d ':' | tr 'A-F' 'a-f')
+          got=$("$apksigner" verify --print-certs android/apk/HomeWorkOrders-v*.apk | grep -i "SHA-256 digest" | head -1 | sed 's/^[^:]*: *//' | tr -d ': ' | tr 'A-F' 'a-f')
           echo "Key in secret : $want"
           echo "Key in the APK: $got"
           [ -n "$want" ] && [ "$want" = "$got" ] || { echo "::error::The APK is not signed with the key from DEBUG_KEYSTORE_B64."; exit 1; }
