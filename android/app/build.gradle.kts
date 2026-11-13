@@ -20,6 +20,19 @@ android {
         versionName = "2.6.2.0"
     }
 
+    // CI sets HWO_KEYSTORE to the owner's debug keystore so the APK is signed with the same key as
+    // the one built in Android Studio. Without it (a normal local build) the default debug key is used.
+    signingConfigs {
+        System.getenv("HWO_KEYSTORE")?.takeIf { it.isNotBlank() }?.let { path ->
+            getByName("debug") {
+                storeFile = file(path)
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
