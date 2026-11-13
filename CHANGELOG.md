@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.6.2.0
+
+- The Continue with Google button is hidden for now. Account sign in is Sign in and Sign up with email: name, surname, email and a password (at least 8 characters) are all required to create an account.
+
 ## 2.6.1.0
 
 - Account sign in now has three options: Continue with Google, Sign in, and Sign up.

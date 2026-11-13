@@ -390,7 +390,7 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
-const APP_VERSION='2.6.1.0';
+const APP_VERSION='2.6.2.0';
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -736,6 +736,7 @@ async function sbSignUp(first,last,email,pw){
     SY.busy=false; SY.err=syNetErr(e)||(e.status===422||e.status===400?e.message:'Could not sign up: '+e.message); syPaint();
   }
 }
+const GOOGLE_SIGNIN=false; /* switch to true once Google is enabled in the Supabase project */
 /* Google sign in: web version only. Google does not allow its sign-in page inside an app's embedded browser. */
 function sbGoogle(){
   if(IS_APP){ SY.err='Google sign in works in the web version. In this app, use your email and password (create the account with Sign up).'; syPaint(); return; }
@@ -832,8 +833,8 @@ function syncBlock(){
   const up=SY.mode==='up', dis=SY.busy?' disabled':'';
   return `<div><h3 class="sec-h">Account sync</h3>
    <p class="hint">Sign in to keep this device in step with your other devices. The records also stay on this device.</p>
-   <div class="addrow"><button type="button" class="btn wide" data-action="sync-google"${dis}><b aria-hidden="true">G</b>&nbsp; Continue with Google</button></div>
-   <p class="hint" style="text-align:center;margin:10px 0">or use your email</p>
+   ${GOOGLE_SIGNIN?`<div class="addrow"><button type="button" class="btn wide" data-action="sync-google"${dis}><b aria-hidden="true">G</b>&nbsp; Continue with Google</button></div>
+   <p class="hint" style="text-align:center;margin:10px 0">or use your email</p>`:''}
    <div class="seg" role="group" aria-label="Account"><button type="button" data-action="sync-mode" data-mode="in" aria-pressed="${!up}">Sign in</button><button type="button" data-action="sync-mode" data-mode="up" aria-pressed="${up}">Sign up</button></div>
    ${up?`<label class="fld"><span>Name</span><input id="sy-first" type="text" autocomplete="given-name" required></label>
    <label class="fld"><span>Surname</span><input id="sy-last" type="text" autocomplete="family-name" required></label>`:''}
