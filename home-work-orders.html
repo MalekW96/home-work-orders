@@ -390,7 +390,8 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
-const APP_VERSION='2.6.2.0';
+const APP_VERSION='2.6.3.1';
+const RELEASE_NOTES=['Settings is reordered: sign in, currency, version, then backup and restore.','Back up your records to a file when you are signed in.','The version shows as V2.6.3.1 with the key release notes.'];
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -645,7 +646,7 @@ function makeBridgeDownloads(){
 
 async function boot(){
   render();
-  const verEl=$('#app-ver'); if(verEl) verEl.textContent='v'+APP_VERSION;
+  const verEl=$('#app-ver'); if(verEl) verEl.textContent='V'+APP_VERSION;
   let db=null,user=null,dl=null;
   if(IS_APP){ db=makeLocalDb(); dl=makeBridgeDownloads(); }
   else if(IS_WEB){ try{ const ws=await webStore(); db=makeLocalDb({initial:ws.initial,write:ws.write}); dl=makeWebDownloads(); }catch(e){ db=null; } }
@@ -1383,12 +1384,19 @@ function renderSettings(){
     ${syncBlock()}
     <label class="fld"><span>Currency code</span><input id="st-cur" list="st-curlist" type="text" maxlength="3" value="${esc(S.settings.currency||'SAR')}" autocomplete="off" ${canWrite()?'':'disabled'}><datalist id="st-curlist">${CURRENCIES.map(c=>`<option value="${c}"></option>`).join('')}</datalist></label>
     <p class="hint">Three-letter code such as SAR, USD or EUR. It changes how amounts are shown, not the numbers.</p>
-    <div><h3 class="sec-h">Restore from a backup</h3>${canWrite()?`<label class="fld"><span>Backup file (JSON)</span><input id="st-restore" type="file" accept="application/json,.json"></label>${S.restore?`<p class="hint">${esc(S.restore.msg)}</p>${S.restore.ok?`<button type="button" class="btn sm primary" data-action="do-restore" style="margin-top:8px">Restore these records</button>`:''}`:`<p class="hint">Pick a Full backup file made by this app, for example to move your records from the web version to the phone.</p>`}`:`<p class="hint">Restoring is not available in this view.</p>`}</div>
     <h3 class="sec-h">Updates</h3>
     ${aboutBlock()}
+    <h3 class="sec-h">Backup</h3>
+    ${backupBlock()}
+    <div><h3 class="sec-h">Restore from a backup</h3>${canWrite()?`<label class="fld"><span>Backup file (JSON)</span><input id="st-restore" type="file" accept="application/json,.json"></label>${S.restore?`<p class="hint">${esc(S.restore.msg)}</p>${S.restore.ok?`<button type="button" class="btn sm primary" data-action="do-restore" style="margin-top:8px">Restore these records</button>`:''}`:`<p class="hint">Pick a Full backup file made by this app, for example to move your records from the web version to the phone.</p>`}`:`<p class="hint">Restoring is not available in this view.</p>`}</div>
    </div>
    <footer class="sheet-f"><span></span><div class="acts"><button type="button" class="btn primary" data-action="close-modal">Done</button></div></footer></section>`;
   keepStill(host,was); syncInert();
+}
+function backupBlock(){
+  if(!SY.sess) return '<p class="hint">Sign in to back up your records.</p>';
+  if(!S.downloads) return '<p class="hint">Backups aren\'t available in this view.</p>';
+  return `<div><div class="addrow"><button type="button" class="btn sm" data-action="export" data-what="json">Back up now (JSON file)</button></div><p class="hint">Saves all your records to a file. Restore it below, for example on a new phone.</p></div>`;
 }
 function cmpVer(a,b){
   const x=String(a).split('.').map(Number), y=String(b).split('.').map(Number);
@@ -1423,7 +1431,7 @@ function aboutBlock(){
     act=`<a class="btn sm" href="${esc(u.apkUrl)}" target="_blank" rel="noopener">Download the update</a>`;
   } else act=`<a class="btn sm" href="${esc(RELEASES_URL)}" target="_blank" rel="noopener">Open releases page</a>`;
   const dlmsg=dl&&dl.state!=='progress'?`<p class="upd${dl.state==='error'?'':' good'}">${esc(dl.msg)}</p>`:'';
-  return `<section class="about" aria-label="About and updates"><div class="about-h"><div><div class="k-l">Installed version</div><div class="ver mono" id="st-version">v${esc(APP_VERSION)}</div><p class="hint">Every job on the house and the car, numbered, costed and on record.</p></div>${CAN_CHECK?`<button type="button" class="btn sm primary" data-action="check-update"${u&&u.state==='checking'?' disabled':''}>Check for updates</button>`:''}</div>
+  return `<section class="about" aria-label="About and updates"><div class="about-h"><div><div class="k-l">Installed version</div><div class="ver mono" id="st-version">V${esc(APP_VERSION)}</div><ul class="hint" style="margin:8px 0 0;padding-left:18px">${RELEASE_NOTES.map(n=>`<li>${esc(n)}</li>`).join('')}</ul></div>${CAN_CHECK?`<button type="button" class="btn sm primary" data-action="check-update"${u&&u.state==='checking'?' disabled':''}>Check for updates</button>`:''}</div>
    ${OTA?`${status}${dlmsg}${act?`<div class="addrow">${act}</div>`:''}<p class="hint">${IS_IOS?'Update now downloads the newest screens and reloads. Your records stay on this iPhone. Changes to the iPhone app itself, such as notifications, need a new install.':'Update now reloads the app with the newest version. Your records stay on this device.'}</p>`:IS_APP?`${status}${dlmsg}<div class="addrow">${act}</div><p class="hint">Update address</p><p class="addr mono">${esc(RELEASES_URL)}</p><p class="hint">${IS_IOS?'A newer version arrives as a new build of the app (TestFlight, or installed again from Xcode). Install it over this one and your records stay on the iPhone.':'When a newer version exists, press Download and install. Android asks you to confirm and installs it over this app, and your records stay on the phone.'}</p>`:`<p class="hint">The web version updates itself whenever a new version is published.</p>`}</section>`;
 }
 function startInstall(){

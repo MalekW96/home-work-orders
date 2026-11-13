@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.6.3.1
+
+- Settings is reordered: sign in, currency, version, then backup and restore.
+- New Back up now button (a JSON file of all your records), shown when you are signed in. Restore from a backup stays below it.
+- The version shows as V2.6.3.1, without the description, and lists the key release notes instead.
+
 ## 2.6.2.0
 
 - The Continue with Google button is hidden for now. Account sign in is Sign in and Sign up with email: name, surname, email and a password (at least 8 characters) are all required to create an account.
