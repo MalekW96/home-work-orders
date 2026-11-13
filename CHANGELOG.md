@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.4.2.3
+
+- The task header now shows the vehicle's number plate, or the equipment's serial number, next to the word TASK.
+- A closed task opens for viewing only: the Close and Create follow-up buttons are gone (use the × at the top to leave). PDF report stays.
+- New Attachments section at the bottom of a task. It lists the location photos and any PDF report made from the task. The report is kept on the task, and Save again hands you the same file.
+- Closed tasks no longer show a green circle next to the status.
+- The PDF report button on a closed task now makes a report for that one task.
+
 ## 2.4.1.3
 
 - Every task now has a checklist. A button at the bottom of the task starts one for that WO number, and you add the steps. A task cannot be closed until the checklist has at least one step and every step is ticked.

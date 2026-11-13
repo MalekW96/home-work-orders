@@ -367,7 +367,7 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
-const APP_VERSION='2.4.1.3';
+const APP_VERSION='2.4.2.3';
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -415,6 +415,8 @@ const ckItems=o=>(o&&o.checklist&&Array.isArray(o.checklist.items))?o.checklist.
 const ckGate=o=>{ const i=ckItems(o); if(!o||!o.checklist||!i.length) return 'Start the checklist and add at least one step before closing this task.'; if(!i.every(x=>x.done)) return 'Complete every checklist step before closing this task.'; return ''; };
 const startedAtOf=o=>o.startedAt||(o.status!=='Open'?(o.createdAt||o.openedOn||''):'');
 function fmtDT(v){ if(!v) return ''; const dateOnly=String(v).length<=10; const d=new Date(dateOnly?v+'T12:00:00':v); if(!isFinite(d.getTime())) return ''; const a=d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}); return dateOnly?a:a+', '+d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}); }
+/* the vehicle's number plate, or the equipment's serial number, shown beside the word TASK */
+const assetIdent=id=>{ const a=S.assets.get(id); if(!a) return ''; const plate=String(a.plate||'').trim(), ser=String(a.serial||'').trim(); if(a.category==='Vehicle'&&plate) return 'Plate '+plate; if(ser) return 'S/N '+ser; if(plate) return 'Plate '+plate; return ''; };
 const assetName=id=>{ const a=S.assets.get(id); return a?a.name:'Unknown equipment'; };
 const byName=(a,b)=>String(a.name).localeCompare(String(b.name));
 const byNumberDesc=(a,b)=>(num(b.year)-num(a.year))||(a.createdAt&&b.createdAt&&a.createdAt!==b.createdAt?String(b.createdAt).localeCompare(String(a.createdAt)):0)||(num(b.seq)-num(a.seq))||String(b.id).localeCompare(String(a.id));
@@ -459,7 +461,7 @@ function showPhoto(src,cap){
   d.addEventListener('click',closePhoto); document.body.appendChild(d);
 }
 function closePhoto(){ const d=document.getElementById('lb'); if(d){ d.remove(); return true; } return false; }
-function stDot(status){ const c={'Open':'','In progress':'prog','Further action':'further','Completed':'done','Cancelled':'cancel'}[status]||''; const l=statusLabel(status); return `<span class="st ${c}"><i></i>${esc(l)}</span>`; }
+function stDot(status){ const c={'Open':'','In progress':'prog','Further action':'further','Completed':'done','Cancelled':'cancel'}[status]||''; const l=statusLabel(status); return `<span class="st ${c}">${c==='done'?'':'<i></i>'}${esc(l)}</span>`; }
 function emptyArt(){ return `<svg class="art" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 30 32 11l24 19"/><path d="M13 27v25h38V27"/><path d="M26 52V37h12v15"/><path d="M47 14v8"/></svg>`; }
 function pill(status){ const c={'Open':'open','In progress':'prog','Further action':'further','Completed':'done','Cancelled':'cancel'}[status]||'open'; return `<span class="pill ${c}">${esc(statusLabel(status))}</span>`; }
 
@@ -818,7 +820,7 @@ function openWO(id,prefill){
   if(id){
     const o=S.orders.find(x=>x.id===id); if(!o) return;
     const c=JSON.parse(JSON.stringify(o));
-    S.wo=Object.assign(c,{isNew:false,locked:isClosed(o),startedAt:o.startedAt||'',closedAt:o.closedAt||'',checklist:Array.isArray(ckItems(o))&&o.checklist&&Array.isArray(o.checklist.items)?{items:o.checklist.items.map(x=>({id:x.id||('c'+Math.random().toString(36).slice(2,8)),text:x.text||'',done:!!x.done}))}:null,number:o.number||o.id,type:o.type==='Repair'?'Corrective maintenance':(o.type||'Preventive maintenance'),furtherAt:o.furtherAt||'',
+    S.wo=Object.assign(c,{isNew:false,locked:isClosed(o),reports:(o.reports||[]).map(r=>({name:r.name,at:r.at,src:r.src})),startedAt:o.startedAt||'',closedAt:o.closedAt||'',checklist:Array.isArray(ckItems(o))&&o.checklist&&Array.isArray(o.checklist.items)?{items:o.checklist.items.map(x=>({id:x.id||('c'+Math.random().toString(36).slice(2,8)),text:x.text||'',done:!!x.done}))}:null,number:o.number||o.id,type:o.type==='Repair'?'Corrective maintenance':(o.type||'Preventive maintenance'),furtherAt:o.furtherAt||'',
       visit:o.visit?{on:true,name:o.visit.name||'',contact:o.visit.contact||'',loc:o.visit.loc||null,atts:(o.visit.atts||[]).map(x=>({src:x.src,caption:x.caption||''}))}:blankVisit(),meter:o.meter==null?'':String(o.meter),dueOn:o.dueOn||'',completedOn:o.completedOn||'',doneBy:o.doneBy||'',description:o.description||'',notes:o.notes||'',
       lines:(o.lines||[]).map(l=>({kind:l.kind||'part',name:l.name||'',partNo:l.partNo||'',supplier:l.supplier||'',qty:String(l.qty==null?'':l.qty),unitCost:String(l.unitCost==null?'':l.unitCost)}))});
   } else S.wo=blankWO(prefill);
@@ -847,7 +849,7 @@ function renderWO(focusId){
   host.hidden=false;
   host.innerHTML=`<div class="scrim" data-action="close-modal"></div>
   <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="wo-h">
-   <header class="sheet-h"><div><p class="eyebrow">Task${w.followUpOf?' · follow-up to '+esc(fmtNo(w.followUpOf)):''}</p><h2 id="wo-h">${bang(w)}${w.isNew?'<span class="tag pending">'+(w.assetId?'Number WO-'+woCode(w.assetId)+'… assigned when you save':'Number assigned when you save')+'</span>':`<span class="tag">${esc(fmtNo(w.number))}</span>`}</h2></div>
+   <header class="sheet-h"><div><p class="eyebrow">Task${assetIdent(w.assetId)?' · '+esc(assetIdent(w.assetId)):''}${w.followUpOf?' · follow-up to '+esc(fmtNo(w.followUpOf)):''}</p><h2 id="wo-h">${bang(w)}${w.isNew?'<span class="tag pending">'+(w.assetId?'Number WO-'+woCode(w.assetId)+'… assigned when you save':'Number assigned when you save')+'</span>':`<span class="tag">${esc(fmtNo(w.number))}</span>`}</h2></div>
    <button type="button" class="icon" data-action="close-modal" aria-label="Close">&times;</button></header>
    <div class="sheet-b">
     ${w.locked?'<p class="lockednote">This task is closed. A closed task can\'t be re-opened or changed.</p>':''}
@@ -874,10 +876,11 @@ function renderWO(focusId){
      ${w.visit.on?visitHTML(w.visit):''}
     </div>
     ${checklistHTML(w)}
+    ${attachmentsHTML(w)}
    </div>
    <footer class="sheet-f"><div class="tot"><span>Order total</span><strong id="wo-total">${money(total)}</strong></div>
-    <div class="acts">${!w.isNew&&w.locked?'<button type="button" class="btn" data-action="report-task">PDF report</button><button type="button" class="btn" data-action="followup">Create follow-up</button>':''}<button type="button" class="btn" data-action="close-modal">${w.locked?'Close':'Cancel'}</button>${w.locked?'':`<button type="button" class="btn primary" data-action="save-wo"${S.saving?' disabled':''}>${w.status==='Completed'?(w.isNew?'Create and close task':'Save and close task'):(w.isNew?'Create task':'Save changes')}</button>`}</div></footer></section>`;
-  if(w.locked) host.querySelectorAll('.sheet-b input,.sheet-b select,.sheet-b textarea,.sheet-b [data-action]:not([data-action="view-photo"])').forEach(el=>{ el.disabled=true; });
+    <div class="acts">${!w.isNew&&w.locked?'<button type="button" class="btn" data-action="report-task">PDF report</button>':''}${w.locked?'':`<button type="button" class="btn" data-action="close-modal">Cancel</button><button type="button" class="btn primary" data-action="save-wo"${S.saving?' disabled':''}>${w.status==='Completed'?(w.isNew?'Create and close task':'Save and close task'):(w.isNew?'Create task':'Save changes')}</button>`}</div></footer></section>`;
+  if(w.locked) host.querySelectorAll('.sheet-b input,.sheet-b select,.sheet-b textarea,.sheet-b [data-action]:not([data-action="view-photo"]):not([data-action="open-report"])').forEach(el=>{ el.disabled=true; });
   keepStill(host,was);
   const sb=$('.sheet-b',host); if(sb) sb.scrollTop=scroll;
   syncInert();
@@ -960,6 +963,13 @@ function updateTotals(){
   let sum=0; S.wo.lines.forEach((l,i)=>{ const v=lineTotal(l); sum+=v; const el=document.getElementById('ln-'+i+'-total'); if(el) el.textContent=money(v); });
   const t=$('#wo-total'); if(t) t.textContent=money(sum);
 }
+function attachmentsHTML(w){
+  const photos=(w.visit&&w.visit.on?w.visit.atts:[])||[]; const reps=w.reports||[];
+  if(!photos.length&&!reps.length) return '';
+  return `<div class="ckbox"><strong>Attachments</strong>
+   ${photos.length?`<div class="atts">${photos.map((x,i)=>`<div class="att"><button type="button" class="thumb" data-action="view-photo" data-k="visit" data-i="${i}" aria-label="View photo ${i+1}"><img src="${x.src}" alt=""></button><span class="hint">${esc(x.caption||'Photo '+(i+1))}</span></div>`).join('')}</div>`:''}
+   ${reps.map((r,i)=>`<div class="ck-i"><span class="hint" style="flex:1;min-width:0">PDF · ${esc(r.name)} · ${esc(fmtDT(r.at))}</span><button type="button" class="btn sm" data-action="open-report" data-i="${i}">Save again</button></div>`).join('')}</div>`;
+}
 function checklistHTML(w){
   const lock=!!w.locked; const no=w.isNew?'this task':fmtNo(w.number);
   if(!w.checklist){
@@ -1017,6 +1027,7 @@ async function saveWO(){
     followUpOf:w.followUpOf||'',sample:!!w.sample,updatedAt:now,
     furtherAt:w.status==='Further action'?(w.furtherAt||now):'',
     startedAt:w.startedAt||(w.status!=='Open'?(w.isNew?now:(w.createdAt||now)):''),closedAt:w.status==='Completed'?(w.closedAt||now):'',
+    reports:w.reports||[],
     checklist:w.checklist?{items:w.checklist.items.map(x=>({id:x.id,text:x.text,done:!!x.done}))}:null,
     visit:w.visit&&w.visit.on?{name:w.visit.name.trim(),contact:w.visit.contact.trim(),loc:w.visit.loc||null,atts:w.visit.atts}:null};
   S.saving=true; renderWO();
@@ -1350,6 +1361,7 @@ function pdfMoney(n){ return String(S.settings.currency||'SAR').toUpperCase()+' 
 /* The built-in PDF fonts cover Latin text only, so anything else is swapped for "?" rather than drawn as noise. */
 function pdfText(s){ return String(s==null?'':s).replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,'-').replace(/…/g,'...').replace(/[  ]/g,' ').replace(/[^\n\x20-\x7E\xA1-\xFF]/g,'?'); }
 function reportData(opt){
+  if(opt.task){ const t=S.orders.find(o=>o.id===opt.task); return {start:'',list:t?[t]:[]}; }
   let start=''; const d=new Date();
   if(opt.period==='year') start=d.getFullYear()+'-01-01';
   else if(opt.period==='12m'){ d.setFullYear(d.getFullYear()-1); start=localISO(d); }
@@ -1431,7 +1443,7 @@ function buildReportPDF(deps,opt){
 /* REPORT-END */
 const hasDone=()=>S.orders.some(o=>o.status==='Completed');
 const reportReady=()=>!!(S.db&&S.downloads&&S.ready.orders&&S.ready.assets&&hasDone());
-function openReport(pre){ if(!hasDone()){ toast('The PDF report is available once a task is completed.',true); return; }  if(!S.report) S.report={period:'year',asset:'',parts:true}; if(pre&&pre.asset!==undefined) S.report.asset=pre.asset; S.sheet='report'; renderReport(); }
+function openReport(pre){ if(!hasDone()){ toast('The PDF report is available once a task is completed.',true); return; }  if(!S.report) S.report={period:'year',asset:'',parts:true}; if(pre&&pre.asset!==undefined) S.report.asset=pre.asset; S.report.task=(pre&&pre.task)||''; S.sheet='report'; renderReport(); }
 function updateReportCount(){
   const c=$('#rp-count'); if(!c||!S.report) return;
   const n=reportData(S.report).list.length;
@@ -1444,14 +1456,28 @@ function renderReport(){
   <section class="sheet narrow" role="dialog" aria-modal="true" aria-labelledby="rp-h">
    <header class="sheet-h"><div><p class="eyebrow">PDF report</p><h2 id="rp-h">Maintenance report</h2></div><button type="button" class="icon" data-action="close-modal" aria-label="Close">&times;</button></header>
    <div class="sheet-b">
-    <label class="fld"><span>Period</span><select id="rp-period">${opt([['year','This year'],['12m','Last 12 months'],['all','All time']],r.period)}</select></label>
-    <label class="fld"><span>Equipment</span><select id="rp-asset">${opt([['','All equipment']].concat(assets.map(a=>[a.id,a.name])),r.asset)}</select></label>
+    ${r.task?`<p class="hint">This report covers one task: ${esc(fmtNo((S.orders.find(o=>o.id===r.task)||{}).number||r.task))}. It is saved under Attachments on the task.</p>`:`<label class="fld"><span>Period</span><select id="rp-period">${opt([['year','This year'],['12m','Last 12 months'],['all','All time']],r.period)}</select></label>
+    <label class="fld"><span>Equipment</span><select id="rp-asset">${opt([['','All equipment']].concat(assets.map(a=>[a.id,a.name])),r.asset)}</select></label>`}
     <label class="chk"><input id="rp-parts" type="checkbox"${r.parts?' checked':''}><span>Include the list of parts used</span></label>
     <p class="hint" id="rp-count"></p>
     <p class="hint">Cancelled tasks are left out. Text outside the Latin alphabet shows as "?" in the PDF.</p>
    </div>
    <footer class="sheet-f"><span></span><div class="acts"><button type="button" class="btn" data-action="close-modal">Cancel</button><button type="button" class="btn primary" data-action="make-report"${S.saving?' disabled':''}>${S.saving?'Creating…':'Create PDF'}</button></div></footer></section>`;
   keepStill(host,was); syncInert(); updateReportCount();
+}
+function bufToDataUri(buf){ const b=new Uint8Array(buf); let bin=''; for(let i=0;i<b.length;i+=0x8000) bin+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000)); return 'data:application/pdf;base64,'+btoa(bin); }
+async function attachReport(taskId,name,data){
+  try{
+    const o=S.orders.find(x=>x.id===taskId); if(!o||data.byteLength>1500000) return;
+    const doc=Object.assign({},o); delete doc.id;
+    doc.reports=(o.reports||[]).concat([{name,at:new Date().toISOString(),src:bufToDataUri(data)}]);
+    await S.db.doc('workorders/'+o.id).set(doc);
+  }catch(e){ toast('The report was saved, but could not be kept on the task.',true); }
+}
+async function saveStoredReport(r){
+  if(!S.downloads){ toast('Downloads are not available in this view.',true); return; }
+  try{ const bin=atob(String(r.src).split(',')[1]||''); const u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); await S.downloads.save({filename:r.name,data:u.buffer}); toast('Report saved'); }
+  catch(e){ if(!(e&&e.code==='declined')) toast('The report could not be saved.',true); }
 }
 async function makeReport(){
   if(S.saving||!S.report) return;
@@ -1463,7 +1489,9 @@ async function makeReport(){
   try{
     const doc=buildReportPDF({JsPDF:jp,autoTable:window.jspdf.autoTable},S.report);
     const data=doc.output('arraybuffer');
-    await S.downloads.save({filename:'maintenance-report-'+todayISO()+'.pdf',data});
+    const name=(S.report.task?'task-report-'+fmtNo((S.orders.find(o=>o.id===S.report.task)||{}).number||'')+'-':'maintenance-report-')+todayISO()+'.pdf';
+    await S.downloads.save({filename:name,data});
+    if(S.report.task) await attachReport(S.report.task,name,data);
     S.saving=false; closeSheet('report'); toast(IS_IOS?'Report ready':IS_APP?'Report saved to Downloads':'Report saved');
   }catch(e){
     S.saving=false; renderReport();
@@ -1522,7 +1550,8 @@ document.addEventListener('click',e=>{
     case 'settings': openSettings(); break;
     case 'export': exportData(el.dataset.what); break;
     case 'report': openReport(); break;
-    case 'report-task': { const aid=S.wo&&S.wo.assetId; closeSheet('wo'); openReport({asset:aid||''}); break; }
+    case 'report-task': { const aid=S.wo&&S.wo.assetId, tid=S.wo&&S.wo.id; closeSheet('wo'); openReport({asset:aid||'',task:tid||''}); break; }
+    case 'open-report': { const r=S.wo&&(S.wo.reports||[])[+el.dataset.i]; if(r) saveStoredReport(r); break; }
     case 'do-restore': doRestore(); break;
     case 'check-update': S.dl=null; checkUpdate(); break;
     case 'apply-web-update': applyWebUpdate(); break;
