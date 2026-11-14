@@ -390,8 +390,8 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
-const APP_VERSION='2.8.0.1';
-const RELEASE_NOTES=['New task from an equipment card no longer asks what needs doing, and shows the brand and plate (for example Toyota - ABC 1234).','The task card now runs Work performed, Notes, then parts, labour and costs last.','The checklist and the garage visit are added after the task is created.'];
+const APP_VERSION='2.8.0.2';
+const RELEASE_NOTES=['The description (What needs doing) is only asked for on Corrective maintenance tasks.','A checklist is required to close Preventive maintenance tasks only.','The checklist is still available on every task type, once the task is created.'];
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -436,7 +436,8 @@ const isClosed=o=>!!o&&(o.status==='Completed'||o.status==='Cancelled');
 /* WO numbers show with one dash only, after WO. Older numbers like WO-V-2026-0001 are shown as WO-V20260001. */
 const fmtNo=n=>String(n==null?'':n).replace(/^(WO-)(.*)$/,(m,a,b)=>a+b.replace(/-/g,''));
 const ckItems=o=>(o&&o.checklist&&Array.isArray(o.checklist.items))?o.checklist.items:[];
-const ckGate=o=>{ const i=ckItems(o); if(!o||!o.checklist||!i.length) return 'Start the checklist and add at least one step before closing this task.'; if(!i.every(x=>x.done)) return 'Complete every checklist step before closing this task.'; return ''; };
+const ckRequired=o=>!!o&&o.type==='Preventive maintenance';
+const ckGate=o=>{ if(!ckRequired(o)) return ''; const i=ckItems(o); if(!o||!o.checklist||!i.length) return 'Start the checklist and add at least one step before closing this task.'; if(!i.every(x=>x.done)) return 'Complete every checklist step before closing this task.'; return ''; };
 const startedAtOf=o=>o.startedAt||(o.status!=='Open'?(o.createdAt||o.openedOn||''):'');
 function fmtDT(v){ if(!v) return ''; const dateOnly=String(v).length<=10; const d=new Date(dateOnly?v+'T12:00:00':v); if(!isFinite(d.getTime())) return ''; const a=d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}); return dateOnly?a:a+', '+d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}); }
 /* the vehicle's brand and number plate (or the equipment's brand and serial number), shown beside the word TASK */
@@ -1089,11 +1090,11 @@ function renderWO(focusId){
    <div class="sheet-b">
     ${w.locked?'<p class="lockednote">This task is closed. A closed task can\'t be re-opened or changed.</p>':''}
     <div class="grid">
-     ${w.isNew&&w.fromAsset?'':`<label class="fld" style="grid-column:1/-1"><span>What needs doing</span><input id="wo-title" data-f="title" type="text" value="${esc(w.title)}" placeholder="Oil and filter change" autocomplete="off"></label>`}
+     ${!isCorrective(w)?'':`<label class="fld" style="grid-column:1/-1"><span>What needs doing</span><input id="wo-title" data-f="title" type="text" value="${esc(w.title)}" placeholder="Oil and filter change" autocomplete="off"></label>`}
      <label class="fld"><span>Equipment</span><select id="wo-asset" data-f="assetId">${opt([['','Choose the equipment…']].concat(assets.map(x=>[x.id,x.parentId&&S.assets.get(x.parentId)?x.name+' (accessory of '+S.assets.get(x.parentId).name+')':x.name])).concat([['__new','Add new equipment…']]),w.assetId)}</select></label>
      <label class="fld"><span>Type</span><select id="wo-type" data-f="type">${opt(TYPES.map(t=>[t,t]),w.type)}</select></label>
      <label class="fld"><span>Priority</span><select id="wo-priority" data-f="priority">${opt(PRIORITIES.map(t=>[t,t]),w.priority)}</select></label>
-     <label class="fld"><span>Status</span><select id="wo-status" data-f="status">${opt((w.status==='Cancelled'?STATUSES.concat(['Cancelled']):w.isNew?STATUSES.filter(t=>t!=='Completed'):STATUSES).map(t=>[t,statusLabel(t)]),w.status)}</select></label>
+     <label class="fld"><span>Status</span><select id="wo-status" data-f="status">${opt((w.status==='Cancelled'?STATUSES.concat(['Cancelled']):w.isNew&&ckRequired(w)?STATUSES.filter(t=>t!=='Completed'):STATUSES).map(t=>[t,statusLabel(t)]),w.status)}</select></label>
      <label class="fld"><span>Opened</span><input id="wo-opened" data-f="openedOn" type="date" value="${esc(w.openedOn)}"></label>
      <label class="fld"><span>Due</span><input id="wo-due" data-f="dueOn" type="date" value="${esc(w.dueOn)}"></label>
      ${w.status==='Completed'?`<label class="fld"><span>Completed</span><input id="wo-completed" data-f="completedOn" type="date" value="${esc(w.completedOn)}"></label>`:''}
@@ -1208,7 +1209,7 @@ function attachmentsHTML(w){
 function checklistHTML(w){
   const lock=!!w.locked; const no=w.isNew?'this task':fmtNo(w.number);
   if(!w.checklist){
-    return lock?'':`<div class="ckbox"><strong>Checklist</strong><p class="hint">A task can only be closed after its checklist is completed.</p><div class="addrow"><button type="button" class="btn" data-action="ck-start">Start checklist for ${esc(no)}</button></div></div>`;
+    return lock?'':`<div class="ckbox"><strong>Checklist</strong><p class="hint">${ckRequired(w)?'A preventive maintenance task can only be closed after its checklist is completed.':'Optional for this type of task. Use it if it helps.'}</p><div class="addrow"><button type="button" class="btn" data-action="ck-start">Start checklist for ${esc(no)}</button></div></div>`;
   }
   const items=w.checklist.items; const done=items.filter(x=>x.done).length;
   return `<div class="ckbox"><div class="ck-h"><strong>Checklist · ${esc(no)}</strong><span class="hint" id="ck-count">${done} of ${items.length} done</span></div>
@@ -1250,8 +1251,8 @@ function onWoInput(e){
 }
 async function saveWO(){
   const w=S.wo; if(!w||S.saving) return;
-  if(w.isNew&&w.fromAsset&&!w.title.trim()) w.title=w.type;
-  if(!w.title.trim()){ toast('Give the task a title.',true); $('#wo-title')&&$('#wo-title').focus(); return; }
+  if(!isCorrective(w)&&!w.title.trim()) w.title=w.type;
+  if(!w.title.trim()){ toast('Describe what needs doing.',true); $('#wo-title')&&$('#wo-title').focus(); return; }
   if(!w.assetId||!S.assets.has(w.assetId)){ toast('Choose the equipment this work is for.',true); $('#wo-asset')&&$('#wo-asset').focus(); return; }
   if(w.meter!==''&&!isFinite(Number(w.meter))){ toast('The reading must be a number.',true); return; }
   if(w.locked||(!w.isNew&&isClosed(S.orders.find(x=>x.id===w.id)))){ toast('This task is closed and can\'t be changed.',true); return; }

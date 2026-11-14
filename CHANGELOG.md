@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.8.0.2
+
+- "What needs doing" is only asked for Corrective maintenance (repair) tasks. Other types use the task type as the title.
+- The checklist is required to close a task only for Preventive maintenance. For every other type it is optional but still available once the task is created.
+
 ## 2.8.0.1
 
 - A task opened from an equipment card no longer asks "What needs doing"; the title follows the task type.
