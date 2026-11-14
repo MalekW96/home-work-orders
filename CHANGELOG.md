@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.8.0.1
+
+- A task opened from an equipment card no longer asks "What needs doing"; the title follows the task type.
+- The task header shows the vehicle brand and plate with a dash (Toyota - ABC 1234) instead of the word Plate.
+- Task card order: Work performed, Notes, garage visit, checklist, attachments, then parts, labour and costs last.
+- The checklist and the garage / technician visit can only be added after the task is created. A new task cannot be created as Completed.
+
 ## 2.7.0.0
 
 - Sign in, confirmation emails and record sync moved from Supabase to Firebase (Authentication and Firestore).
