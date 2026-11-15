@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.0.0.0
+
+- New preventive maintenance checklist (P.O.W.E.R: petrol, oils, water, electrical, rubbers, plus the OBD scanner). It opens in its own window from the task card, with Yes / No answers, readings, a battery date and photos.
+- A preventive task can only be closed once every question is answered. Answers and photos are saved when you close the checklist window.
+- "Done by" is no longer shown while a task is being created; it appears once the task exists, to be signed later.
+- Corrective, inspection and other task types keep the simple optional checklist.
+
 ## 2.8.0.2
 
 - "What needs doing" is only asked for Corrective maintenance (repair) tasks. Other types use the task type as the title.

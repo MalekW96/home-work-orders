@@ -183,6 +183,12 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none;color:var(--in
 .fbtn{border:0;box-shadow:var(--shadow);background:var(--panel);color:var(--accent);font-weight:600;border-radius:14px;padding:0 16px;min-height:44px;display:inline-flex;align-items:center;gap:6px}
 .fbtn b{background:var(--accent);color:var(--accent-ink);border-radius:99px;min-width:18px;height:18px;font-size:11px;display:grid;place-items:center;padding:0 5px}
 .lockednote{margin:0 0 12px;padding:10px 12px;border-radius:12px;background:var(--panel);box-shadow:var(--shadow);font-size:13.5px;color:var(--ink2)}
+.pm-s{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+.pm-sub{margin:8px 0 0;font-size:13px;color:var(--ink2,inherit);text-transform:uppercase;letter-spacing:.04em}
+.pm-i{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.pm-i.ok{border-left:4px solid var(--ok,#2e8b57)}
+.pm-q{margin:0;font-size:15px;font-weight:600}
+.pm-ph{display:flex;flex-direction:column;gap:6px}
 .ckbox{display:flex;flex-direction:column;gap:12px;padding-top:12px;border-top:1px solid var(--line)}
 .ck-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
 .ck-list{display:flex;flex-direction:column;gap:6px}
@@ -390,8 +396,8 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
-const APP_VERSION='2.8.0.2';
-const RELEASE_NOTES=['The description (What needs doing) is only asked for on Corrective maintenance tasks.','A checklist is required to close Preventive maintenance tasks only.','The checklist is still available on every task type, once the task is created.'];
+const APP_VERSION='3.0.0.0';
+const RELEASE_NOTES=['New preventive maintenance checklist (P.O.W.E.R and the OBD scanner) opens in its own window with Yes / No answers, photos and readings.','A preventive task can only be closed once every question is answered.','New tasks no longer ask for Done by; it is filled in later.'];
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -437,7 +443,8 @@ const isClosed=o=>!!o&&(o.status==='Completed'||o.status==='Cancelled');
 const fmtNo=n=>String(n==null?'':n).replace(/^(WO-)(.*)$/,(m,a,b)=>a+b.replace(/-/g,''));
 const ckItems=o=>(o&&o.checklist&&Array.isArray(o.checklist.items))?o.checklist.items:[];
 const ckRequired=o=>!!o&&o.type==='Preventive maintenance';
-const ckGate=o=>{ if(!ckRequired(o)) return ''; const i=ckItems(o); if(!o||!o.checklist||!i.length) return 'Start the checklist and add at least one step before closing this task.'; if(!i.every(x=>x.done)) return 'Complete every checklist step before closing this task.'; return ''; };
+const ckGate=o=>{ if(!ckRequired(o)) return ''; if(!pmComplete(o.pm)) return 'Answer every question in the preventive maintenance checklist before closing this task.'; return ''; };
+const ckGateOld=o=>{ if(!ckRequired(o)) return ''; const i=ckItems(o); if(!o||!o.checklist||!i.length) return 'Start the checklist and add at least one step before closing this task.'; if(!i.every(x=>x.done)) return 'Complete every checklist step before closing this task.'; return ''; };
 const startedAtOf=o=>o.startedAt||(o.status!=='Open'?(o.createdAt||o.openedOn||''):'');
 function fmtDT(v){ if(!v) return ''; const dateOnly=String(v).length<=10; const d=new Date(dateOnly?v+'T12:00:00':v); if(!isFinite(d.getTime())) return ''; const a=d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}); return dateOnly?a:a+', '+d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}); }
 /* the vehicle's brand and number plate (or the equipment's brand and serial number), shown beside the word TASK */
@@ -1050,7 +1057,7 @@ function partsResults(){
 function blankVisit(){ return {on:false,name:'',contact:'',loc:null,atts:[]}; }
 function blankWO(p){
   p=p||{};
-  return {isNew:true,fromAsset:!!p.assetId,number:'',title:p.title||'',assetId:p.assetId||'',type:p.type||'Preventive maintenance',priority:'Normal',status:'Open',openedOn:todayISO(),dueOn:'',completedOn:'',meter:'',doneBy:'Me',description:'',notes:'',lines:[],followUpOf:p.followUpOf||'',furtherAt:'',startedAt:'',closedAt:'',checklist:null,locked:false,visit:blankVisit()};
+  return {isNew:true,fromAsset:!!p.assetId,pm:null,number:'',title:p.title||'',assetId:p.assetId||'',type:p.type||'Preventive maintenance',priority:'Normal',status:'Open',openedOn:todayISO(),dueOn:'',completedOn:'',meter:'',doneBy:'',description:'',notes:'',lines:[],followUpOf:p.followUpOf||'',furtherAt:'',startedAt:'',closedAt:'',checklist:null,locked:false,visit:blankVisit()};
 }
 function openWO(id,prefill){
   if(id){
@@ -1099,7 +1106,7 @@ function renderWO(focusId){
      <label class="fld"><span>Due</span><input id="wo-due" data-f="dueOn" type="date" value="${esc(w.dueOn)}"></label>
      ${w.status==='Completed'?`<label class="fld"><span>Completed</span><input id="wo-completed" data-f="completedOn" type="date" value="${esc(w.completedOn)}"></label>`:''}
      ${unit?`<label class="fld"><span>Reading (${esc(unit)})</span><input id="wo-meter" data-f="meter" type="number" min="0" step="any" inputmode="decimal" value="${esc(w.meter)}" placeholder="${unit==='h'?'Hours':'Odometer'}"></label>`:''}
-     <label class="fld"><span>Done by</span><input id="wo-doneby" data-f="doneBy" type="text" value="${esc(w.doneBy)}" placeholder="Me, or the workshop name" autocomplete="off"></label>
+     ${w.isNew?'':`<label class="fld"><span>Done by</span><input id="wo-doneby" data-f="doneBy" type="text" value="${esc(w.doneBy)}" placeholder="Me, or the workshop name" autocomplete="off"></label>`}
     </div>
     ${woAlertNote(w)}
     <label class="fld"><span>Work performed</span><textarea id="wo-desc" data-f="description" placeholder="What was done, what was found">${esc(w.description)}</textarea></label>
@@ -1108,7 +1115,7 @@ function renderWO(focusId){
      <label class="chk"><input id="wo-visit-on" type="checkbox" data-vf="on"${w.visit.on?' checked':''}><span>The equipment went to a garage, or a technician came over</span></label>
      ${w.visit.on?visitHTML(w.visit):''}
     </div>`}
-    ${w.isNew?'<p class="hint">The garage visit and the checklist are available once the task is created.</p>':checklistHTML(w)}
+    ${w.isNew?'<p class="hint">The garage visit and the checklist are available once the task is created.</p>':(w.type==='Preventive maintenance'?pmBoxHTML(w):checklistHTML(w))}
     ${attachmentsHTML(w)}
     <div><h3 class="sec-h">Parts, labour and costs</h3>
      <div class="lines" id="wo-lines">${w.lines.length?w.lines.map(lineHTML).join(''):'<p class="hint">No cost lines yet. Add the parts you used and any labour.</p>'}</div>
@@ -1206,6 +1213,128 @@ function attachmentsHTML(w){
    ${photos.length?`<div class="atts">${photos.map((x,i)=>`<div class="att"><button type="button" class="thumb" data-action="view-photo" data-k="visit" data-i="${i}" aria-label="View photo ${i+1}"><img src="${x.src}" alt=""></button><span class="hint">${esc(x.caption||'Photo '+(i+1))}</span></div>`).join('')}</div>`:''}
    ${reps.map((r,i)=>`<div class="ck-i"><span class="hint" style="flex:1;min-width:0">PDF · ${esc(r.name)} · ${esc(fmtDT(r.at))}</span><button type="button" class="btn sm" data-action="open-report" data-i="${i}">Save again</button></div>`).join('')}</div>`;
 }
+/* ---------- preventive maintenance checklist (opens in its own window) ---------- */
+const PM_SECTIONS=[
+ {h:'P · Petrol / fuel system',items:[
+  {id:'p1',t:'yn',q:'Is the dashboard indication correct and functional?'},
+  {id:'p2',t:'text',q:'Fill level',ph:'e.g. Half, three quarters, full'},
+  {id:'p3',t:'photo',q:'Attach a photo of the fuel gauge'}]},
+ {h:'O · Oils',items:[
+  {id:'o1',t:'photo',q:'Engine oil dipstick level. Attach a photo.'},
+  {id:'o2',sub:'Brake oil',t:'yn',q:'Colour: from apple juice to coffee, is it more on the apple juice side?'},
+  {id:'o3',sub:'Brake oil',t:'yn',q:'Is the master reservoir fill level between Full and Empty?'},
+  {id:'o4',t:'yn',q:'Did you check the status of the brakes?'}]},
+ {h:'W · Water',items:[
+  {id:'w1',t:'yn',q:'Is the windshield washer filled?'},
+  {id:'w2',t:'photo',q:'Coolant level to specification. Take a photo of the needle floating, or of the max line being wet.'},
+  {id:'w3',t:'yn',q:'Does the water spray onto the windshield?'},
+  {id:'w4',t:'yn',q:'After filling in water, did you inspect the floor for any leaking?'}]},
+ {h:'E · Electrical',items:[
+  {id:'e1',sub:'Battery test',t:'date',q:'Installation date of the battery'},
+  {id:'e2',sub:'Battery test',t:'yn',q:'Is the voltage above 12.00 V?',x:{when:'a',label:'Voltage reading (V)',kind:'num'}},
+  {id:'e3',sub:'Battery test',t:'yn',q:'Any corrosion on the battery terminals?'},
+  {id:'e4',sub:'Battery test',t:'yn',q:'Did anything need cleaning, or did connectors need tightening?'},
+  {id:'e5',t:'yn',q:'Any burnt fuses?',x:{when:'y',label:'Which circuit?',kind:'text',req:true}},
+  {id:'e6',t:'yn',q:'Are all external lights working?'},
+  {id:'e7',t:'yn',q:'Are all internal lights working?'},
+  {id:'e8',t:'yn',q:'Did you inspect the status of the spark plugs?'}]},
+ {h:'R · Rubbers',items:[
+  {id:'r1',sub:'Wheels',t:'yn',q:'Are they inflated to the car manufacturer\'s specification?',x:{when:'a',label:'Reading (PSI or bar)',kind:'text'}},
+  {id:'r2',sub:'Wheels',t:'yn',q:'Are the valve caps there?'},
+  {id:'r3',sub:'Wheels',t:'yn',q:'Did you measure the tread depth?',x:{when:'y',label:'Tread depth (mm)',kind:'num',req:true}},
+  {id:'r4',sub:'Wheels',t:'yn',q:'Any noticeable damage on the tyres?'},
+  {id:'r5',sub:'Fan belt',t:'yn',q:'Any damage on the fan belt?'},
+  {id:'r6',sub:'Fan belt',t:'yn',q:'Did you have to adjust or tighten it?'},
+  {id:'r7',sub:'Windshield wipers',t:'yn',q:'Rub your finger across the rubber of the blade. Does it feel stiff and hard?',hint:'If not, it is fine. If it is, it is time to change it, especially if it is cracked or torn.',opt:true,photo:'Attach a photo of how you checked (optional)'}]},
+ {h:'OBD scanner',items:[
+  {id:'b1',t:'yn',q:'Are there any alerts on the scanner?'},
+  {id:'b2',t:'yn',q:'Are they resolved and cleared without issues?',only:{id:'b1',v:'y'}}]}
+];
+const pmAns=(w,id)=>((w&&w.pm&&w.pm.a)||{})[id]||{};
+const pmShown=(it,a)=>!it.only||((a[it.only.id]||{}).v===it.only.v);
+const pmExtraOn=(it,x)=>!!it.x&&(it.x.when==='a'?!!x.v:it.x.when===x.v);
+function pmItemDone(it,a){
+  const x=a[it.id]||{};
+  if(it.t==='yn'){ if(x.v!=='y'&&x.v!=='n') return false; if(it.x&&it.x.req&&pmExtraOn(it,x)&&!String(x.x||'').trim()) return false; return true; }
+  if(it.t==='photo') return !!(x.p&&x.p.length);
+  return !!String(x.v||'').trim();
+}
+function pmProgress(pm){
+  const a=(pm&&pm.a)||{}; let total=0, done=0;
+  PM_SECTIONS.forEach(s=>s.items.forEach(it=>{ if(!pmShown(it,a)) return; total++; if(pmItemDone(it,a)) done++; }));
+  return {done,total};
+}
+const pmComplete=pm=>{ const p=pmProgress(pm); return p.done===p.total; };
+function pmBoxHTML(w){
+  const p=pmProgress(w.pm);
+  return `<div class="ckbox"><div class="ck-h"><strong>Preventive maintenance checklist</strong><span class="hint">${p.done} of ${p.total} answered</span></div>
+   <p class="hint">${w.locked?'This task is closed.':'The task can only be closed once every question is answered.'}</p>
+   <div class="addrow"><button type="button" class="btn" data-action="pm-open">${w.locked?'View the checklist':p.done?'Continue the checklist':'Start the checklist'}</button></div></div>`;
+}
+function pmPhotoHTML(it,x,label,lock){
+  const has=x.p&&x.p.length;
+  return `<div class="pm-ph"><span class="hint">${esc(label)}</span><div class="ph">${has?`<span class="thumbx"><button type="button" class="thumb" data-action="view-photo" data-k="pm" data-id="${it.id}" aria-label="View the photo"><img src="${x.p[0]}" alt=""></button>${lock?'':`<button type="button" class="x" data-action="pm-photo-del" data-id="${it.id}" aria-label="Remove the photo">&times;</button>`}</span>`:''}
+   ${lock?'':`<label class="btn sm"><input type="file" accept="image/*" data-photo="pm" data-id="${it.id}" hidden>${has?'Replace photo':'Add photo'}</label>`}</div></div>`;
+}
+function pmItemHTML(it,w,lock){
+  const a=(w.pm&&w.pm.a)||{}; const x=a[it.id]||{}; const dis=lock?' disabled':'';
+  let body='';
+  if(it.t==='yn') body=`<div class="seg" role="group" aria-label="${esc(it.q)}"><button type="button" data-action="pm-yn" data-id="${it.id}" data-v="y" aria-pressed="${x.v==='y'}"${dis}>Yes</button><button type="button" data-action="pm-yn" data-id="${it.id}" data-v="n" aria-pressed="${x.v==='n'}"${dis}>No</button></div>`;
+  else if(it.t==='date') body=`<input type="date" data-pm="${it.id}" data-k="v" value="${esc(x.v||'')}"${dis}>`;
+  else if(it.t==='text') body=`<input type="text" data-pm="${it.id}" data-k="v" value="${esc(x.v||'')}" placeholder="${esc(it.ph||'')}" autocomplete="off"${dis}>`;
+  else if(it.t==='photo') body=pmPhotoHTML(it,x,'Required',lock);
+  const extra=it.t==='yn'&&pmExtraOn(it,x)?`<label class="fld"><span>${esc(it.x.label)}${it.x.req?'':' (optional)'}</span><input type="${it.x.kind==='num'?'number':'text'}"${it.x.kind==='num'?' step="any" inputmode="decimal"':''} data-pm="${it.id}" data-k="x" value="${esc(x.x||'')}" autocomplete="off"${dis}></label>`:'';
+  const ph=it.photo?pmPhotoHTML(it,x,it.photo,lock):'';
+  return `<div class="pm-i${pmItemDone(it,a)?' ok':''}"><p class="pm-q">${esc(it.q)}</p>${it.hint?`<p class="hint">${esc(it.hint)}</p>`:''}${body}${extra}${ph}</div>`;
+}
+function renderPM(){
+  const host=$('#modal2'); const w=S.wo;
+  if(!S.pmOpen||!w){ host.innerHTML=''; host.hidden=true; syncInert(); return; }
+  const prev=$('.sheet-b',host); const sc=prev?prev.scrollTop:0; const was=!!prev&&!host.hidden; const lock=!!w.locked;
+  const a=(w.pm&&w.pm.a)||{}; const p=pmProgress(w.pm);
+  host.hidden=false;
+  host.innerHTML=`<div class="scrim" data-action="pm-close"></div>
+  <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="pm-h">
+   <header class="sheet-h"><div><p class="eyebrow">${w.isNew?'Task':esc(fmtNo(w.number))}${assetIdent(w.assetId)?' · '+esc(assetIdent(w.assetId)):''}</p><h2 id="pm-h">Preventive maintenance checklist</h2></div><button type="button" class="icon" data-action="pm-close" aria-label="Close">&times;</button></header>
+   <div class="sheet-b">
+    ${PM_SECTIONS.map(s=>{ let last=''; return `<div class="pm-s"><h3 class="sec-h">${esc(s.h)}</h3>${s.items.filter(it=>pmShown(it,a)).map(it=>{ let h=''; if(it.sub&&it.sub!==last){ h=`<h4 class="pm-sub">${esc(it.sub)}</h4>`; } last=it.sub||''; return h+pmItemHTML(it,w,lock); }).join('')}</div>`; }).join('')}
+   </div>
+   <footer class="sheet-f"><span class="hint" id="pm-count">${p.done} of ${p.total} answered</span><div class="acts"><button type="button" class="btn primary" data-action="pm-close">${lock?'Close':'Done'}</button></div></footer>
+  </section>`;
+  keepStill(host,was);
+  const sb=$('.sheet-b',host); if(sb) sb.scrollTop=sc;
+  syncInert();
+}
+function pmSet(id,k,v){
+  const w=S.wo; if(!w||w.locked) return;
+  if(!w.pm) w.pm={a:{}}; if(!w.pm.a[id]) w.pm.a[id]={};
+  w.pm.a[id][k]=v;
+}
+function pmUpdateCount(){ const p=pmProgress(S.wo&&S.wo.pm); const c=$('#pm-count'); if(c) c.textContent=p.done+' of '+p.total+' answered'; }
+function pmOpen(){ if(!S.wo||S.wo.isNew) return; S.pmOpen=true; renderPM(); }
+async function pmClose(){
+  const w=S.wo; S.pmOpen=false; renderPM();
+  if(!w) return;
+  if(!w.isNew&&!w.locked){
+    const o=S.orders.find(x=>x.id===w.id);
+    if(o&&!isClosed(o)){
+      try{ const doc=Object.assign({},o); delete doc.id; doc.pm=w.pm||null; doc.updatedAt=new Date().toISOString(); await S.db.doc('workorders/'+o.id).set(doc); }
+      catch(e){ toast('The checklist could not be saved yet. Press Save changes on the task.',true); }
+    }
+  }
+  if(S.wo) renderWO();
+}
+async function addPmPhoto(input){
+  const w=S.wo; const file=input.files&&input.files[0]; const id=input.dataset.id; input.value='';
+  if(!w||w.locked||!file) return;
+  try{ const url=await shrink(file,900,.6); if(!S.wo) return; pmSet(id,'p',[url]); renderPM(); }
+  catch(e){ toast(e&&e.message?e.message:'The photo could not be added.',true); }
+}
+function onPmInput(e){
+  const t=e.target; if(!t.dataset||t.dataset.pm===undefined) return;
+  pmSet(t.dataset.pm,t.dataset.k,t.value);
+  if(t.dataset.k==='x'||t.dataset.k==='v'){ const it=PM_SECTIONS.reduce((r,s)=>r||s.items.find(i=>i.id===t.dataset.pm),null); const box=t.closest('.pm-i'); if(it&&box) box.classList.toggle('ok',pmItemDone(it,(S.wo.pm&&S.wo.pm.a)||{})); pmUpdateCount(); }
+}
 function checklistHTML(w){
   const lock=!!w.locked; const no=w.isNew?'this task':fmtNo(w.number);
   if(!w.checklist){
@@ -1265,6 +1394,7 @@ async function saveWO(){
     furtherAt:w.status==='Further action'?(w.furtherAt||now):'',
     startedAt:w.startedAt||(w.status!=='Open'?(w.isNew?now:(w.createdAt||now)):''),closedAt:w.status==='Completed'?(w.closedAt||now):'',
     reports:w.reports||[],
+    pm:w.pm||null,
     checklist:w.checklist?{items:w.checklist.items.map(x=>({id:x.id,text:x.text,done:!!x.done}))}:null,
     visit:w.visit&&w.visit.on?{name:w.visit.name.trim(),contact:w.visit.contact.trim(),loc:w.visit.loc||null,atts:w.visit.atts}:null};
   S.saving=true; renderWO();
@@ -1353,6 +1483,7 @@ function renderAsset(focusId){
   if(focusId){ const el=document.getElementById(focusId); if(el) el.focus(); }
 }
 async function addPhoto(input){
+  if(input.dataset&&input.dataset.photo==='pm'){ addPmPhoto(input); return; }
   if(input.dataset&&input.dataset.photo==='visit'){ addVisitPhoto(input); return; }
   const a=S.asset; const file=input.files&&input.files[0]; input.value='';
   if(!a||!file) return;
@@ -1751,6 +1882,7 @@ function syncInert(){
   m1.inert=!m2.hidden;
 }
 function closeSheet(which){
+  S.pmOpen=false;
   if(which==='wo'||which==='settings'||which==='report'){ S.wo=null; S.sheet=''; const h=$('#modal'); h.innerHTML=''; h.hidden=true; }
   syncInert();
 }
@@ -1759,7 +1891,7 @@ function toggleAddMenu(){ const m=$('#addmenu'); if(!m) return; if(!closeAddMenu
 function closeTop(){
   if(closeAddMenu()) return;
   if(closePhoto()) return;
-  if(!$('#modal2').hidden){ S.asset=null; renderAsset(); return; }
+  if(!$('#modal2').hidden){ if(S.pmOpen){ pmClose(); return; } S.asset=null; renderAsset(); return; }
   if(!$('#modal').hidden) closeSheet(S.sheet||'wo');
 }
 
@@ -1776,6 +1908,10 @@ document.addEventListener('click',e=>{
     case 'open-wo': openWO(id); break;
     case 'close-modal': closeSheet(S.sheet||'wo'); break;
     case 'close-modal2': S.asset=null; renderAsset(); break;
+    case 'pm-open': pmOpen(); break;
+    case 'pm-close': pmClose(); break;
+    case 'pm-yn': if(S.wo&&!S.wo.locked){ const cur=pmAns(S.wo,id).v; pmSet(id,'v',cur===el.dataset.v?'':el.dataset.v); renderPM(); } break;
+    case 'pm-photo-del': if(S.wo&&!S.wo.locked){ pmSet(id,'p',[]); renderPM(); } break;
     case 'save-wo': saveWO(); break;
     case 'followup': { const w=S.wo; if(w) openWO(null,{assetId:w.assetId,title:w.title,type:w.type,followUpOf:w.number}); break; }
     case 'visit-loc': captureLocation(); break;
@@ -1784,7 +1920,7 @@ document.addEventListener('click',e=>{
     case 'del-line': if(S.wo){ S.wo.lines.splice(+el.dataset.i,1); renderWO(); } break;
     case 'new-asset': if(canWrite()) openAsset(null,false); break;
     case 'edit-asset': openAsset(id,false); break;
-    case 'view-photo': { if(el.dataset.k==='visit'){ const x=S.wo&&S.wo.visit.atts[+el.dataset.i||0]; if(x) showPhoto(x.src,x.caption); break; } const src=id?S.assets.get(id):S.asset; if(src){ const l=id?attsOf(src):src.attachments; const x=l[+el.dataset.i||0]; if(x) showPhoto(x.src,x.caption); } break; }
+    case 'view-photo': { if(el.dataset.k==='pm'){ const pp=pmAns(S.wo,id).p; if(pp&&pp[0]) showPhoto(pp[0],''); break; } if(el.dataset.k==='visit'){ const x=S.wo&&S.wo.visit.atts[+el.dataset.i||0]; if(x) showPhoto(x.src,x.caption); break; } const src=id?S.assets.get(id):S.asset; if(src){ const l=id?attsOf(src):src.attachments; const x=l[+el.dataset.i||0]; if(x) showPhoto(x.src,x.caption); } break; }
     case 'del-photo': if(el.dataset.k==='visit'){ if(S.wo){ S.wo.visit.atts.splice(+el.dataset.i||0,1); renderWO(); } } else if(S.asset){ S.asset.attachments.splice(+el.dataset.i||0,1); renderAsset(); } break;
     case 'asset-history': S.f={status:'all',asset:id,year:'',q:''}; setView('orders'); break;
     case 'asset-wo': if(canWrite()) openWO(null,{assetId:id}); break;
@@ -1827,6 +1963,7 @@ document.addEventListener('click',e=>{
 });
 function onInput(e){
   const t=e.target; if(!t||!t.id&&!t.dataset) return;
+  if(S.pmOpen&&t.dataset&&t.dataset.pm!==undefined){ onPmInput(e); return; }
   if(t.dataset&&t.dataset.cap!==undefined&&S.asset){ const x=S.asset.attachments[+t.dataset.cap]; if(x) x.caption=t.value; return; }
   if(t.dataset&&t.dataset.af!==undefined&&S.asset){
     const k=t.dataset.af; S.asset[k]=t.value;
@@ -1862,7 +1999,7 @@ window.addEventListener('hashchange',()=>{ const h=location.hash.slice(1); if(['
 window.__back=function(){
   if(closeAddMenu()) return true;
   if(closePhoto()) return true;
-  if(!$('#modal2').hidden){ S.asset=null; renderAsset(); return true; }
+  if(!$('#modal2').hidden){ if(S.pmOpen){ pmClose(); return true; } S.asset=null; renderAsset(); return true; }
   if(!$('#modal').hidden){ closeSheet(S.sheet||'wo'); return true; }
   if(S.view!=='dashboard'){ setView('dashboard'); return true; }
   return false;
