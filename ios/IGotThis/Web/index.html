@@ -188,6 +188,8 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none;color:var(--in
 .pm-sub{margin:8px 0 0;font-size:13px;color:var(--ink2,inherit);text-transform:uppercase;letter-spacing:.04em}
 .pm-i{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
 .pm-i.ok{border-left:4px solid var(--ok,#2e8b57)}
+.pm-i .seg{align-self:flex-start}
+.pm-i .seg button{min-width:64px}
 .pm-q{margin:0;font-size:15px;font-weight:600}
 .pm-ph{display:flex;flex-direction:column;gap:6px}
 .ckbox{display:flex;flex-direction:column;gap:12px;padding-top:12px;border-top:1px solid var(--line)}
@@ -397,8 +399,8 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
-const APP_VERSION='3.0.0.0';
-const RELEASE_NOTES=['New preventive maintenance checklist (P.O.W.E.R and the OBD scanner) opens in its own window with Yes / No answers, photos and readings.','A preventive task can only be closed once every question is answered.','New tasks no longer ask for Done by; it is filled in later.'];
+const APP_VERSION='3.0.0.1';
+const RELEASE_NOTES=['The preventive maintenance checklist window is now simply called Check List.','The Yes / No buttons in the checklist are compact instead of stretching across the screen.','Preventive tasks still need every question answered before they can be closed.'];
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -1268,9 +1270,9 @@ function pmProgress(pm){
 const pmComplete=pm=>{ const p=pmProgress(pm); return p.done===p.total; };
 function pmBoxHTML(w){
   const p=pmProgress(w.pm);
-  return `<div class="ckbox"><div class="ck-h"><strong>Preventive maintenance checklist</strong><span class="hint">${p.done} of ${p.total} answered</span></div>
+  return `<div class="ckbox"><div class="ck-h"><strong>Check List</strong><span class="hint">${p.done} of ${p.total} answered</span></div>
    <p class="hint">${w.locked?'This task is closed.':'The task can only be closed once every question is answered.'}</p>
-   <div class="addrow"><button type="button" class="btn" data-action="pm-open">${w.locked?'View the checklist':p.done?'Continue the checklist':'Start the checklist'}</button></div></div>`;
+   <div class="addrow"><button type="button" class="btn" data-action="pm-open">${w.locked?'View Check List':p.done?'Continue Check List':'Start Check List'}</button></div></div>`;
 }
 function pmPhotoHTML(it,x,label,lock){
   const has=x.p&&x.p.length;
@@ -1296,7 +1298,7 @@ function renderPM(){
   host.hidden=false;
   host.innerHTML=`<div class="scrim" data-action="pm-close"></div>
   <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="pm-h">
-   <header class="sheet-h"><div><p class="eyebrow">${w.isNew?'Task':esc(fmtNo(w.number))}${assetIdent(w.assetId)?' · '+esc(assetIdent(w.assetId)):''}</p><h2 id="pm-h">Preventive maintenance checklist</h2></div><button type="button" class="icon" data-action="pm-close" aria-label="Close">&times;</button></header>
+   <header class="sheet-h"><div><p class="eyebrow">${w.isNew?'Task':esc(fmtNo(w.number))}${assetIdent(w.assetId)?' · '+esc(assetIdent(w.assetId)):''}</p><h2 id="pm-h">Check List</h2></div><button type="button" class="icon" data-action="pm-close" aria-label="Close">&times;</button></header>
    <div class="sheet-b">
     ${PM_SECTIONS.map(s=>{ let last=''; return `<div class="pm-s"><h3 class="sec-h">${esc(s.h)}</h3>${s.items.filter(it=>pmShown(it,a)).map(it=>{ let h=''; if(it.sub&&it.sub!==last){ h=`<h4 class="pm-sub">${esc(it.sub)}</h4>`; } last=it.sub||''; return h+pmItemHTML(it,w,lock); }).join('')}</div>`; }).join('')}
    </div>

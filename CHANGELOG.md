@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.0.1
+
+- The checklist window and its box on the task card are titled "Check List".
+- Yes / No buttons in the checklist are compact instead of full width.
+
 ## 3.0.0.0
 
 - New preventive maintenance checklist (P.O.W.E.R: petrol, oils, water, electrical, rubbers, plus the OBD scanner). It opens in its own window from the task card, with Yes / No answers, readings, a battery date and photos.
