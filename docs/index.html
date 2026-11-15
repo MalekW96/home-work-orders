@@ -184,6 +184,9 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none;color:var(--in
 .fbtn{border:0;box-shadow:var(--shadow);background:var(--panel);color:var(--accent);font-weight:600;border-radius:14px;padding:0 16px;min-height:44px;display:inline-flex;align-items:center;gap:6px}
 .fbtn b{background:var(--accent);color:var(--accent-ink);border-radius:99px;min-width:18px;height:18px;font-size:11px;display:grid;place-items:center;padding:0 5px}
 .lockednote{margin:0 0 12px;padding:10px 12px;border-radius:12px;background:var(--panel);box-shadow:var(--shadow);font-size:13.5px;color:var(--ink2)}
+.sgpad{display:block;width:100%;height:230px;background:#fff;border:1px solid var(--line2);border-radius:12px;touch-action:none;cursor:crosshair}
+.pm-sig{display:flex;flex-direction:column;gap:6px;padding:12px;border:1px solid var(--line);border-radius:12px}
+.pm-sig img{max-width:260px;width:100%;border:1px solid var(--line);border-radius:8px;background:#fff}
 .pm-s{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
 .pm-sub{margin:8px 0 0;font-size:13px;color:var(--ink2,inherit);text-transform:uppercase;letter-spacing:.04em}
 .pm-i{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
@@ -399,8 +402,8 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
-const APP_VERSION='3.0.0.1';
-const RELEASE_NOTES=['The preventive maintenance checklist window is now simply called Check List.','The Yes / No buttons in the checklist are compact instead of stretching across the screen.','Preventive tasks still need every question answered before they can be closed.'];
+const APP_VERSION='3.1.0.0';
+const RELEASE_NOTES=['When every Check List question is answered, a Sign button opens a white signing block stamped with the task number, date and time.','A preventive task can be closed once its Check List is signed; the signed Check List is then locked.','Export the signed Check List, with its photos and signature, as a PDF.'];
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -446,7 +449,7 @@ const isClosed=o=>!!o&&(o.status==='Completed'||o.status==='Cancelled');
 const fmtNo=n=>String(n==null?'':n).replace(/^(WO-)(.*)$/,(m,a,b)=>a+b.replace(/-/g,''));
 const ckItems=o=>(o&&o.checklist&&Array.isArray(o.checklist.items))?o.checklist.items:[];
 const ckRequired=o=>!!o&&o.type==='Preventive maintenance';
-const ckGate=o=>{ if(!ckRequired(o)) return ''; if(!pmComplete(o.pm)) return 'Answer every question in the preventive maintenance checklist before closing this task.'; return ''; };
+const ckGate=o=>{ if(!ckRequired(o)) return ''; if(!pmComplete(o.pm)) return 'Answer every question in the Check List before closing this task.'; if(!(o.pm&&o.pm.sig)) return 'Sign the Check List before closing this task.'; return ''; };
 const ckGateOld=o=>{ if(!ckRequired(o)) return ''; const i=ckItems(o); if(!o||!o.checklist||!i.length) return 'Start the checklist and add at least one step before closing this task.'; if(!i.every(x=>x.done)) return 'Complete every checklist step before closing this task.'; return ''; };
 const startedAtOf=o=>o.startedAt||(o.status!=='Open'?(o.createdAt||o.openedOn||''):'');
 function fmtDT(v){ if(!v) return ''; const dateOnly=String(v).length<=10; const d=new Date(dateOnly?v+'T12:00:00':v); if(!isFinite(d.getTime())) return ''; const a=d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}); return dateOnly?a:a+', '+d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}); }
@@ -1269,10 +1272,10 @@ function pmProgress(pm){
 }
 const pmComplete=pm=>{ const p=pmProgress(pm); return p.done===p.total; };
 function pmBoxHTML(w){
-  const p=pmProgress(w.pm);
-  return `<div class="ckbox"><div class="ck-h"><strong>Check List</strong><span class="hint">${p.done} of ${p.total} answered</span></div>
-   <p class="hint">${w.locked?'This task is closed.':'The task can only be closed once every question is answered.'}</p>
-   <div class="addrow"><button type="button" class="btn" data-action="pm-open">${w.locked?'View Check List':p.done?'Continue Check List':'Start Check List'}</button></div></div>`;
+  const p=pmProgress(w.pm); const sig=w.pm&&w.pm.sig;
+  return `<div class="ckbox"><div class="ck-h"><strong>Check List</strong><span class="hint">${sig?'Signed '+esc(pmStamp(sig.at)):p.done+' of '+p.total+' answered'}</span></div>
+   <p class="hint">${sig?'Signed, so the task can be closed.':w.locked?'This task is closed.':p.done===p.total?'Every question is answered. Open the Check List to sign it.':'The task can only be closed once every question is answered and the Check List is signed.'}</p>
+   <div class="addrow"><button type="button" class="btn" data-action="pm-open">${pmLocked(w)?'View Check List':p.done?'Continue Check List':'Start Check List'}</button>${sig?'<button type="button" class="btn" data-action="pm-pdf">Export PDF</button>':''}</div></div>`;
 }
 function pmPhotoHTML(it,x,label,lock){
   const has=x.p&&x.p.length;
@@ -1293,7 +1296,8 @@ function pmItemHTML(it,w,lock){
 function renderPM(){
   const host=$('#modal2'); const w=S.wo;
   if(!S.pmOpen||!w){ host.innerHTML=''; host.hidden=true; syncInert(); return; }
-  const prev=$('.sheet-b',host); const sc=prev?prev.scrollTop:0; const was=!!prev&&!host.hidden; const lock=!!w.locked;
+  if(S.pmSign){ renderSign(); return; }
+  const prev=$('.sheet-b',host); const sc=prev?prev.scrollTop:0; const was=!!prev&&!host.hidden; const lock=pmLocked(w);
   const a=(w.pm&&w.pm.a)||{}; const p=pmProgress(w.pm);
   host.hidden=false;
   host.innerHTML=`<div class="scrim" data-action="pm-close"></div>
@@ -1301,35 +1305,31 @@ function renderPM(){
    <header class="sheet-h"><div><p class="eyebrow">${w.isNew?'Task':esc(fmtNo(w.number))}${assetIdent(w.assetId)?' · '+esc(assetIdent(w.assetId)):''}</p><h2 id="pm-h">Check List</h2></div><button type="button" class="icon" data-action="pm-close" aria-label="Close">&times;</button></header>
    <div class="sheet-b">
     ${PM_SECTIONS.map(s=>{ let last=''; return `<div class="pm-s"><h3 class="sec-h">${esc(s.h)}</h3>${s.items.filter(it=>pmShown(it,a)).map(it=>{ let h=''; if(it.sub&&it.sub!==last){ h=`<h4 class="pm-sub">${esc(it.sub)}</h4>`; } last=it.sub||''; return h+pmItemHTML(it,w,lock); }).join('')}</div>`; }).join('')}
+    ${w.pm&&w.pm.sig?`<div class="pm-sig"><strong>Signed</strong><img src="${w.pm.sig.img}" alt="Signature"><span class="hint">${esc(pmStamp(w.pm.sig.at))}</span></div>`:(p.done===p.total&&!w.locked?'<p class="hint">Every question is answered. Press Sign to finish.</p>':'')}
    </div>
-   <footer class="sheet-f"><span class="hint" id="pm-count">${p.done} of ${p.total} answered</span><div class="acts"><button type="button" class="btn primary" data-action="pm-close">${lock?'Close':'Done'}</button></div></footer>
+   <footer class="sheet-f"><span class="hint" id="pm-count">${p.done} of ${p.total} answered</span><div class="acts">${w.pm&&w.pm.sig?'<button type="button" class="btn" data-action="pm-pdf">Export PDF</button>':(p.done===p.total&&!w.locked?'<button type="button" class="btn primary" data-action="pm-sign">Sign</button>':'')}<button type="button" class="btn${w.pm&&w.pm.sig||(p.done===p.total&&!w.locked)?'':' primary'}" data-action="pm-close">${lock?'Close':'Done'}</button></div></footer>
   </section>`;
   keepStill(host,was);
   const sb=$('.sheet-b',host); if(sb) sb.scrollTop=sc;
   syncInert();
 }
 function pmSet(id,k,v){
-  const w=S.wo; if(!w||w.locked) return;
+  const w=S.wo; if(!w||pmLocked(w)) return;
   if(!w.pm) w.pm={a:{}}; if(!w.pm.a[id]) w.pm.a[id]={};
   w.pm.a[id][k]=v;
 }
 function pmUpdateCount(){ const p=pmProgress(S.wo&&S.wo.pm); const c=$('#pm-count'); if(c) c.textContent=p.done+' of '+p.total+' answered'; }
-function pmOpen(){ if(!S.wo||S.wo.isNew) return; S.pmOpen=true; renderPM(); }
+function pmOpen(){ if(!S.wo||S.wo.isNew) return; S.pmOpen=true; S.pmSign=false; renderPM(); }
 async function pmClose(){
+  if(S.pmSign){ S.pmSign=false; S.sg=null; renderPM(); return; }
   const w=S.wo; S.pmOpen=false; renderPM();
   if(!w) return;
-  if(!w.isNew&&!w.locked){
-    const o=S.orders.find(x=>x.id===w.id);
-    if(o&&!isClosed(o)){
-      try{ const doc=Object.assign({},o); delete doc.id; doc.pm=w.pm||null; doc.updatedAt=new Date().toISOString(); await S.db.doc('workorders/'+o.id).set(doc); }
-      catch(e){ toast('The checklist could not be saved yet. Press Save changes on the task.',true); }
-    }
-  }
+  if(!w.isNew&&!w.locked) await pmPersist(w);
   if(S.wo) renderWO();
 }
 async function addPmPhoto(input){
   const w=S.wo; const file=input.files&&input.files[0]; const id=input.dataset.id; input.value='';
-  if(!w||w.locked||!file) return;
+  if(!w||pmLocked(w)||!file) return;
   try{ const url=await shrink(file,900,.6); if(!S.wo) return; pmSet(id,'p',[url]); renderPM(); }
   catch(e){ toast(e&&e.message?e.message:'The photo could not be added.',true); }
 }
@@ -1337,6 +1337,99 @@ function onPmInput(e){
   const t=e.target; if(!t.dataset||t.dataset.pm===undefined) return;
   pmSet(t.dataset.pm,t.dataset.k,t.value);
   if(t.dataset.k==='x'||t.dataset.k==='v'){ const it=PM_SECTIONS.reduce((r,s)=>r||s.items.find(i=>i.id===t.dataset.pm),null); const box=t.closest('.pm-i'); if(it&&box) box.classList.toggle('ok',pmItemDone(it,(S.wo.pm&&S.wo.pm.a)||{})); pmUpdateCount(); }
+}
+/* ---------- Check List: signature and PDF ---------- */
+const pmLocked=w=>!!w&&(!!w.locked||!!(w.pm&&w.pm.sig));
+const pmStamp=iso=>{ const d=new Date(iso); return d.getDate()+' '+MON[d.getMonth()]+' '+d.getFullYear()+', '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); };
+function sgPaintBg(){
+  const g=S.sg; if(!g) return; const x=g.x;
+  x.save(); x.fillStyle='#fff'; x.fillRect(0,0,g.w,g.h);
+  x.translate(g.w/2,g.h/2); x.rotate(-0.3); x.fillStyle='rgba(20,32,46,.14)'; x.font='600 14px sans-serif'; x.textBaseline='middle';
+  const tw=x.measureText(g.label).width+36; const diag=Math.hypot(g.w,g.h);
+  let row=0; for(let y=-diag/2;y<=diag/2;y+=34,row++){ for(let xx=-diag/2-(row%2?tw/2:0);xx<=diag/2;xx+=tw) x.fillText(g.label,xx,y); }
+  x.restore();
+}
+function sgInit(){
+  const c=$('#sg'); if(!c||!S.wo) return; const dpr=window.devicePixelRatio||1; const r=c.getBoundingClientRect();
+  c.width=Math.round(r.width*dpr); c.height=Math.round(r.height*dpr); const x=c.getContext('2d'); x.scale(dpr,dpr);
+  const at=S.sg&&S.sg.at||new Date().toISOString();
+  S.sg={c,x,w:r.width,h:r.height,drawn:false,at,label:(S.wo.number?fmtNo(S.wo.number):'Task')+'  ·  '+pmStamp(at)};
+  sgPaintBg();
+  let down=false,lx=0,ly=0;
+  const pt=e=>{ const b=c.getBoundingClientRect(); return [e.clientX-b.left,e.clientY-b.top]; };
+  c.addEventListener('pointerdown',e=>{ down=true; [lx,ly]=pt(e); try{ c.setPointerCapture(e.pointerId); }catch(_){} x.beginPath(); x.fillStyle='#14202e'; x.arc(lx,ly,1.4,0,6.3); x.fill(); S.sg.drawn=true; e.preventDefault(); });
+  c.addEventListener('pointermove',e=>{ if(!down) return; const [px,py]=pt(e); x.strokeStyle='#14202e'; x.lineWidth=2.6; x.lineCap='round'; x.lineJoin='round'; x.beginPath(); x.moveTo(lx,ly); x.lineTo(px,py); x.stroke(); lx=px; ly=py; e.preventDefault(); });
+  const up=()=>{ down=false; }; c.addEventListener('pointerup',up); c.addEventListener('pointercancel',up);
+}
+function renderSign(){
+  const host=$('#modal2'); const w=S.wo; if(!w) return;
+  host.hidden=false;
+  host.innerHTML=`<div class="scrim" data-action="pm-sign-back"></div>
+  <section class="sheet narrow" role="dialog" aria-modal="true" aria-labelledby="sg-h">
+   <header class="sheet-h"><div><p class="eyebrow">${esc(fmtNo(w.number))}${assetIdent(w.assetId)?' · '+esc(assetIdent(w.assetId)):''}</p><h2 id="sg-h">Sign</h2></div><button type="button" class="icon" data-action="pm-sign-back" aria-label="Back">&times;</button></header>
+   <div class="sheet-b"><p class="hint">Sign inside the white block with your finger or mouse. The task number, date and time are stamped behind your signature.</p><canvas id="sg" class="sgpad" aria-label="Signature area"></canvas></div>
+   <footer class="sheet-f"><button type="button" class="btn" data-action="pm-sign-clear">Clear</button><div class="acts"><button type="button" class="btn" data-action="pm-sign-back">Back</button><button type="button" class="btn primary" data-action="pm-sign-ok">Sign and finish</button></div></footer>
+  </section>`;
+  S.sg=null; syncInert(); sgInit();
+}
+async function pmPersist(w){
+  if(!w||w.isNew) return true;
+  const o=S.orders.find(x=>x.id===w.id); if(!o||isClosed(o)) return true;
+  try{ const doc=Object.assign({},o); delete doc.id; doc.pm=w.pm||null; doc.updatedAt=new Date().toISOString(); await S.db.doc('workorders/'+o.id).set(doc); return true; }
+  catch(e){ toast('The Check List could not be saved yet. Press Save changes on the task.',true); return false; }
+}
+async function pmSignOk(){
+  const w=S.wo, g=S.sg; if(!w||!g) return;
+  if(!g.drawn){ toast('Sign inside the white block first.',true); return; }
+  if(!pmComplete(w.pm)){ toast('Answer every question first.',true); return; }
+  const img=g.c.toDataURL('image/jpeg',.85);
+  if(!w.pm) w.pm={a:{}}; w.pm.sig={img,at:g.at,no:fmtNo(w.number)};
+  S.pmSign=false; S.sg=null; renderPM(); toast('Signed');
+  await pmPersist(w);
+}
+function buildChecklistPDF(JsPDF,w){
+  const doc=new JsPDF({unit:'mm',format:'a4'}); const W=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight(), M=14, CW=W-2*M;
+  const ACC=[31,95,191], INK=[20,32,46], MUT=[102,114,127];
+  const a=(w.pm&&w.pm.a)||{}; let y=20;
+  const need=h=>{ if(y+h>H-16){ doc.addPage(); y=18; } };
+  doc.setFont('helvetica','bold'); doc.setFontSize(20); doc.setTextColor(...INK); doc.text('Check List',M,y); y+=6;
+  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...MUT); doc.text('I Got This',M,y); y+=5;
+  doc.text(pdfText([fmtNo(w.number),assetName(w.assetId)+(assetIdent(w.assetId)?' ('+assetIdent(w.assetId)+')':''),w.type].join('   |   ')),M,y); y+=4;
+  doc.setDrawColor(...ACC); doc.setLineWidth(0.6); doc.line(M,y,W-M,y); y+=7;
+  PM_SECTIONS.forEach(s=>{
+    need(14); doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.setTextColor(...ACC); doc.text(pdfText(s.h.replace('·','-')),M,y); y+=6; let last='';
+    s.items.filter(it=>pmShown(it,a)).forEach(it=>{
+      const x=a[it.id]||{};
+      if(it.sub&&it.sub!==last){ need(7); doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(...MUT); doc.text(pdfText(it.sub.toUpperCase()),M,y); y+=5; } last=it.sub||'';
+      const q=doc.splitTextToSize(pdfText(it.q),CW-34); need(q.length*4.6+3);
+      doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...INK); doc.text(q,M,y);
+      let ans=''; if(it.t==='yn') ans=x.v==='y'?'Yes':x.v==='n'?'No':'-'; else if(it.t==='photo') ans=(x.p&&x.p.length)?'Photo':'-'; else ans=String(x.v||'-');
+      doc.setFont('helvetica','bold'); doc.text(pdfText(ans),W-M,y,{align:'right'}); y+=q.length*4.6;
+      if(it.t==='yn'&&x.x&&pmExtraOn(it,x)){ doc.setFont('helvetica','normal'); doc.setTextColor(...MUT); doc.text(pdfText(it.x.label+': '+x.x),M+4,y); y+=4.6; }
+      if(x.p&&x.p[0]){ try{ const pr=doc.getImageProperties(x.p[0]); const iw=56, ih=Math.min(60,iw*pr.height/pr.width); need(ih+3); doc.addImage(x.p[0],'JPEG',M,y,iw,ih); y+=ih+2; }catch(e){} }
+      doc.setDrawColor(228,232,236); doc.setLineWidth(0.2); doc.line(M,y+1.6,W-M,y+1.6); y+=5;
+    });
+    y+=3;
+  });
+  if(w.pm&&w.pm.sig){
+    need(62); doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.setTextColor(...ACC); doc.text('Signed',M,y); y+=4;
+    try{ const pr=doc.getImageProperties(w.pm.sig.img); const iw=90, ih=iw*pr.height/pr.width; need(ih+10); doc.setDrawColor(200,206,212); doc.rect(M,y,iw,ih); doc.addImage(w.pm.sig.img,'JPEG',M,y,iw,ih); y+=ih+5; }catch(e){}
+    doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...MUT); doc.text(pdfText((w.pm.sig.no||fmtNo(w.number))+'  |  Signed '+pmStamp(w.pm.sig.at)),M,y);
+  }
+  const n=doc.getNumberOfPages();
+  for(let i=1;i<=n;i++){ doc.setPage(i); doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...MUT); doc.text(pdfText(fmtNo(w.number)+' - Check List'),M,H-8); doc.text('Page '+i+' of '+n,W-M,H-8,{align:'right'}); }
+  return doc;
+}
+async function pmExportPDF(){
+  const w=S.wo; if(!w||!(w.pm&&w.pm.sig)) return;
+  const jp=window.jspdf&&window.jspdf.jsPDF;
+  if(!jp){ toast('The PDF library did not load. Check your connection and reload the page.',true); return; }
+  if(!S.downloads){ toast('Downloads are not available in this view.',true); return; }
+  try{
+    const doc=buildChecklistPDF(jp,w); const data=doc.output('arraybuffer');
+    await S.downloads.save({filename:'check-list-'+fmtNo(w.number)+'-'+todayISO()+'.pdf',data});
+    toast(IS_IOS?'PDF ready':IS_APP?'PDF saved to Downloads':'PDF saved');
+  }catch(e){ if(!(e&&e.code==='declined')) toast('The PDF could not be created.',true); }
 }
 function checklistHTML(w){
   const lock=!!w.locked; const no=w.isNew?'this task':fmtNo(w.number);
@@ -1885,7 +1978,7 @@ function syncInert(){
   m1.inert=!m2.hidden;
 }
 function closeSheet(which){
-  S.pmOpen=false;
+  S.pmOpen=false; S.pmSign=false;
   if(which==='wo'||which==='settings'||which==='report'){ S.wo=null; S.sheet=''; const h=$('#modal'); h.innerHTML=''; h.hidden=true; }
   syncInert();
 }
@@ -1913,8 +2006,13 @@ document.addEventListener('click',e=>{
     case 'close-modal2': S.asset=null; renderAsset(); break;
     case 'pm-open': pmOpen(); break;
     case 'pm-close': pmClose(); break;
-    case 'pm-yn': if(S.wo&&!S.wo.locked){ const cur=pmAns(S.wo,id).v; pmSet(id,'v',cur===el.dataset.v?'':el.dataset.v); renderPM(); } break;
-    case 'pm-photo-del': if(S.wo&&!S.wo.locked){ pmSet(id,'p',[]); renderPM(); } break;
+    case 'pm-sign': if(S.wo&&pmComplete(S.wo.pm)&&!pmLocked(S.wo)){ S.pmSign=true; renderSign(); } break;
+    case 'pm-sign-back': S.pmSign=false; S.sg=null; renderPM(); break;
+    case 'pm-sign-clear': if(S.sg){ S.sg.drawn=false; sgPaintBg(); } break;
+    case 'pm-sign-ok': pmSignOk(); break;
+    case 'pm-pdf': pmExportPDF(); break;
+    case 'pm-yn': if(S.wo&&!pmLocked(S.wo)){ const cur=pmAns(S.wo,id).v; pmSet(id,'v',cur===el.dataset.v?'':el.dataset.v); renderPM(); } break;
+    case 'pm-photo-del': if(S.wo&&!pmLocked(S.wo)){ pmSet(id,'p',[]); renderPM(); } break;
     case 'save-wo': saveWO(); break;
     case 'followup': { const w=S.wo; if(w) openWO(null,{assetId:w.assetId,title:w.title,type:w.type,followUpOf:w.number}); break; }
     case 'visit-loc': captureLocation(); break;

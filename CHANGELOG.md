@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.1.0.0
+
+- When every Check List question is answered, a Sign button appears at the bottom of the Check List window. It opens a white signing block stamped (several lines) with the task number, date and time.
+- Once signed, the Check List is locked and the task can be set to Completed. A preventive task cannot be closed without a signed Check List.
+- Export PDF: the signed Check List (answers, photos, signature) can be exported as a PDF from the Check List window or the task card.
+
 ## 3.0.0.1
 
 - The checklist window and its box on the task card are titled "Check List".
