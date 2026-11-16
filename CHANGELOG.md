@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.2.0.0
+
+- Equipment page: new Attributes button opens a page where you add attributes (extra details such as Year or Location) with an Active / Not active menu. Active attributes appear when adding or editing equipment, and on the equipment card.
+- Equipment cards: a pen icon next to the name opens the editor (Save changes inside).
+- Check List: when started but not complete it shows "Check List started" with the date and time, and a "Start a new Check List" option underneath (asks to confirm before discarding the answers).
+
 ## 3.1.0.0
 
 - When every Check List question is answered, a Sign button appears at the bottom of the Check List window. It opens a white signing block stamped (several lines) with the task number, date and time.

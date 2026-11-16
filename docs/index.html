@@ -226,6 +226,8 @@ textarea{min-height:76px;resize:vertical}
 
 /* asset cards */
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(17rem,1fr));gap:14px}
+.nm{display:flex;align-items:center;gap:4px}.nm h3{margin:0}.pen{width:30px;height:30px;font-size:inherit;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;flex:none}
+.attr-t{display:flex;flex-direction:column;gap:8px}.attr-r{display:grid;grid-template-columns:1fr 140px;gap:8px;align-items:center}.attr-hd{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink2)}
 .acard{display:flex;flex-direction:column;gap:10px}
 .ahead{display:flex;gap:12px;align-items:flex-start}.ahead>div:last-child{min-width:0}
 .acard h3{font:700 22px/1.1 var(--disp);letter-spacing:.01em;overflow-wrap:anywhere}
@@ -402,8 +404,8 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
-const APP_VERSION='3.1.0.0';
-const RELEASE_NOTES=['When every Check List question is answered, a Sign button opens a white signing block stamped with the task number, date and time.','A preventive task can be closed once its Check List is signed; the signed Check List is then locked.','Export the signed Check List, with its photos and signature, as a PDF.'];
+const APP_VERSION='3.2.0.0';
+const RELEASE_NOTES=['New Attributes page under Equipment: add your own details and set each one Active or Not active.','Equipment cards have a pen icon next to the name to edit, then save changes.','An unfinished Check List shows when it was started, with the option to start a new one underneath.'];
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -685,6 +687,10 @@ async function boot(){
     S.orders=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
     S.ready.orders=true; ok(); render(); syncReminders();
   },bad);
+  db.doc('meta/attributes').onSnapshot(s=>{
+    S.attrs={list:s.exists&&Array.isArray(s.data().list)?s.data().list:[]};
+    render();
+  },()=>{});
   db.doc('meta/settings').onSnapshot(s=>{
     if(s.exists){ S.settings=Object.assign({currency:'SAR'},s.data()); }
     render();
@@ -1029,15 +1035,15 @@ function assetsView(){
   const all=[...S.assets.values()].sort(byName);
   const list=all.filter(a=>S.showArchived||!a.archived);
   const archivedCount=all.filter(a=>a.archived).length;
-  const head=`<div class="toolbar"><div>${archivedCount?`<button type="button" class="btn sm ghost" data-action="toggle-archived">${S.showArchived?'Hide':'Show'} archived (${archivedCount})</button>`:''}</div></div>`;
+  const head=`<div class="toolbar"><div><button type="button" class="btn sm" data-action="attrs"${canWrite()?'':' disabled'}>Attributes</button>${archivedCount?`<button type="button" class="btn sm ghost" data-action="toggle-archived">${S.showArchived?'Hide':'Show'} archived (${archivedCount})</button>`:''}</div></div>`;
   if(!list.length) return head+`<div class="empty small"><h2>No equipment yet</h2><p>Add the things you maintain: a car, a room, an appliance. Tasks are opened against them.</p></div>`;
   return head+`<div class="cards">${list.map(a=>{
     const s=stats.get(a.id)||{n:0,open:0,spent:0,last:'',meter:null};
     const kids=kidsOf(a.id); const par=a.parentId?S.assets.get(a.parentId):null; const pic=photoOf(a);
-    const ident=[a.plate?['Number plate',a.plate]:null,a.vin?['VIN',a.vin]:null,(a.brand||a.model)&&a.category!=='Vehicle'?['Brand / model',joinUniq([a.brand,a.model])]:null,a.serial?['Serial',a.serial]:null].filter(Boolean);
-    return `<article class="panel acard${a.archived?' arch':''}"><div class="ahead">${pic?`<button type="button" class="apic-b" data-action="view-photo" data-id="${esc(a.id)}" data-k="att" data-i="0" aria-label="View attachment"><img class="apic" src="${pic}" alt=""></button>`:icoFor(effCat(a))}<div><p class="tagline">${esc(effCat(a)||'Other')}${par?' · Accessory':''}${a.archived?' · Archived':''}</p><h3>${esc(a.name)}</h3>${par?`<p class="muted">Accessory of ${esc(par.name)}</p>`:''}${a.details?`<p class="muted">${esc(a.details)}</p>`:''}</div></div>
+    const ident=[].concat(activeAttrs().map(t=>{ const v=a.attrs&&a.attrs[t.id]; return v?[t.name,v]:null; }),[a.plate?['Number plate',a.plate]:null,a.vin?['VIN',a.vin]:null,(a.brand||a.model)&&a.category!=='Vehicle'?['Brand / model',joinUniq([a.brand,a.model])]:null,a.serial?['Serial',a.serial]:null]).filter(Boolean);
+    return `<article class="panel acard${a.archived?' arch':''}"><div class="ahead">${pic?`<button type="button" class="apic-b" data-action="view-photo" data-id="${esc(a.id)}" data-k="att" data-i="0" aria-label="View attachment"><img class="apic" src="${pic}" alt=""></button>`:icoFor(effCat(a))}<div><p class="tagline">${esc(effCat(a)||'Other')}${par?' · Accessory':''}${a.archived?' · Archived':''}</p><div class="nm"><h3>${esc(a.name)}</h3><button type="button" class="icon pen" data-action="edit-asset" data-id="${esc(a.id)}" aria-label="Edit ${esc(a.name)}" title="Edit"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button></div>${par?`<p class="muted">Accessory of ${esc(par.name)}</p>`:''}${a.details?`<p class="muted">${esc(a.details)}</p>`:''}</div></div>
       <dl class="facts">${ident.map(r=>`<dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd>`).join('')}${kids.length?`<dt>Accessories</dt><dd>${esc(kids.map(k=>k.name).join(', '))}</dd>`:''}<dt>Tasks</dt><dd>${s.n}${s.open?` (${s.open} open)`:''}</dd><dt>Total spent</dt><dd>${money(s.spent)}</dd><dt>Last service</dt><dd>${s.last?fmtDate(s.last):'—'}</dd>${a.meterUnit?`<dt>Last reading</dt><dd>${fmtMeter(s.meter,a.meterUnit)}</dd>`:''}</dl>
-      <div class="acts"><button type="button" class="btn sm" data-action="asset-history" data-id="${esc(a.id)}">History</button><button type="button" class="btn sm" data-action="asset-wo" data-id="${esc(a.id)}"${canWrite()&&!a.archived?'':' disabled'}>New task</button><button type="button" class="btn sm ghost" data-action="edit-asset" data-id="${esc(a.id)}">Edit</button></div></article>`;
+      <div class="acts"><button type="button" class="btn sm" data-action="asset-history" data-id="${esc(a.id)}">History</button><button type="button" class="btn sm" data-action="asset-wo" data-id="${esc(a.id)}"${canWrite()&&!a.archived?'':' disabled'}>New task</button></div></article>`;
   }).join('')}</div>`;
 }
 
@@ -1272,10 +1278,12 @@ function pmProgress(pm){
 }
 const pmComplete=pm=>{ const p=pmProgress(pm); return p.done===p.total; };
 function pmBoxHTML(w){
-  const p=pmProgress(w.pm); const sig=w.pm&&w.pm.sig;
+  const p=pmProgress(w.pm); const sig=w.pm&&w.pm.sig; const st=w.pm&&w.pm.startedAt; const partial=!sig&&p.done<p.total&&(p.done>0||!!st);
   return `<div class="ckbox"><div class="ck-h"><strong>Check List</strong><span class="hint">${sig?'Signed '+esc(pmStamp(sig.at)):p.done+' of '+p.total+' answered'}</span></div>
+   ${partial?`<p class="hint"><b>Check List started</b>${st?' · '+esc(pmStamp(st)):''}</p>`:''}
    <p class="hint">${sig?'Signed, so the task can be closed.':w.locked?'This task is closed.':p.done===p.total?'Every question is answered. Open the Check List to sign it.':'The task can only be closed once every question is answered and the Check List is signed.'}</p>
-   <div class="addrow"><button type="button" class="btn" data-action="pm-open">${pmLocked(w)?'View Check List':p.done?'Continue Check List':'Start Check List'}</button>${sig?'<button type="button" class="btn" data-action="pm-pdf">Export PDF</button>':''}</div></div>`;
+   <div class="addrow"><button type="button" class="btn" data-action="pm-open">${pmLocked(w)?'View Check List':partial?'Continue Check List':'Start Check List'}</button>${sig?'<button type="button" class="btn" data-action="pm-pdf">Export PDF</button>':''}</div>
+   ${partial&&!w.locked?`<div class="addrow">${w.pmRestart?'<button type="button" class="btn sm danger" data-action="pm-restart">Confirm: discard answers and start new</button><button type="button" class="btn sm ghost" data-action="pm-restart-cancel">Keep this one</button>':'<button type="button" class="btn sm ghost" data-action="pm-restart">Start a new Check List</button>'}</div>`:''}</div>`;
 }
 function pmPhotoHTML(it,x,label,lock){
   const has=x.p&&x.p.length;
@@ -1319,7 +1327,7 @@ function pmSet(id,k,v){
   w.pm.a[id][k]=v;
 }
 function pmUpdateCount(){ const p=pmProgress(S.wo&&S.wo.pm); const c=$('#pm-count'); if(c) c.textContent=p.done+' of '+p.total+' answered'; }
-function pmOpen(){ if(!S.wo||S.wo.isNew) return; S.pmOpen=true; S.pmSign=false; renderPM(); }
+function pmOpen(){ if(!S.wo||S.wo.isNew) return; if(!pmLocked(S.wo)&&(!S.wo.pm||!S.wo.pm.startedAt)){ if(!S.wo.pm) S.wo.pm={a:{}}; S.wo.pm.startedAt=new Date().toISOString(); } S.pmOpen=true; S.pmSign=false; renderPM(); }
 async function pmClose(){
   if(S.pmSign){ S.pmSign=false; S.sg=null; renderPM(); return; }
   const w=S.wo; S.pmOpen=false; renderPM();
@@ -1515,7 +1523,7 @@ const ASSET_TEXT=['name','brand','make','model','colour','plate','vin','serial',
 function openAsset(id,fromWO){
   const a=id?S.assets.get(id):null;
   const base={isNew:!a,id:a?a.id:'',category:a&&a.category||'Vehicle',role:a&&a.parentId?'child':'parent',parentId:a&&a.parentId||'',meterUnit:a?(a.meterUnit||''):'',
-    attachments:a?attsOf(a):[],archived:!!(a&&a.archived),sample:!!(a&&a.sample),structured:!!(a&&a.structured),confirmDelete:false};
+    attachments:a?attsOf(a):[],attrs:Object.assign({},a&&a.attrs||{}),archived:!!(a&&a.archived),sample:!!(a&&a.sample),structured:!!(a&&a.structured),confirmDelete:false};
   ASSET_TEXT.forEach(k=>{ base[k]=a&&a[k]?String(a[k]):''; });
   if(a&&a.category==='Vehicle'&&!a.parentId&&a.model){ base.make=joinUniq([a.make,a.model]); base.model=''; }
   S.asset=base; S.asset.fromWO=!!fromWO; renderAsset(a?null:'as-cat');
@@ -1560,6 +1568,8 @@ function renderAsset(focusId){
      <div class="grid">${f('brand','Brand','Samsung')}${f('model','Model number','AR24TYHYC')}</div>
      ${f('serial','Serial number','')}`;
   }
+  const act=activeAttrs();
+  if(act.length) body+=`<div class="grid">${act.map(t=>`<label class="fld"><span>${esc(t.name)}</span><input id="as-at-${esc(t.id)}" data-at="${esc(t.id)}" type="text" value="${esc((a.attrs||{})[t.id]||'')}" autocomplete="off"></label>`).join('')}</div>`;
   body+=attachField();
   if(!veh){
     body+=`<label class="fld"><span>Notes</span><textarea id="as-notes" data-af="notes" placeholder="Purchase date, warranty, anything worth remembering">${esc(a.notes)}</textarea></label>`;
@@ -1607,7 +1617,8 @@ async function saveAsset(){
   const name=veh?(joinUniq([t('brand'),t('make'),t('colour')])||t('plate')):(t('name')||joinUniq([t('brand'),t('model')])||'Equipment');
   const doc={name,category:child?effCat(par):a.category,details:t('details'),meterUnit:child?'':a.meterUnit,notes:t('notes'),archived:!!a.archived,sample:!!a.sample,structured:true,updatedAt:new Date().toISOString(),
     brand:t('brand'),model:veh?'':t('model'),serial:veh?'':t('serial'),make:veh?t('make'):'',colour:veh?t('colour'):'',plate:veh?t('plate'):'',vin:veh?t('vin').toUpperCase():'',
-    attachments:a.attachments.map(x=>({src:x.src,caption:String(x.caption||'').trim()})),parentId:child?a.parentId:''};
+    attachments:a.attachments.map(x=>({src:x.src,caption:String(x.caption||'').trim()})),parentId:child?a.parentId:'',
+    attrs:Object.keys(a.attrs||{}).reduce((r,k)=>{ const v=String(a.attrs[k]||'').trim(); if(v) r[k]=v; return r; },{})};
   try{
     let id=a.id;
     if(a.isNew){ doc.createdAt=doc.updatedAt; const ref=await S.db.collection('assets').add(doc); id=ref.id; }
@@ -1914,6 +1925,37 @@ function buildReportPDF(deps,opt){
 /* REPORT-END */
 const hasDone=()=>S.orders.some(o=>o.status==='Completed');
 const reportReady=()=>!!(S.db&&S.downloads&&S.ready.orders&&S.ready.assets&&hasDone());
+/* ---------- attributes: extra details recorded for equipment ---------- */
+const activeAttrs=()=>((S.attrs&&S.attrs.list)||[]).filter(x=>x&&x.active!==false&&String(x.name||'').trim());
+function openAttrs(){
+  if(!canWrite()){ toast('You can only view this.',true); return; }
+  S.attrEdit=((S.attrs&&S.attrs.list)||[]).map(x=>({id:x.id,name:String(x.name||''),active:x.active!==false}));
+  S.sheet='attrs'; renderAttrs();
+}
+function renderAttrs(focus){
+  const host=$('#modal'); const was=!host.hidden&&!!host.querySelector('#at-h'); host.hidden=false; const L=S.attrEdit||[];
+  host.innerHTML=`<div class="scrim" data-action="close-modal"></div>
+  <section class="sheet narrow" role="dialog" aria-modal="true" aria-labelledby="at-h">
+   <header class="sheet-h"><div><p class="eyebrow">Equipment</p><h2 id="at-h">Attributes</h2></div><button type="button" class="icon" data-action="close-modal" aria-label="Close">&times;</button></header>
+   <div class="sheet-b">
+    <p class="hint">Add the extra details you want to record for your equipment, such as Year, Fuel type or Location. Active attributes appear when you add or edit equipment. Not active ones are hidden but keep their values.</p>
+    <div class="attr-t" role="table" aria-label="Attributes">
+     <div class="attr-r attr-hd" role="row"><span role="columnheader">Attribute</span><span role="columnheader">Status</span></div>
+     ${L.length?L.map((x,i)=>`<div class="attr-r" role="row"><input id="at-n-${i}" data-attr="${i}" data-k="name" type="text" value="${esc(x.name)}" placeholder="Attribute name" autocomplete="off" aria-label="Attribute name">
+       <select data-attr="${i}" data-k="active" aria-label="Status">${opt([['1','Active'],['0','Not active']],x.active?'1':'0')}</select></div>`).join(''):'<p class="hint">No attributes yet.</p>'}
+    </div>
+    <div class="addrow"><button type="button" class="btn sm" data-action="attr-add">Add attribute</button></div>
+   </div>
+   <footer class="sheet-f"><span></span><div class="acts"><button type="button" class="btn" data-action="close-modal">Cancel</button><button type="button" class="btn primary" data-action="attr-save">Save changes</button></div></footer></section>`;
+  keepStill(host,was); syncInert();
+  if(focus){ const el=document.getElementById(focus); if(el) el.focus(); }
+}
+async function saveAttrs(){
+  const seen=new Set(); const list=[];
+  (S.attrEdit||[]).forEach((x,i)=>{ const name=String(x.name||'').trim(); if(!name) return; const k=name.toLowerCase(); if(seen.has(k)) return; seen.add(k); list.push({id:x.id||('a'+Date.now().toString(36)+i),name,active:!!x.active}); });
+  try{ await S.db.doc('meta/attributes').set({list,updatedAt:new Date().toISOString()}); S.attrs={list}; toast('Attributes saved'); closeSheet('attrs'); render(); }
+  catch(e){ fail(e,'Not saved'); }
+}
 function openReport(pre){ if(!hasDone()){ toast('The PDF report is available once a task is completed.',true); return; }  if(!S.report) S.report={period:'year',asset:'',parts:true}; if(pre&&pre.asset!==undefined) S.report.asset=pre.asset; S.report.task=(pre&&pre.task)||''; S.sheet='report'; renderReport(); }
 function updateReportCount(){
   const c=$('#rp-count'); if(!c||!S.report) return;
@@ -1979,7 +2021,7 @@ function syncInert(){
 }
 function closeSheet(which){
   S.pmOpen=false; S.pmSign=false;
-  if(which==='wo'||which==='settings'||which==='report'){ S.wo=null; S.sheet=''; const h=$('#modal'); h.innerHTML=''; h.hidden=true; }
+  if(which==='wo'||which==='settings'||which==='report'||which==='attrs'){ S.wo=null; S.sheet=''; const h=$('#modal'); h.innerHTML=''; h.hidden=true; }
   syncInert();
 }
 function closeAddMenu(){ const m=$('#addmenu'); if(m&&!m.hidden){ m.hidden=true; const b=$('#btn-add'); if(b) b.setAttribute('aria-expanded','false'); return true; } return false; }
@@ -2011,6 +2053,8 @@ document.addEventListener('click',e=>{
     case 'pm-sign-clear': if(S.sg){ S.sg.drawn=false; sgPaintBg(); } break;
     case 'pm-sign-ok': pmSignOk(); break;
     case 'pm-pdf': pmExportPDF(); break;
+    case 'pm-restart': if(S.wo&&!pmLocked(S.wo)){ if(!S.wo.pmRestart){ S.wo.pmRestart=true; renderWO(); } else { S.wo.pmRestart=false; S.wo.pm={a:{},startedAt:new Date().toISOString()}; renderWO(); pmPersist(S.wo); toast('New Check List started'); } } break;
+    case 'pm-restart-cancel': if(S.wo){ S.wo.pmRestart=false; renderWO(); } break;
     case 'pm-yn': if(S.wo&&!pmLocked(S.wo)){ const cur=pmAns(S.wo,id).v; pmSet(id,'v',cur===el.dataset.v?'':el.dataset.v); renderPM(); } break;
     case 'pm-photo-del': if(S.wo&&!pmLocked(S.wo)){ pmSet(id,'p',[]); renderPM(); } break;
     case 'save-wo': saveWO(); break;
@@ -2031,6 +2075,9 @@ document.addEventListener('click',e=>{
     case 'settings': openSettings(); break;
     case 'export': exportData(el.dataset.what); break;
     case 'report': openReport(); break;
+    case 'attrs': openAttrs(); break;
+    case 'attr-add': if(S.attrEdit){ S.attrEdit.push({id:'',name:'',active:true}); renderAttrs('at-n-'+(S.attrEdit.length-1)); } break;
+    case 'attr-save': saveAttrs(); break;
     case 'report-task': { const aid=S.wo&&S.wo.assetId, tid=S.wo&&S.wo.id; closeSheet('wo'); openReport({asset:aid||'',task:tid||''}); break; }
     case 'open-report': { const r=S.wo&&(S.wo.reports||[])[+el.dataset.i]; if(r) saveStoredReport(r); break; }
     case 'do-restore': doRestore(); break;
@@ -2065,6 +2112,8 @@ document.addEventListener('click',e=>{
 function onInput(e){
   const t=e.target; if(!t||!t.id&&!t.dataset) return;
   if(S.pmOpen&&t.dataset&&t.dataset.pm!==undefined){ onPmInput(e); return; }
+  if(t.dataset&&t.dataset.attr!==undefined&&S.attrEdit){ const r=S.attrEdit[+t.dataset.attr]; if(r){ if(t.dataset.k==='active') r.active=t.value==='1'; else r.name=t.value; } return; }
+  if(t.dataset&&t.dataset.at!==undefined&&S.asset){ if(!S.asset.attrs) S.asset.attrs={}; S.asset.attrs[t.dataset.at]=t.value; return; }
   if(t.dataset&&t.dataset.cap!==undefined&&S.asset){ const x=S.asset.attachments[+t.dataset.cap]; if(x) x.caption=t.value; return; }
   if(t.dataset&&t.dataset.af!==undefined&&S.asset){
     const k=t.dataset.af; S.asset[k]=t.value;
