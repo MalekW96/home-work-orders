@@ -1,5 +1,5 @@
-/* I Got This service worker (generated into docs/sw.js by scripts/sync-web.sh). Version: 4.1.0.0 */
-const CACHE='igotthis-4.1.0.0';
+/* I Got This service worker (generated into docs/sw.js by scripts/sync-web.sh). Version: 4.2.0.0 */
+const CACHE='igotthis-4.2.0.0';
 const CORE=['./','index.html','manifest.webmanifest','apple-touch-icon.png','icon-192.png','icon-512.png','libs/jspdf.umd.min.js','libs/jspdf.plugin.autotable.min.js'];
 
 self.addEventListener('install',e=>{

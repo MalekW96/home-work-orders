@@ -119,6 +119,19 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none;color:var(--in
 .hero .k-l{color:rgba(255,255,255,.8);letter-spacing:.12em}
 .hero-v{font:600 clamp(26px,11cqi,40px)/1.15 var(--mono);margin:6px 0 2px;letter-spacing:-.02em;overflow-wrap:anywhere}
 .hero-s{font-size:13px;color:rgba(255,255,255,.82)}
+button.hero{display:block;width:100%;border:0;text-align:left;font:inherit;cursor:pointer;position:relative}
+button.hero:active{transform:scale(.99)}
+.hero-go{position:absolute;right:18px;top:50%;margin-top:-10px;font-size:26px;line-height:20px;opacity:.85}
+.catrow{background:var(--panel);border-radius:14px;box-shadow:var(--shadow);margin-bottom:8px;overflow:hidden}
+.catrow summary{list-style:none;cursor:pointer;padding:12px 14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:center}
+.catrow summary::-webkit-details-marker{display:none}
+.catrow .cn{font-weight:600}.catrow .cv{font-variant-numeric:tabular-nums;font-weight:600}
+.catrow .cm{font-size:12px;color:var(--muted)}
+.catrow .bar-t{grid-column:1/-1;margin-top:4px;border-radius:4px}
+.catrow .cd{padding:0 14px 12px;border-top:1px solid var(--track)}
+.catrow .cd ul{margin:8px 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.catrow .cd li{display:flex;justify-content:space-between;gap:10px}
+.catrow .cd li span:last-child{font-variant-numeric:tabular-nums}
 .strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:6px}
 .strip>div{background:var(--panel);border-radius:14px;box-shadow:var(--shadow);padding:12px 14px;container-type:inline-size;min-width:0}
 .k-l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.09em}
@@ -404,8 +417,8 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
-const APP_VERSION='4.1.0.0';
-const RELEASE_NOTES=['The Check List can still be viewed, and its PDF exported, after a task is closed.','All photos now live in one Attachments section at the bottom of the task. The garage visit no longer has its own photo spot.','Photos from earlier garage visits move into Attachments automatically.'];
+const APP_VERSION='4.2.0.0';
+const RELEASE_NOTES=['Tap the big Spent number on the Dashboard to see where the money went, by category, then equipment, with parts, labour and other.','Equipment can be filtered by category with the chips above the cards.','History on an equipment card lists all its tasks, including those on its accessories.'];
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -416,7 +429,7 @@ const CURRENCIES=['SAR','AED','KWD','QAR','BHD','OMR','EGP','JOD','USD','EUR','G
 
 const S={db:null,user:null,downloads:null,noStore:false,readOnly:false,timedOut:false,
   assets:new Map(),orders:[],settings:{currency:'SAR'},ready:{assets:false,orders:false},
-  view:'dashboard',range:'year',f:{status:'open',asset:'',year:'',q:''},partsQ:'',showArchived:false,showFilters:false,
+  view:'dashboard',range:'year',f:{status:'open',asset:'',year:'',q:''},partsQ:'',acat:'',showArchived:false,showFilters:false,
   wo:null,asset:null,saving:false,confirmClear:false,sheet:'',report:null,restore:null,upd:null};
 const HOLDER='h'+Math.random().toString(36).slice(2,10);
 
@@ -969,7 +982,7 @@ function dashboardView(){
   const kinfo=[['Parts',kinds.part,'--c1'],['Labour',kinds.labour,'--c2'],['Other',kinds.other,'--c3']];
   const kbar=kinfo.filter(k=>k[1]>0).map(k=>`<i style="flex:${k[1]};background:var(${k[2]})" title="${k[0]}: ${esc(money(k[1]))}"></i>`).join('');
   const klegend=kinfo.map(k=>`<li><b style="background:var(${k[2]})"></b><span>${k[0]}</span><span>${money(k[1])}</span></li>`).join('');
-  return `<section class="hero" aria-label="Spent"><div class="k-l">Spent · ${esc(rl)}</div><div class="hero-v">${money(spend)}</div><div class="hero-s">${ro.length} job${ro.length===1?'':'s'} · ${esc(rl)}</div></section>
+  return `<button type="button" class="hero" data-action="spend-cats" aria-label="Spent ${esc(rl)}: ${esc(money(spend))}. Show spending by category"><div class="k-l">Spent · ${esc(rl)}</div><div class="hero-v">${money(spend)}</div><div class="hero-s">${ro.length} job${ro.length===1?'':'s'} · ${esc(rl)} · tap for categories</div><span class="hero-go" aria-hidden="true">&rsaquo;</span></button>
   <div class="strip">
     <div><div class="k-l">Open</div><div class="k-v">${active.length}</div></div>
     <div><div class="k-l">Overdue</div><div class="k-v${overdue.length?' bad':' zero'}">${overdue.length}</div></div>
@@ -989,12 +1002,46 @@ function dashboardView(){
   </div></div>`;
 }
 
+/* spend by category (opens from the big number) */
+function spendByCat(){
+  const start=rangeStart(); const cats=new Map(); let total=0;
+  for(const o of S.orders){
+    if(o.status==='Cancelled'||(start&&orderDate(o)<start)) continue;
+    const a=S.assets.get(o.assetId); const c=effCat(a)||'Other'; const t=orderTotals(o);
+    let e=cats.get(c); if(!e){ e={cat:c,sum:0,part:0,labour:0,other:0,n:0,eq:new Map()}; cats.set(c,e); }
+    e.sum+=t.all; e.part+=t.part; e.labour+=t.labour; e.other+=t.other; e.n++; total+=t.all;
+    const q=e.eq.get(o.assetId)||{sum:0,n:0}; q.sum+=t.all; q.n++; e.eq.set(o.assetId,q);
+  }
+  return {total,rows:[...cats.values()].sort((a,b)=>b.sum-a.sum||a.cat.localeCompare(b.cat))};
+}
+function renderSpend(){
+  const host=$('#modal'); const was=!host.hidden&&!!host.querySelector('#sp-h'); host.hidden=false;
+  const d=spendByCat(); const rl={year:'This year','12m':'Last 12 months',all:'All time'}[S.range];
+  const max=d.rows.length?Math.max(...d.rows.map(r=>r.sum)):0;
+  const rows=d.rows.map(r=>{
+    const pct=d.total>0?Math.round(r.sum/d.total*100):0;
+    const eq=[...r.eq.entries()].sort((a,b)=>b[1].sum-a[1].sum).map(e=>`<li><span>${esc(assetName(e[0]))} <em class="muted">· ${e[1].n} task${e[1].n===1?'':'s'}</em></span><span>${money(e[1].sum)}</span></li>`).join('');
+    return `<details class="catrow"><summary><span class="cn">${esc(r.cat)}</span><span class="cv">${money(r.sum)}</span><span class="cm">${r.n} task${r.n===1?'':'s'} · ${pct}% of spend</span><span class="cm" style="text-align:right">Parts ${money(r.part)} · Labour ${money(r.labour)} · Other ${money(r.other)}</span><span class="bar-t"><span class="bar-f" style="width:${max>0?Math.max(2,Math.round(r.sum/max*100)):0}%"></span></span></summary>
+      <div class="cd"><ul>${eq}</ul><button type="button" class="btn sm" data-action="cat-equipment" data-cat="${esc(r.cat)}">Show ${esc(r.cat)} equipment</button></div></details>`;
+  }).join('');
+  host.innerHTML=`<div class="scrim" data-action="close-modal"></div>
+  <section class="sheet narrow" role="dialog" aria-modal="true" aria-labelledby="sp-h">
+   <header class="sheet-h"><div><p class="eyebrow">Spent · ${esc(rl)}</p><h2 id="sp-h">${money(d.total)} by category</h2></div><button type="button" class="icon" data-action="close-modal" aria-label="Close">&times;</button></header>
+   <div class="sheet-b"><div class="seg" role="group" aria-label="Period" style="margin-bottom:12px">${[['year','This year'],['12m','12 months'],['all','All time']].map(r=>`<button type="button" data-action="range" data-range="${r[0]}" aria-pressed="${S.range===r[0]}">${r[1]}</button>`).join('')}</div>
+   ${rows||'<p class="muted">No costs logged for this period yet.</p>'}</div>
+   <footer class="sheet-f"><span></span><div class="acts"><button type="button" class="btn" data-action="close-modal">Close</button></div></footer></section>`;
+  keepStill(host,was); syncInert();
+}
+function openSpend(){ S.sheet='spend'; renderSpend(); }
+
 /* tasks list */
+function assetFamily(id){ const ids=new Set([id]); const walk=(x,d)=>{ if(d>4) return; kidsOf(x).forEach(k=>{ if(!ids.has(k.id)){ ids.add(k.id); walk(k.id,d+1); } }); }; walk(id,0); return ids; }
 function filteredOrders(){
+  const fam=S.f.asset?assetFamily(S.f.asset):null;
   const q=S.f.q.trim().toLowerCase();
   return S.orders.filter(o=>{
     if(S.f.status!=='all'&&FGROUPS[S.f.status]&&!FGROUPS[S.f.status](o)) return false;
-    if(S.f.asset&&o.assetId!==S.f.asset) return false;
+    if(fam&&!fam.has(o.assetId)) return false;
     if(S.f.year&&String(orderDate(o)).slice(0,4)!==S.f.year) return false;
     if(q){ const hay=[o.number,fmtNo(o.number),o.title,o.description,o.notes,o.doneBy,o.type,assetName(o.assetId)].concat((o.lines||[]).map(l=>[l.name,l.partNo,l.supplier].join(' '))).join(' ').toLowerCase(); if(hay.indexOf(q)<0) return false; }
     return true;
@@ -1003,11 +1050,11 @@ function filteredOrders(){
 /* the Tasks tab has three filters. Open = In progress or Further action. */
 const FGROUPS={open:o=>o.status==='In progress'||o.status==='Further action',notstarted:o=>o.status==='Open',closed:o=>isClosed(o)};
 function ordersView(){
-  const base=S.orders.filter(o=>!S.f.asset||o.assetId===S.f.asset);
+  const fam=S.f.asset?assetFamily(S.f.asset):null; const base=S.orders.filter(o=>!fam||fam.has(o.assetId));
   const chips=[['open','Open'],['notstarted','Not started'],['closed','Closed']];
   return `<div class="searchrow"><input id="f-q" type="search" value="${esc(S.f.q)}" placeholder="Search number, equipment, notes" aria-label="Search tasks" autocomplete="off"></div>
   <div class="chips" role="group" aria-label="Show tasks">${chips.map(c=>`<button type="button" class="chip" data-action="chip" data-status="${esc(c[0])}" aria-pressed="${S.f.status===c[0]}">${c[1]} · ${base.filter(FGROUPS[c[0]]).length}</button>`).join('')}</div>
-  ${S.f.asset?`<p class="sumline"><span>Equipment: <b>${esc(assetName(S.f.asset))}</b></span><button type="button" class="btn sm ghost" data-action="clear-asset">Show all equipment</button></p>`:''}
+  ${S.f.asset?`<p class="sumline"><span>Equipment: <b>${esc(assetName(S.f.asset))}</b>${kidsOf(S.f.asset).length?' <span class="muted">· with accessories</span>':''}</span><button type="button" class="btn sm ghost" data-action="clear-asset">Show all equipment</button></p>`:''}
   <div id="orders-results">${ordersResults()}</div>`;
 }
 function ordersResults(){
@@ -1038,11 +1085,16 @@ function assetStampLine(a){
 function assetsView(){
   const stats=assetStats();
   const all=[...S.assets.values()].sort(byName);
-  const list=all.filter(a=>S.showArchived||!a.archived);
+  const vis=all.filter(a=>S.showArchived||!a.archived);
+  const catCount=new Map(); vis.forEach(a=>{ const c=effCat(a)||'Other'; catCount.set(c,(catCount.get(c)||0)+1); });
+  if(S.acat&&!catCount.has(S.acat)) S.acat='';
+  const list=S.acat?vis.filter(a=>(effCat(a)||'Other')===S.acat):vis;
+  const cats=[...catCount.keys()].sort((a,b)=>a.localeCompare(b));
+  const catChips=cats.length>1?`<div class="chips" role="group" aria-label="Filter by category"><button type="button" class="chip" data-action="acat" data-cat="" aria-pressed="${!S.acat}">All · ${vis.length}</button>${cats.map(c=>`<button type="button" class="chip" data-action="acat" data-cat="${esc(c)}" aria-pressed="${S.acat===c}">${esc(c)} · ${catCount.get(c)}</button>`).join('')}</div>`:'';
   const archivedCount=all.filter(a=>a.archived).length;
   const head=`<div class="toolbar"><div><button type="button" class="btn sm" data-action="attrs"${canWrite()?'':' disabled'}>Attributes</button>${archivedCount?`<button type="button" class="btn sm ghost" data-action="toggle-archived">${S.showArchived?'Hide':'Show'} archived (${archivedCount})</button>`:''}</div></div>`;
-  if(!list.length) return head+`<div class="empty small"><h2>No equipment yet</h2><p>Add the things you maintain: a car, a room, an appliance. Tasks are opened against them.</p></div>`;
-  return head+`<div class="cards">${list.map(a=>{
+  if(!vis.length) return head+`<div class="empty small"><h2>No equipment yet</h2><p>Add the things you maintain: a car, a room, an appliance. Tasks are opened against them.</p></div>`;
+  return head+catChips+`<div class="cards">${list.map(a=>{
     const s=stats.get(a.id)||{n:0,open:0,spent:0,last:'',meter:null};
     const kids=kidsOf(a.id); const par=a.parentId?S.assets.get(a.parentId):null; const pic=photoOf(a);
     const ident=[].concat(activeAttrs().map(t=>{ const v=a.attrs&&a.attrs[t.id]; return v?[t.name,v]:null; }),[a.plate?['Number plate',a.plate]:null,a.vin?['VIN',a.vin]:null,(a.brand||a.model)&&a.category!=='Vehicle'?['Brand / model',joinUniq([a.brand,a.model])]:null,a.serial?['Serial',a.serial]:null]).filter(Boolean);
@@ -2139,7 +2191,7 @@ function syncInert(){
 }
 function closeSheet(which){
   S.pmOpen=false; S.pmSign=false;
-  if(which==='wo'||which==='settings'||which==='report'||which==='attrs'||which==='share'){ S.wo=null; S.sheet=''; const h=$('#modal'); h.innerHTML=''; h.hidden=true; }
+  if(which==='wo'||which==='settings'||which==='report'||which==='attrs'||which==='share'||which==='spend'){ S.wo=null; S.sheet=''; const h=$('#modal'); h.innerHTML=''; h.hidden=true; }
   syncInert();
 }
 function closeAddMenu(){ const m=$('#addmenu'); if(m&&!m.hidden){ m.hidden=true; const b=$('#btn-add'); if(b) b.setAttribute('aria-expanded','false'); return true; } return false; }
@@ -2228,7 +2280,10 @@ document.addEventListener('click',e=>{
     case 'ck-add': ckAdd(); break;
     case 'ck-del': if(S.wo&&S.wo.checklist&&!S.wo.locked){ S.wo.checklist.items.splice(+el.dataset.i,1); renderWO(); } break;
     case 'toggle-filters': S.showFilters=!S.showFilters; renderView(); break;
-    case 'range': S.range=el.dataset.range; render(); break;
+    case 'range': S.range=el.dataset.range; render(); if(S.sheet==='spend'&&!$('#modal').hidden) renderSpend(); break;
+    case 'spend-cats': openSpend(); break;
+    case 'cat-equipment': S.acat=el.dataset.cat; closeSheet('spend'); setView('assets'); break;
+    case 'acat': S.acat=el.dataset.cat||''; renderView(); break;
     case 'toggle-archived': S.showArchived=!S.showArchived; render(); break;
   }
 });

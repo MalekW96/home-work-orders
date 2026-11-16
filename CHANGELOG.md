@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.2.0.0
+
+- History on an equipment card lists every related task, including tasks on its accessories.
+- The big Spent number on the Dashboard is tappable: opens spending by equipment category (parts, labour, other, share of spend), expandable to each piece of equipment, for the selected period.
+- Equipment tab: category filter chips; the category breakdown can jump straight to that category's equipment.
+
 ## 4.1.0.0
 
 - A closed task keeps its Check List viewable (View, and Export PDF once signed).
