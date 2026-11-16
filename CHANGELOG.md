@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.4.0.0
+
+- New equipment field: Owner address / location (free text, one owner per line if more than one). Shown on the equipment card, on add and edit. Not included in shared cards.
+
 ## 4.3.0.0
 
 - Corrective maintenance (and Repair) tasks have no due date: the field is hidden, nothing is saved for it, and they never show as Overdue. Preventive tasks are unchanged.

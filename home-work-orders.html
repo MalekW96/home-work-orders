@@ -247,7 +247,7 @@ textarea{min-height:76px;resize:vertical}
 .tagline{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
 .facts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 14px;font-size:13px}
 .facts dt{color:var(--muted)}
-.facts dd{text-align:right;font-variant-numeric:tabular-nums}
+.facts dd{text-align:right;font-variant-numeric:tabular-nums;white-space:pre-line}
 .acard .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto}
 .acard.arch{opacity:.7}
 
@@ -417,8 +417,8 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
-const APP_VERSION='4.3.0.0';
-const RELEASE_NOTES=['Corrective maintenance tasks no longer have a due date.','Preventive maintenance tasks keep their due date and Overdue flag.','Older corrective tasks that had a due date no longer show as overdue.'];
+const APP_VERSION='4.4.0.0';
+const RELEASE_NOTES=['Equipment now records the owner address / location, with room for more than one owner. It shows on the equipment card.','Available when adding new equipment and when editing existing equipment.','The address is private: it is never included when you share an equipment card.'];
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -1097,7 +1097,7 @@ function assetsView(){
   return head+catChips+`<div class="cards">${list.map(a=>{
     const s=stats.get(a.id)||{n:0,open:0,spent:0,last:'',meter:null};
     const kids=kidsOf(a.id); const par=a.parentId?S.assets.get(a.parentId):null; const pic=photoOf(a);
-    const ident=[].concat(activeAttrs().map(t=>{ const v=a.attrs&&a.attrs[t.id]; return v?[t.name,v]:null; }),[a.plate?['Number plate',a.plate]:null,a.vin?['VIN',a.vin]:null,(a.brand||a.model)&&a.category!=='Vehicle'?['Brand / model',joinUniq([a.brand,a.model])]:null,a.serial?['Serial',a.serial]:null]).filter(Boolean);
+    const ident=[].concat(activeAttrs().map(t=>{ const v=a.attrs&&a.attrs[t.id]; return v?[t.name,v]:null; }),[a.plate?['Number plate',a.plate]:null,a.vin?['VIN',a.vin]:null,(a.brand||a.model)&&a.category!=='Vehicle'?['Brand / model',joinUniq([a.brand,a.model])]:null,a.serial?['Serial',a.serial]:null,a.ownerLoc?['Owner address',a.ownerLoc]:null]).filter(Boolean);
     return `<article class="panel acard${a.archived?' arch':''}"><button type="button" class="icon pen pen-sh" data-action="share-asset" data-id="${esc(a.id)}" aria-label="Share ${esc(a.name)}" title="Share"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></button><button type="button" class="icon pen pen-tr" data-action="edit-asset" data-id="${esc(a.id)}" aria-label="Edit ${esc(a.name)}" title="Edit"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><div class="ahead">${pic?`<button type="button" class="apic-b" data-action="view-photo" data-id="${esc(a.id)}" data-k="att" data-i="0" aria-label="View attachment"><img class="apic" src="${pic}" alt=""></button>`:icoFor(effCat(a))}<div><p class="tagline">${esc(effCat(a)||'Other')}${par?' · Accessory':''}${a.archived?' · Archived':''}</p><h3>${esc(a.name)}</h3>${par?`<p class="muted">Accessory of ${esc(par.name)}</p>`:''}${a.details?`<p class="muted">${esc(a.details)}</p>`:''}</div></div>
       <dl class="facts">${ident.map(r=>`<dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd>`).join('')}${kids.length?`<dt>Accessories</dt><dd>${esc(kids.map(k=>k.name).join(', '))}</dd>`:''}<dt>Tasks</dt><dd>${s.n}${s.open?` (${s.open} open)`:''}</dd><dt>Total spent</dt><dd>${money(s.spent)}</dd><dt>Last service</dt><dd>${s.last?fmtDate(s.last):'—'}</dd>${a.meterUnit?`<dt>Last reading</dt><dd>${fmtMeter(s.meter,a.meterUnit)}</dd>`:''}</dl>
       ${assetStampLine(a)}<div class="acts"><button type="button" class="btn sm" data-action="asset-history" data-id="${esc(a.id)}">History</button><button type="button" class="btn sm" data-action="asset-wo" data-id="${esc(a.id)}"${canWrite()&&!a.archived?'':' disabled'}>New task</button></div></article>`;
@@ -1596,7 +1596,7 @@ async function saveWO(){
 }
 
 /* ---------- asset sheet ---------- */
-const ASSET_TEXT=['name','brand','make','model','colour','plate','vin','serial','details','notes'];
+const ASSET_TEXT=['name','brand','make','model','colour','plate','vin','serial','details','notes','ownerLoc'];
 function openAsset(id,fromWO){
   const a=id?S.assets.get(id):null;
   const base={isNew:!a,id:a?a.id:'',category:a&&a.category||'Vehicle',role:a&&a.parentId?'child':'parent',parentId:a&&a.parentId||'',meterUnit:a?(a.meterUnit||''):'',
@@ -1647,6 +1647,7 @@ function renderAsset(focusId){
   }
   const act=activeAttrs();
   if(act.length) body+=`<div class="grid">${act.map(t=>`<label class="fld"><span>${esc(t.name)}</span><input id="as-at-${esc(t.id)}" data-at="${esc(t.id)}" type="text" value="${esc((a.attrs||{})[t.id]||'')}" autocomplete="off"></label>`).join('')}</div>`;
+  if(!child) body+=`<label class="fld"><span>Owner address / location</span><textarea id="as-ownerloc" data-af="ownerLoc" placeholder="${veh?'Owner name and address. If there is more than one owner, put each on its own line':'Where it is, or the owner\'s address'}">${esc(a.ownerLoc)}</textarea></label>`;
   body+=attachField();
   if(!veh){
     body+=`<label class="fld"><span>Notes</span><textarea id="as-notes" data-af="notes" placeholder="Purchase date, warranty, anything worth remembering">${esc(a.notes)}</textarea></label>`;
@@ -1692,7 +1693,7 @@ async function saveAsset(){
   const par=child?S.assets.get(a.parentId):null;
   const t=k=>String(a[k]||'').trim();
   const name=veh?(joinUniq([t('brand'),t('make'),t('colour')])||t('plate')):(t('name')||joinUniq([t('brand'),t('model')])||'Equipment');
-  const doc={name,category:child?effCat(par):a.category,details:t('details'),meterUnit:child?'':a.meterUnit,notes:t('notes'),archived:!!a.archived,sample:!!a.sample,structured:true,updatedAt:new Date().toISOString(),
+  const doc={name,category:child?effCat(par):a.category,details:t('details'),ownerLoc:child?'':t('ownerLoc'),meterUnit:child?'':a.meterUnit,notes:t('notes'),archived:!!a.archived,sample:!!a.sample,structured:true,updatedAt:new Date().toISOString(),
     brand:t('brand'),model:veh?'':t('model'),serial:veh?'':t('serial'),make:veh?t('make'):'',colour:veh?t('colour'):'',plate:veh?t('plate'):'',vin:veh?t('vin').toUpperCase():'',
     attachments:a.attachments.map(x=>({src:x.src,caption:String(x.caption||'').trim()})),parentId:child?a.parentId:'',
     shareId:(S.assets.get(a.id)||{}).shareId||'',
