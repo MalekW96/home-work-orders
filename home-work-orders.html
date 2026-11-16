@@ -404,8 +404,8 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
-const APP_VERSION='4.0.0.0';
-const RELEASE_NOTES=['Equipment cards can be shared: a Share button creates a link that opens the card in a web page.','The page guides the person to download the app or use the web version.','Shared cards show the name, details and first photo only, never tasks or costs. You can stop sharing at any time.'];
+const APP_VERSION='4.1.0.0';
+const RELEASE_NOTES=['The Check List can still be viewed, and its PDF exported, after a task is closed.','All photos now live in one Attachments section at the bottom of the task. The garage visit no longer has its own photo spot.','Photos from earlier garage visits move into Attachments automatically.'];
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -1074,14 +1074,14 @@ function partsResults(){
 function blankVisit(){ return {on:false,name:'',contact:'',loc:null,atts:[]}; }
 function blankWO(p){
   p=p||{};
-  return {isNew:true,fromAsset:!!p.assetId,pm:null,number:'',title:p.title||'',assetId:p.assetId||'',type:p.type||'Preventive maintenance',priority:'Normal',status:'Open',openedOn:todayISO(),dueOn:'',completedOn:'',meter:'',doneBy:'',description:'',notes:'',lines:[],followUpOf:p.followUpOf||'',furtherAt:'',startedAt:'',closedAt:'',checklist:null,locked:false,visit:blankVisit()};
+  return {isNew:true,fromAsset:!!p.assetId,pm:null,atts:[],number:'',title:p.title||'',assetId:p.assetId||'',type:p.type||'Preventive maintenance',priority:'Normal',status:'Open',openedOn:todayISO(),dueOn:'',completedOn:'',meter:'',doneBy:'',description:'',notes:'',lines:[],followUpOf:p.followUpOf||'',furtherAt:'',startedAt:'',closedAt:'',checklist:null,locked:false,visit:blankVisit()};
 }
 function openWO(id,prefill){
   if(id){
     const o=S.orders.find(x=>x.id===id); if(!o) return;
     const c=JSON.parse(JSON.stringify(o));
     S.wo=Object.assign(c,{isNew:false,locked:isClosed(o),reports:(o.reports||[]).map(r=>({name:r.name,at:r.at,src:r.src})),startedAt:o.startedAt||'',closedAt:o.closedAt||'',checklist:Array.isArray(ckItems(o))&&o.checklist&&Array.isArray(o.checklist.items)?{items:o.checklist.items.map(x=>({id:x.id||('c'+Math.random().toString(36).slice(2,8)),text:x.text||'',done:!!x.done}))}:null,number:o.number||o.id,type:o.type==='Repair'?'Corrective maintenance':(o.type||'Preventive maintenance'),furtherAt:o.furtherAt||'',
-      visit:o.visit?{on:true,name:o.visit.name||'',contact:o.visit.contact||'',loc:o.visit.loc||null,atts:(o.visit.atts||[]).map(x=>({src:x.src,caption:x.caption||''}))}:blankVisit(),meter:o.meter==null?'':String(o.meter),dueOn:o.dueOn||'',completedOn:o.completedOn||'',doneBy:o.doneBy||'',description:o.description||'',notes:o.notes||'',
+      visit:o.visit?{on:true,name:o.visit.name||'',contact:o.visit.contact||'',loc:o.visit.loc||null,atts:[]}:blankVisit(),atts:(o.atts||(o.visit&&o.visit.atts)||[]).map(x=>({src:x.src,caption:x.caption||''})),meter:o.meter==null?'':String(o.meter),dueOn:o.dueOn||'',completedOn:o.completedOn||'',doneBy:o.doneBy||'',description:o.description||'',notes:o.notes||'',
       lines:(o.lines||[]).map(l=>({kind:l.kind||'part',name:l.name||'',partNo:l.partNo||'',supplier:l.supplier||'',qty:String(l.qty==null?'':l.qty),unitCost:String(l.unitCost==null?'':l.unitCost)}))});
   } else S.wo=blankWO(prefill);
   S.sheet='wo'; renderWO(S.wo.isNew?'wo-title':null);
@@ -1133,14 +1133,14 @@ function renderWO(focusId){
      ${w.visit.on?visitHTML(w.visit):''}
     </div>`}
     ${w.isNew?'<p class="hint">The garage visit and the checklist are available once the task is created.</p>':(w.type==='Preventive maintenance'?pmBoxHTML(w):checklistHTML(w))}
-    ${attachmentsHTML(w)}
     <div><h3 class="sec-h">Parts, labour and costs</h3>
      <div class="lines" id="wo-lines">${w.lines.length?w.lines.map(lineHTML).join(''):'<p class="hint">No cost lines yet. Add the parts you used and any labour.</p>'}</div>
      <div class="addrow" style="margin-top:10px"><button type="button" class="btn sm" data-action="add-line" data-kind="part">Add part</button><button type="button" class="btn sm" data-action="add-line" data-kind="labour">Add labour</button><button type="button" class="btn sm" data-action="add-line" data-kind="other">Add other cost</button></div></div>
+    ${attachmentsHTML(w)}
    </div>
    <footer class="sheet-f"><div class="tot"><span>Order total</span><strong id="wo-total">${money(total)}</strong></div>
     <div class="acts">${!w.isNew&&w.locked?'<button type="button" class="btn" data-action="report-task">PDF report</button>':''}${w.locked?'':`<button type="button" class="btn" data-action="close-modal">Cancel</button><button type="button" class="btn primary" data-action="save-wo"${S.saving?' disabled':''}>${w.status==='Completed'?(w.isNew?'Create and close task':'Save and close task'):(w.isNew?'Create task':'Save changes')}</button>`}</div></footer></section>`;
-  if(w.locked) host.querySelectorAll('.sheet-b input,.sheet-b select,.sheet-b textarea,.sheet-b [data-action]:not([data-action="view-photo"]):not([data-action="open-report"])').forEach(el=>{ el.disabled=true; });
+  if(w.locked) host.querySelectorAll('.sheet-b input,.sheet-b select,.sheet-b textarea,.sheet-b [data-action]:not([data-action="view-photo"]):not([data-action="open-report"]):not([data-action="pm-open"]):not([data-action="pm-pdf"])').forEach(el=>{ el.disabled=true; });
   keepStill(host,was);
   const sb=$('.sheet-b',host); if(sb) sb.scrollTop=scroll;
   syncInert();
@@ -1170,11 +1170,6 @@ function visitHTML(v){
    <div class="fld"><span>Location</span>
     ${loc?`<p class="locline"><span class="mono">${esc(loc.lat)}, ${esc(loc.lng)}</span>${loc.acc?` <em>(within ${esc(loc.acc)} m)</em>`:''} · <a href="https://www.google.com/maps?q=${encodeURIComponent(loc.lat+','+loc.lng)}" target="_blank" rel="noopener">Open in maps</a></p>`:'<p class="hint">No location saved yet. Press the button while you are at the garage.</p>'}
     <div class="addrow"><button type="button" id="wo-visit-loc" class="btn sm" data-action="visit-loc"${S.locBusy?' disabled':''}>${S.locBusy?'Finding location…':loc?'Update to my current location':'Save current location'}</button>${loc?'<button type="button" class="btn sm ghost" data-action="visit-loc-clear">Clear</button>':''}</div></div>
-   <div class="fld"><span>Photos of the location</span><div class="atts">
-    ${v.atts.map((x,i)=>`<div class="att"><button type="button" class="thumb" data-action="view-photo" data-k="visit" data-i="${i}" aria-label="View photo ${i+1}"><img src="${x.src}" alt=""></button>
-     <input id="wo-vcap-${i}" class="capin" data-vcap="${i}" type="text" value="${esc(x.caption)}" placeholder="Caption, e.g. Garage entrance" autocomplete="off" aria-label="Caption for photo ${i+1}">
-     <button type="button" class="icon" data-action="del-photo" data-k="visit" data-i="${i}" aria-label="Remove photo ${i+1}">&times;</button></div>`).join('')}</div>
-    ${v.atts.length<MAX_ATT?`<div class="ph"><label class="btn sm"><input type="file" accept="image/*" data-photo="visit" hidden>Add attachment</label></div>`:`<span class="hint">Up to ${MAX_ATT} attachments.</span>`}</div>
   </div>`;
 }
 function getPosition(){
@@ -1203,8 +1198,8 @@ async function addVisitPhoto(input){
   try{
     const url=await shrink(file,1280,.72);
     if(!S.wo) return;
-    if(w.visit.atts.length<MAX_ATT) w.visit.atts.push({src:url,caption:''});
-    renderWO('wo-vcap-'+(w.visit.atts.length-1));
+    if(w.atts.length<MAX_ATT) w.atts.push({src:url,caption:''});
+    renderWO('wo-vcap-'+(w.atts.length-1));
   }catch(e){ toast(e&&e.message?e.message:'The attachment could not be added.',true); }
 }
 /* Reminders: the phone apps schedule a notification for each corrective, High-priority task 3 days after it was set to Further action. */
@@ -1224,10 +1219,12 @@ function updateTotals(){
   const t=$('#wo-total'); if(t) t.textContent=money(sum);
 }
 function attachmentsHTML(w){
-  const photos=(w.visit&&w.visit.on?w.visit.atts:[])||[]; const reps=w.reports||[];
-  if(!photos.length&&!reps.length) return '';
+  const photos=w.atts||[]; const reps=w.reports||[];
   return `<div class="ckbox"><strong>Attachments</strong>
-   ${photos.length?`<div class="atts">${photos.map((x,i)=>`<div class="att"><button type="button" class="thumb" data-action="view-photo" data-k="visit" data-i="${i}" aria-label="View photo ${i+1}"><img src="${x.src}" alt=""></button><span class="hint">${esc(x.caption||'Photo '+(i+1))}</span></div>`).join('')}</div>`:''}
+   ${photos.length?`<div class="atts">${photos.map((x,i)=>`<div class="att"><button type="button" class="thumb" data-action="view-photo" data-k="visit" data-i="${i}" aria-label="View photo ${i+1}"><img src="${x.src}" alt=""></button>
+     <input id="wo-vcap-${i}" class="capin" data-vcap="${i}" type="text" value="${esc(x.caption)}" placeholder="Caption, e.g. Garage entrance" autocomplete="off" aria-label="Caption for photo ${i+1}">
+     <button type="button" class="icon" data-action="del-photo" data-k="visit" data-i="${i}" aria-label="Remove photo ${i+1}">&times;</button></div>`).join('')}</div>`:'<p class="hint">No photos yet.</p>'}
+   ${photos.length<MAX_ATT?`<div class="ph"><label class="btn sm"><input type="file" accept="image/*" data-photo="visit" hidden>Add photo</label></div>`:`<span class="hint">Up to ${MAX_ATT} photos.</span>`}
    ${reps.map((r,i)=>`<div class="ck-i"><span class="hint" style="flex:1;min-width:0">PDF · ${esc(r.name)} · ${esc(fmtDT(r.at))}</span><button type="button" class="btn sm" data-action="open-report" data-i="${i}">Save again</button></div>`).join('')}</div>`;
 }
 /* ---------- preventive maintenance checklist (opens in its own window) ---------- */
@@ -1499,7 +1496,7 @@ function onWoInput(e){
     const c=$('#ck-count'); if(c) c.textContent=S.wo.checklist.items.filter(x=>x.done).length+' of '+S.wo.checklist.items.length+' done';
     return;
   }
-  if(t.dataset.vcap!==undefined){ const x=S.wo.visit.atts[+t.dataset.vcap]; if(x) x.caption=t.value; return; }
+  if(t.dataset.vcap!==undefined){ const x=S.wo.atts[+t.dataset.vcap]; if(x) x.caption=t.value; return; }
   const f=t.dataset.f; if(!f) return;
   const prev=S.wo[f];
   if(f==='status'&&t.value==='Completed'&&!S.wo.locked){ const g=ckGate(S.wo); if(g){ toast(g,true); renderWO(t.id); return; } }
@@ -1527,7 +1524,8 @@ async function saveWO(){
     reports:w.reports||[],
     pm:w.pm||null,
     checklist:w.checklist?{items:w.checklist.items.map(x=>({id:x.id,text:x.text,done:!!x.done}))}:null,
-    visit:w.visit&&w.visit.on?{name:w.visit.name.trim(),contact:w.visit.contact.trim(),loc:w.visit.loc||null,atts:w.visit.atts}:null};
+    visit:w.visit&&w.visit.on?{name:w.visit.name.trim(),contact:w.visit.contact.trim(),loc:w.visit.loc||null,atts:[]}:null,
+    atts:(w.atts||[]).map(x=>({src:x.src,caption:String(x.caption||'').trim()}))};
   S.saving=true; renderWO();
   try{
     if(w.isNew){
@@ -2186,8 +2184,8 @@ document.addEventListener('click',e=>{
     case 'del-line': if(S.wo){ S.wo.lines.splice(+el.dataset.i,1); renderWO(); } break;
     case 'new-asset': if(canWrite()) openAsset(null,false); break;
     case 'edit-asset': openAsset(id,false); break;
-    case 'view-photo': { if(el.dataset.k==='pm'){ const pp=pmAns(S.wo,id).p; if(pp&&pp[0]) showPhoto(pp[0],''); break; } if(el.dataset.k==='visit'){ const x=S.wo&&S.wo.visit.atts[+el.dataset.i||0]; if(x) showPhoto(x.src,x.caption); break; } const src=id?S.assets.get(id):S.asset; if(src){ const l=id?attsOf(src):src.attachments; const x=l[+el.dataset.i||0]; if(x) showPhoto(x.src,x.caption); } break; }
-    case 'del-photo': if(el.dataset.k==='visit'){ if(S.wo){ S.wo.visit.atts.splice(+el.dataset.i||0,1); renderWO(); } } else if(S.asset){ S.asset.attachments.splice(+el.dataset.i||0,1); renderAsset(); } break;
+    case 'view-photo': { if(el.dataset.k==='pm'){ const pp=pmAns(S.wo,id).p; if(pp&&pp[0]) showPhoto(pp[0],''); break; } if(el.dataset.k==='visit'){ const x=S.wo&&S.wo.atts[+el.dataset.i||0]; if(x) showPhoto(x.src,x.caption); break; } const src=id?S.assets.get(id):S.asset; if(src){ const l=id?attsOf(src):src.attachments; const x=l[+el.dataset.i||0]; if(x) showPhoto(x.src,x.caption); } break; }
+    case 'del-photo': if(el.dataset.k==='visit'){ if(S.wo){ S.wo.atts.splice(+el.dataset.i||0,1); renderWO(); } } else if(S.asset){ S.asset.attachments.splice(+el.dataset.i||0,1); renderAsset(); } break;
     case 'asset-history': S.f={status:'all',asset:id,year:'',q:''}; setView('orders'); break;
     case 'asset-wo': if(canWrite()) openWO(null,{assetId:id}); break;
     case 'save-asset': saveAsset(); break;

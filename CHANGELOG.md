@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.1.0.0
+
+- A closed task keeps its Check List viewable (View, and Export PDF once signed).
+- Photos are no longer attached to the garage visit. All photo attachments are in a single Attachments section at the bottom of the task, available on every task. Photos from earlier garage visits are moved there when the task is opened.
+
 ## 4.0.0.0
 
 - Share an equipment card: a Share button on each card creates a link (needs a signed-in, confirmed account). Opening the link shows the card in a web page, with guidance to download the Android app, use the iPhone web app, or open the browser version.
