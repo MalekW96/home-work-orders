@@ -404,8 +404,8 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
-const APP_VERSION='3.3.0.0';
-const RELEASE_NOTES=['Photos in the Check List are optional and marked Recommended.','The edit pen sits in the top right corner of each equipment card.','Each equipment card shows when it was added and when it was last edited.'];
+const APP_VERSION='3.4.0.0';
+const RELEASE_NOTES=['A completed Check List is listed on the task with the date and time it was completed, with a View button. It can no longer be edited.','Open it with View and press the pen at the bottom to sign it.','Once signed, you can export it as a PDF and close the task.'];
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -1283,11 +1283,17 @@ function pmProgress(pm){
 }
 const pmComplete=pm=>{ const p=pmProgress(pm); return p.done===p.total; };
 function pmBoxHTML(w){
-  const p=pmProgress(w.pm); const sig=w.pm&&w.pm.sig; const st=w.pm&&w.pm.startedAt; const partial=!sig&&p.done<p.total&&(p.done>0||!!st);
-  return `<div class="ckbox"><div class="ck-h"><strong>Check List</strong><span class="hint">${sig?'Signed '+esc(pmStamp(sig.at)):p.done+' of '+p.total+' answered'}</span></div>
+  const p=pmProgress(w.pm); const sig=w.pm&&w.pm.sig; const st=w.pm&&w.pm.startedAt; const doneAt=pmDoneAt(w.pm);
+  if(doneAt){
+    return `<div class="ckbox"><div class="ck-h"><strong>Check List</strong></div>
+     <div class="ck-i"><span class="hint" style="flex:1;min-width:0">Completed ${esc(pmStamp(doneAt))}${sig?' · Signed':' · Not signed yet'}</span><button type="button" class="btn sm" data-action="pm-open">View</button>${sig?'<button type="button" class="btn sm" data-action="pm-pdf">Export PDF</button>':''}</div>
+     <p class="hint">${sig?'Signed, so the task can be closed.':'Open it with View, then press the pen at the bottom to sign. The task can only be closed once it is signed.'}</p></div>`;
+  }
+  const partial=p.done<p.total&&(p.done>0||!!st);
+  return `<div class="ckbox"><div class="ck-h"><strong>Check List</strong><span class="hint">${p.done} of ${p.total} answered</span></div>
    ${partial?`<p class="hint"><b>Check List started</b>${st?' · '+esc(pmStamp(st)):''}</p>`:''}
-   <p class="hint">${sig?'Signed, so the task can be closed.':w.locked?'This task is closed.':p.done===p.total?'Every question is answered. Open the Check List to sign it.':'The task can only be closed once every question is answered and the Check List is signed.'}</p>
-   <div class="addrow"><button type="button" class="btn" data-action="pm-open">${pmLocked(w)?'View Check List':partial?'Continue Check List':'Start Check List'}</button>${sig?'<button type="button" class="btn" data-action="pm-pdf">Export PDF</button>':''}</div>
+   <p class="hint">${w.locked?'This task is closed.':p.done===p.total?'Every question is answered. Open the Check List and press Complete Check List.':'The task can only be closed once every question is answered, the Check List is completed and signed.'}</p>
+   <div class="addrow"><button type="button" class="btn" data-action="pm-open">${w.locked?'View Check List':partial?'Continue Check List':p.done===p.total?'Open Check List':'Start Check List'}</button></div>
    ${partial&&!w.locked?`<div class="addrow">${w.pmRestart?'<button type="button" class="btn sm danger" data-action="pm-restart">Confirm: discard answers and start new</button><button type="button" class="btn sm ghost" data-action="pm-restart-cancel">Keep this one</button>':'<button type="button" class="btn sm ghost" data-action="pm-restart">Start a new Check List</button>'}</div>`:''}</div>`;
 }
 function pmPhotoHTML(it,x,label,lock){
@@ -1306,9 +1312,15 @@ function pmItemHTML(it,w,lock){
   const ph=it.photo?pmPhotoHTML(it,x,it.photo,lock):'';
   return `<div class="pm-i${pmItemDone(it,a)?' ok':''}"><p class="pm-q">${esc(it.q)}</p>${it.hint?`<p class="hint">${esc(it.hint)}</p>`:''}${body}${extra}${ph}</div>`;
 }
+const PEN_SVG='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
 function pmActsHTML(w,p,lock){
-  const sig=w.pm&&w.pm.sig, ready=p.done===p.total&&!w.locked;
-  return `${sig?'<button type="button" class="btn" data-action="pm-pdf">Export PDF</button>':(ready?'<button type="button" class="btn primary" data-action="pm-sign">Sign</button>':'')}<button type="button" class="btn${sig||ready?'':' primary'}" data-action="pm-close">${lock?'Close':'Done'}</button>`;
+  const sig=w.pm&&w.pm.sig, doneAt=pmDoneAt(w.pm), ready=p.done===p.total&&!doneAt&&!w.locked;
+  let a='';
+  if(sig) a+='<button type="button" class="btn" data-action="pm-pdf">Export PDF</button>';
+  else if(doneAt&&!w.locked) a+='<button type="button" class="btn primary" data-action="pm-sign" aria-label="Sign">'+PEN_SVG+' Sign</button>';
+  else if(ready) a+='<button type="button" class="btn primary" data-action="pm-complete">Complete Check List</button>';
+  const prim=!(sig||ready||(doneAt&&!w.locked));
+  return a+`<button type="button" class="btn${prim?' primary':''}" data-action="pm-close">${lock?'Close':'Done'}</button>`;
 }
 function renderPM(){
   const host=$('#modal2'); const w=S.wo;
@@ -1322,7 +1334,7 @@ function renderPM(){
    <header class="sheet-h"><div><p class="eyebrow">${w.isNew?'Task':esc(fmtNo(w.number))}${assetIdent(w.assetId)?' · '+esc(assetIdent(w.assetId)):''}</p><h2 id="pm-h">Check List</h2></div><button type="button" class="icon" data-action="pm-close" aria-label="Close">&times;</button></header>
    <div class="sheet-b">
     ${PM_SECTIONS.map(s=>{ let last=''; return `<div class="pm-s"><h3 class="sec-h">${esc(s.h)}</h3>${s.items.filter(it=>pmShown(it,a)).map(it=>{ let h=''; if(it.sub&&it.sub!==last){ h=`<h4 class="pm-sub">${esc(it.sub)}</h4>`; } last=it.sub||''; return h+pmItemHTML(it,w,lock); }).join('')}</div>`; }).join('')}
-    ${w.pm&&w.pm.sig?`<div class="pm-sig"><strong>Signed</strong><img src="${w.pm.sig.img}" alt="Signature"><span class="hint">${esc(pmStamp(w.pm.sig.at))}</span></div>`:(p.done===p.total&&!w.locked?'<p class="hint">Every question is answered. Press Sign to finish.</p>':'')}
+    ${w.pm&&w.pm.sig?`<div class="pm-sig"><strong>Signed</strong><img src="${w.pm.sig.img}" alt="Signature"><span class="hint">${esc(pmStamp(w.pm.sig.at))}</span></div>`:(pmDoneAt(w.pm)?`<p class="hint">Completed ${esc(pmStamp(pmDoneAt(w.pm)))}. It can no longer be edited. ${w.locked?'':'Press the pen below to sign it.'}</p>`:(p.done===p.total&&!w.locked?'<p class="hint">Every question is answered. Press Complete Check List to finish. It cannot be edited afterwards.</p>':''))}
    </div>
    <footer class="sheet-f"><span class="hint" id="pm-count">${p.done} of ${p.total} answered</span><div class="acts" id="pm-acts">${pmActsHTML(w,p,lock)}</div></footer>
   </section>`;
@@ -1356,7 +1368,8 @@ function onPmInput(e){
   if(t.dataset.k==='x'||t.dataset.k==='v'){ const it=PM_SECTIONS.reduce((r,s)=>r||s.items.find(i=>i.id===t.dataset.pm),null); const box=t.closest('.pm-i'); if(it&&box) box.classList.toggle('ok',pmItemDone(it,(S.wo.pm&&S.wo.pm.a)||{})); pmUpdateCount(); }
 }
 /* ---------- Check List: signature and PDF ---------- */
-const pmLocked=w=>!!w&&(!!w.locked||!!(w.pm&&w.pm.sig));
+const pmLocked=w=>!!w&&(!!w.locked||!!(w.pm&&(w.pm.sig||w.pm.completedAt)));
+const pmDoneAt=pm=>pm&&(pm.completedAt||(pm.sig&&pm.sig.at))||'';
 const pmStamp=iso=>{ const d=new Date(iso); return d.getDate()+' '+MON[d.getMonth()]+' '+d.getFullYear()+', '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); };
 function sgPaintBg(){
   const g=S.sg; if(!g) return; const x=g.x;
@@ -1395,12 +1408,17 @@ async function pmPersist(w){
   try{ const doc=Object.assign({},o); delete doc.id; doc.pm=w.pm||null; doc.updatedAt=new Date().toISOString(); await S.db.doc('workorders/'+o.id).set(doc); return true; }
   catch(e){ toast('The Check List could not be saved yet. Press Save changes on the task.',true); return false; }
 }
+async function pmCompleteDo(){
+  const w=S.wo; if(!w||w.locked||!pmComplete(w.pm)||pmDoneAt(w.pm)) return;
+  w.pm.completedAt=new Date().toISOString(); S.pmOpen=false; renderPM(); renderWO(); toast('Check List completed');
+  await pmPersist(w);
+}
 async function pmSignOk(){
   const w=S.wo, g=S.sg; if(!w||!g) return;
   if(!g.drawn){ toast('Sign inside the white block first.',true); return; }
   if(!pmComplete(w.pm)){ toast('Answer every question first.',true); return; }
   const img=g.c.toDataURL('image/jpeg',.85);
-  if(!w.pm) w.pm={a:{}}; w.pm.sig={img,at:g.at,no:fmtNo(w.number)};
+  if(!w.pm) w.pm={a:{}}; w.pm.sig={img,at:g.at,no:fmtNo(w.number)}; if(!w.pm.completedAt) w.pm.completedAt=g.at;
   S.pmSign=false; S.sg=null; renderPM(); toast('Signed');
   await pmPersist(w);
 }
@@ -2057,11 +2075,12 @@ document.addEventListener('click',e=>{
     case 'close-modal2': S.asset=null; renderAsset(); break;
     case 'pm-open': pmOpen(); break;
     case 'pm-close': pmClose(); break;
-    case 'pm-sign': if(S.wo&&pmComplete(S.wo.pm)&&!pmLocked(S.wo)){ S.pmSign=true; renderSign(); } break;
+    case 'pm-sign': if(S.wo&&pmComplete(S.wo.pm)&&!S.wo.locked&&!(S.wo.pm&&S.wo.pm.sig)){ S.pmSign=true; renderSign(); } break;
     case 'pm-sign-back': S.pmSign=false; S.sg=null; renderPM(); break;
     case 'pm-sign-clear': if(S.sg){ S.sg.drawn=false; sgPaintBg(); } break;
     case 'pm-sign-ok': pmSignOk(); break;
     case 'pm-pdf': pmExportPDF(); break;
+    case 'pm-complete': pmCompleteDo(); break;
     case 'pm-restart': if(S.wo&&!pmLocked(S.wo)){ if(!S.wo.pmRestart){ S.wo.pmRestart=true; renderWO(); } else { S.wo.pmRestart=false; S.wo.pm={a:{},startedAt:new Date().toISOString()}; renderWO(); pmPersist(S.wo); toast('New Check List started'); } } break;
     case 'pm-restart-cancel': if(S.wo){ S.wo.pmRestart=false; renderWO(); } break;
     case 'pm-yn': if(S.wo&&!pmLocked(S.wo)){ const cur=pmAns(S.wo,id).v; pmSet(id,'v',cur===el.dataset.v?'':el.dataset.v); renderPM(); } break;

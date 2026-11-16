@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.4.0.0
+
+- When every question is answered, a Complete Check List button finishes it. The Check List is then listed on the task with the date and time it was completed and a View button. It can no longer be edited.
+- In View, a pen button at the bottom signs it. Once signed, Export PDF is available and the task can be closed.
+
 ## 3.3.0.0
 
 - Check List photos are optional and marked "Recommended". Only the Yes / No and fill-in questions count towards signing.
