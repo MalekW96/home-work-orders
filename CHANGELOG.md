@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.0.0.0
+
+- Share an equipment card: a Share button on each card creates a link (needs a signed-in, confirmed account). Opening the link shows the card in a web page, with guidance to download the Android app, use the iPhone web app, or open the browser version.
+- A shared card includes the name, category, details, active attributes and first photo only. Tasks, costs and notes are never shared. Later edits update the link; Stop sharing removes it.
+
 ## 3.4.0.0
 
 - When every question is answered, a Complete Check List button finishes it. The Check List is then listed on the task with the date and time it was completed and a View button. It can no longer be edited.

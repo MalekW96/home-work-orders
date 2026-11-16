@@ -226,7 +226,8 @@ textarea{min-height:76px;resize:vertical}
 
 /* asset cards */
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(17rem,1fr));gap:14px}
-.acard{position:relative}.pen-tr{position:absolute;top:10px;right:10px}.acard .ahead>div:last-child{padding-right:34px}.astamp{margin:0}.pen{width:30px;height:30px;font-size:inherit;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;flex:none}
+.acard{position:relative}.pen-tr{position:absolute;top:10px;right:10px}.pen-sh{position:absolute;top:10px;right:46px}.acard .ahead>div:last-child{padding-right:76px}
+#cardview{position:fixed;inset:0;z-index:2000;overflow:auto;background:var(--bg,#eceff3);display:flex;justify-content:center}.cv-in{width:100%;max-width:520px;padding:22px 16px 40px;display:flex;flex-direction:column;gap:14px}.cv-brand{margin:0;font:700 20px/1 var(--disp);letter-spacing:.06em}.cv-card{display:flex;flex-direction:column;gap:10px}.cv-card h1{margin:0;font:700 26px/1.1 var(--disp)}.cv-pic{width:100%;max-height:260px;object-fit:cover;border-radius:12px}.cv-get{padding:16px;border-radius:14px;background:var(--panel,#fff);border:1px solid var(--line)}.cv-get h2{margin:0 0 6px;font-size:18px}.cv-btns{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.cv-btns .btn{text-decoration:none;display:inline-flex;align-items:center}.astamp{margin:0}.pen{width:30px;height:30px;font-size:inherit;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;flex:none}
 .attr-t{display:flex;flex-direction:column;gap:8px}.attr-r{display:grid;grid-template-columns:1fr 140px;gap:8px;align-items:center}.attr-hd{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink2)}
 .acard{display:flex;flex-direction:column;gap:10px}
 .ahead{display:flex;gap:12px;align-items:flex-start}.ahead>div:last-child{min-width:0}
@@ -404,8 +405,8 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
-const APP_VERSION='3.4.0.0';
-const RELEASE_NOTES=['A completed Check List is listed on the task with the date and time it was completed, with a View button. It can no longer be edited.','Open it with View and press the pen at the bottom to sign it.','Once signed, you can export it as a PDF and close the task.'];
+const APP_VERSION='4.0.0.0';
+const RELEASE_NOTES=['Equipment cards can be shared: a Share button creates a link that opens the card in a web page.','The page guides the person to download the app or use the web version.','Shared cards show the name, details and first photo only, never tasks or costs. You can stop sharing at any time.'];
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -1046,7 +1047,7 @@ function assetsView(){
     const s=stats.get(a.id)||{n:0,open:0,spent:0,last:'',meter:null};
     const kids=kidsOf(a.id); const par=a.parentId?S.assets.get(a.parentId):null; const pic=photoOf(a);
     const ident=[].concat(activeAttrs().map(t=>{ const v=a.attrs&&a.attrs[t.id]; return v?[t.name,v]:null; }),[a.plate?['Number plate',a.plate]:null,a.vin?['VIN',a.vin]:null,(a.brand||a.model)&&a.category!=='Vehicle'?['Brand / model',joinUniq([a.brand,a.model])]:null,a.serial?['Serial',a.serial]:null]).filter(Boolean);
-    return `<article class="panel acard${a.archived?' arch':''}"><button type="button" class="icon pen pen-tr" data-action="edit-asset" data-id="${esc(a.id)}" aria-label="Edit ${esc(a.name)}" title="Edit"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><div class="ahead">${pic?`<button type="button" class="apic-b" data-action="view-photo" data-id="${esc(a.id)}" data-k="att" data-i="0" aria-label="View attachment"><img class="apic" src="${pic}" alt=""></button>`:icoFor(effCat(a))}<div><p class="tagline">${esc(effCat(a)||'Other')}${par?' · Accessory':''}${a.archived?' · Archived':''}</p><h3>${esc(a.name)}</h3>${par?`<p class="muted">Accessory of ${esc(par.name)}</p>`:''}${a.details?`<p class="muted">${esc(a.details)}</p>`:''}</div></div>
+    return `<article class="panel acard${a.archived?' arch':''}"><button type="button" class="icon pen pen-sh" data-action="share-asset" data-id="${esc(a.id)}" aria-label="Share ${esc(a.name)}" title="Share"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></button><button type="button" class="icon pen pen-tr" data-action="edit-asset" data-id="${esc(a.id)}" aria-label="Edit ${esc(a.name)}" title="Edit"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><div class="ahead">${pic?`<button type="button" class="apic-b" data-action="view-photo" data-id="${esc(a.id)}" data-k="att" data-i="0" aria-label="View attachment"><img class="apic" src="${pic}" alt=""></button>`:icoFor(effCat(a))}<div><p class="tagline">${esc(effCat(a)||'Other')}${par?' · Accessory':''}${a.archived?' · Archived':''}</p><h3>${esc(a.name)}</h3>${par?`<p class="muted">Accessory of ${esc(par.name)}</p>`:''}${a.details?`<p class="muted">${esc(a.details)}</p>`:''}</div></div>
       <dl class="facts">${ident.map(r=>`<dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd>`).join('')}${kids.length?`<dt>Accessories</dt><dd>${esc(kids.map(k=>k.name).join(', '))}</dd>`:''}<dt>Tasks</dt><dd>${s.n}${s.open?` (${s.open} open)`:''}</dd><dt>Total spent</dt><dd>${money(s.spent)}</dd><dt>Last service</dt><dd>${s.last?fmtDate(s.last):'—'}</dd>${a.meterUnit?`<dt>Last reading</dt><dd>${fmtMeter(s.meter,a.meterUnit)}</dd>`:''}</dl>
       ${assetStampLine(a)}<div class="acts"><button type="button" class="btn sm" data-action="asset-history" data-id="${esc(a.id)}">History</button><button type="button" class="btn sm" data-action="asset-wo" data-id="${esc(a.id)}"${canWrite()&&!a.archived?'':' disabled'}>New task</button></div></article>`;
   }).join('')}</div>`;
@@ -1645,12 +1646,14 @@ async function saveAsset(){
   const doc={name,category:child?effCat(par):a.category,details:t('details'),meterUnit:child?'':a.meterUnit,notes:t('notes'),archived:!!a.archived,sample:!!a.sample,structured:true,updatedAt:new Date().toISOString(),
     brand:t('brand'),model:veh?'':t('model'),serial:veh?'':t('serial'),make:veh?t('make'):'',colour:veh?t('colour'):'',plate:veh?t('plate'):'',vin:veh?t('vin').toUpperCase():'',
     attachments:a.attachments.map(x=>({src:x.src,caption:String(x.caption||'').trim()})),parentId:child?a.parentId:'',
+    shareId:(S.assets.get(a.id)||{}).shareId||'',
     attrs:Object.keys(a.attrs||{}).reduce((r,k)=>{ const v=String(a.attrs[k]||'').trim(); if(v) r[k]=v; return r; },{})};
   try{
     let id=a.id;
     if(a.isNew){ doc.createdAt=doc.updatedAt; const ref=await S.db.collection('assets').add(doc); id=ref.id; }
     else { const old=S.assets.get(a.id)||{}; doc.createdAt=old.createdAt||doc.updatedAt; await S.db.doc('assets/'+a.id).set(doc); }
     toast('Saved '+doc.name);
+    if(!a.isNew&&doc.shareId){ S.assets.set(id,Object.assign({id},doc)); shareRefresh(id); }
     const back=a.fromWO&&S.wo;
     if(back){ S.assets.set(id,Object.assign({id},doc)); S.wo.assetId=id; }
     S.asset=null; renderAsset();
@@ -1983,6 +1986,97 @@ async function saveAttrs(){
   try{ await S.db.doc('meta/attributes').set({list,updatedAt:new Date().toISOString()}); S.attrs={list}; toast('Attributes saved'); closeSheet('attrs'); render(); }
   catch(e){ fail(e,'Not saved'); }
 }
+/* ---------- sharing an equipment card ----------
+   A shared card is a public snapshot (name, details, active attributes, first photo) stored under shared/{secret}.
+   Anyone with the link can open it in the web page; it never includes tasks, costs or notes. */
+const shareLink=tok=>PAGES_URL+'?card='+encodeURIComponent(tok);
+function assetFacts(a){
+  const rows=[].concat(activeAttrs().map(t=>{ const v=a.attrs&&a.attrs[t.id]; return v?[t.name,v]:null; }),[a.plate?['Number plate',a.plate]:null,a.vin?['VIN',a.vin]:null,(a.brand||a.model)&&a.category!=='Vehicle'?['Brand / model',joinUniq([a.brand,a.model])]:null,a.serial?['Serial',a.serial]:null]);
+  return rows.filter(Boolean);
+}
+function assetSnapshot(a){
+  const pic=photoOf(a); const par=a.parentId?S.assets.get(a.parentId):null;
+  return {name:a.name||'Equipment',category:effCat(a)||'Other',accessoryOf:par?par.name:'',facts:assetFacts(a),photo:pic&&pic.length<450000?pic:'',createdAt:a.createdAt||'',updatedAt:a.updatedAt||'',sharedAt:new Date().toISOString()};
+}
+const shareName=tok=>'projects/'+FB.project+'/databases/(default)/documents/shared/'+tok;
+async function sharePublish(a,tok){
+  const w={update:{name:shareName(tok),fields:{owner:{stringValue:SY.sess.uid},data:{stringValue:JSON.stringify(assetSnapshot(a))}}},updateTransforms:[{fieldPath:'updated',setToServerValue:'REQUEST_TIME'}]};
+  await fsReq(':commit',{writes:[w]});
+}
+async function shareUnpublish(tok){ await fsReq(':commit',{writes:[{delete:shareName(tok)}]}); }
+const shareReady=()=>!!(SY.sess&&SY.sess.verified);
+async function openShare(id){
+  const a=S.assets.get(id); if(!a) return;
+  S.share={id,link:'',busy:false,err:''}; S.sheet='share'; renderShare();
+  if(!shareReady()) return;
+  S.share.busy=true; renderShare();
+  try{
+    let tok=a.shareId;
+    if(!tok){ tok=Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b=>b.toString(36).padStart(2,'0')).join('').slice(0,24); }
+    await sharePublish(a,tok);
+    if(!a.shareId){ const doc=Object.assign({},a); delete doc.id; doc.shareId=tok; doc.updatedAt=a.updatedAt||new Date().toISOString(); await S.db.doc('assets/'+id).set(doc); S.assets.set(id,Object.assign({},a,{shareId:tok})); }
+    S.share.link=shareLink(tok);
+  }catch(e){ S.share.err=syNetErr(e)||'The card could not be shared right now. '+(e.status===403?'Sharing is not switched on yet for this app.':'Try again in a moment.'); }
+  S.share.busy=false; if(S.sheet==='share') renderShare();
+}
+async function stopShare(){
+  const sh=S.share; if(!sh) return; const a=S.assets.get(sh.id); if(!a||!a.shareId) return;
+  sh.busy=true; renderShare();
+  try{ await shareUnpublish(a.shareId); const doc=Object.assign({},a); delete doc.id; doc.shareId=''; await S.db.doc('assets/'+sh.id).set(doc); S.assets.set(sh.id,Object.assign({},a,{shareId:''})); toast('Sharing stopped'); closeSheet('share'); render(); }
+  catch(e){ sh.busy=false; sh.err=syNetErr(e)||'Sharing could not be stopped right now. Try again.'; renderShare(); }
+}
+async function shareRefresh(id){
+  const a=S.assets.get(id); if(!a||!a.shareId||!shareReady()) return;
+  try{ await sharePublish(a,a.shareId); }catch(e){}
+}
+function renderShare(){
+  const host=$('#modal'); const sh=S.share; if(!sh) return; const a=S.assets.get(sh.id)||{};
+  const was=!host.hidden&&!!host.querySelector('#sh-h'); host.hidden=false;
+  let body;
+  if(!shareReady()) body=`<p>To share a card, sign in to your account first. The link is stored in your account so you can stop sharing at any time.</p><div class="addrow"><button type="button" class="btn primary" data-action="settings">Open Settings</button></div>`;
+  else if(sh.busy&&!sh.link) body=`<p class="hint">Creating the link…</p>`;
+  else if(sh.err) body=`<p class="hint" style="color:var(--danger)">${esc(sh.err)}</p>`;
+  else body=`<p>Anyone with this link can open the card in a web page and is guided to get the app. They see the name, details and first photo, but never your tasks, costs or notes. Later edits to the card update the link.</p>
+    <label class="fld"><span>Link</span><input id="sh-link" type="text" readonly value="${esc(sh.link)}" aria-label="Share link"></label>
+    <div class="addrow"><button type="button" class="btn primary" data-action="share-copy">Copy link</button>${navigator.share?'<button type="button" class="btn" data-action="share-native">Share…</button>':''}<button type="button" class="btn sm danger" data-action="share-stop"${sh.busy?' disabled':''}>Stop sharing</button></div>`;
+  host.innerHTML=`<div class="scrim" data-action="close-modal"></div>
+  <section class="sheet narrow" role="dialog" aria-modal="true" aria-labelledby="sh-h">
+   <header class="sheet-h"><div><p class="eyebrow">Share equipment card</p><h2 id="sh-h">${esc(a.name||'Equipment')}</h2></div><button type="button" class="icon" data-action="close-modal" aria-label="Close">&times;</button></header>
+   <div class="sheet-b">${body}</div>
+   <footer class="sheet-f"><span></span><div class="acts"><button type="button" class="btn" data-action="close-modal">Close</button></div></footer></section>`;
+  keepStill(host,was); syncInert();
+}
+async function shareCopy(){
+  const sh=S.share; if(!sh||!sh.link) return;
+  try{ await navigator.clipboard.writeText(sh.link); toast('Link copied'); return; }catch(e){}
+  const el=$('#sh-link'); if(el){ el.focus(); el.select(); try{ if(document.execCommand('copy')){ toast('Link copied'); return; } }catch(e){} }
+  toast('Press and hold the link to copy it.');
+}
+function shareNative(){ const sh=S.share; if(!sh||!sh.link||!navigator.share) return; const a=S.assets.get(sh.id)||{}; navigator.share({title:a.name||'Equipment',text:'Equipment card from I Got This',url:sh.link}).catch(()=>{}); }
+/* the page a person lands on when they open a shared link */
+async function shareViewerInit(){
+  let tok=''; try{ tok=new URLSearchParams(location.search).get('card')||''; }catch(e){}
+  if(!tok||!/^[A-Za-z0-9_-]{8,64}$/.test(tok)) return;
+  const v=document.createElement('div'); v.id='cardview'; v.setAttribute('role','dialog'); v.setAttribute('aria-label','Shared equipment card');
+  v.innerHTML='<div class="cv-in"><p class="hint">Opening the shared card…</p></div>'; document.body.appendChild(v);
+  const ua=navigator.userAgent||''; const android=/Android/i.test(ua), ios=/iPhone|iPad|iPod/i.test(ua);
+  const goApp=()=>{ try{ history.replaceState(null,'',location.pathname+location.hash); }catch(e){} v.remove(); };
+  v.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-cv]'); if(b&&b.dataset.cv==='app') goApp(); });
+  const install=`<section class="cv-get"><h2>Get I Got This</h2><p>Keep track of the maintenance of your own cars, appliances and home. Free, and your records stay on your devices.</p>
+    <div class="cv-btns">${android?`<a class="btn primary" href="${RELEASES_URL}/latest" rel="noopener">Download for Android</a>`:ios?`<a class="btn primary" href="${PAGES_URL}" rel="noopener" data-cv="app">Open the web app</a><a class="btn" href="${RELEASES_URL}/latest" rel="noopener">iPhone app file</a>`:`<a class="btn primary" href="${PAGES_URL}" data-cv="app">Use it in your browser</a><a class="btn" href="${RELEASES_URL}/latest" rel="noopener">Download the apps</a>`}</div>
+    <p class="hint">${android?'Open the downloaded file to install it. Android may ask you to allow installing from your browser.':ios?'On iPhone, the easiest way is the web app: open it in Safari, tap Share, then Add to Home Screen.':'Phone apps for Android and iPhone are on the download page.'}</p></section>`;
+  try{
+    const j=await fbFetch(FS_BASE+'/shared/'+encodeURIComponent(tok)+'?key='+FB.key,{method:'GET',headers:{}});
+    const d=JSON.parse((j.fields&&j.fields.data&&j.fields.data.stringValue)||'null'); if(!d) throw new Error('empty');
+    const added=d.createdAt?pmStamp(d.createdAt):''; const ed=d.updatedAt&&d.updatedAt!==d.createdAt?pmStamp(d.updatedAt):'';
+    v.innerHTML=`<div class="cv-in"><p class="cv-brand">I GOT THIS</p><p class="hint">An equipment card shared with you</p>
+     <article class="panel cv-card">${d.photo?`<img class="cv-pic" src="${esc(d.photo)}" alt="">`:''}<p class="tagline">${esc(d.category)}${d.accessoryOf?' · Accessory of '+esc(d.accessoryOf):''}</p><h1>${esc(d.name)}</h1>
+      ${(d.facts&&d.facts.length)?`<dl class="facts">${d.facts.map(r=>`<dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd>`).join('')}</dl>`:''}
+      ${(added||ed)?`<p class="hint">${added?'Added '+esc(added):''}${added&&ed?' · ':''}${ed?'Last edited '+esc(ed):''}</p>`:''}</article>${install}</div>`;
+  }catch(e){
+    v.innerHTML=`<div class="cv-in"><p class="cv-brand">I GOT THIS</p><article class="panel cv-card"><h1>This card is not available</h1><p class="hint">The link may have been stopped by its owner, or it is mistyped.</p></article>${install}</div>`;
+  }
+}
 function openReport(pre){ if(!hasDone()){ toast('The PDF report is available once a task is completed.',true); return; }  if(!S.report) S.report={period:'year',asset:'',parts:true}; if(pre&&pre.asset!==undefined) S.report.asset=pre.asset; S.report.task=(pre&&pre.task)||''; S.sheet='report'; renderReport(); }
 function updateReportCount(){
   const c=$('#rp-count'); if(!c||!S.report) return;
@@ -2048,7 +2142,7 @@ function syncInert(){
 }
 function closeSheet(which){
   S.pmOpen=false; S.pmSign=false;
-  if(which==='wo'||which==='settings'||which==='report'||which==='attrs'){ S.wo=null; S.sheet=''; const h=$('#modal'); h.innerHTML=''; h.hidden=true; }
+  if(which==='wo'||which==='settings'||which==='report'||which==='attrs'||which==='share'){ S.wo=null; S.sheet=''; const h=$('#modal'); h.innerHTML=''; h.hidden=true; }
   syncInert();
 }
 function closeAddMenu(){ const m=$('#addmenu'); if(m&&!m.hidden){ m.hidden=true; const b=$('#btn-add'); if(b) b.setAttribute('aria-expanded','false'); return true; } return false; }
@@ -2104,6 +2198,10 @@ document.addEventListener('click',e=>{
     case 'export': exportData(el.dataset.what); break;
     case 'report': openReport(); break;
     case 'attrs': openAttrs(); break;
+    case 'share-asset': openShare(id); break;
+    case 'share-copy': shareCopy(); break;
+    case 'share-native': shareNative(); break;
+    case 'share-stop': stopShare(); break;
     case 'attr-add': if(S.attrEdit){ S.attrEdit.push({id:'',name:'',active:true}); renderAttrs('at-n-'+(S.attrEdit.length-1)); } break;
     case 'attr-save': saveAttrs(); break;
     case 'report-task': { const aid=S.wo&&S.wo.assetId, tid=S.wo&&S.wo.id; closeSheet('wo'); openReport({asset:aid||'',task:tid||''}); break; }
@@ -2182,6 +2280,7 @@ window.__back=function(){
   if(S.view!=='dashboard'){ setView('dashboard'); return true; }
   return false;
 };
+shareViewerInit();
 boot();
 if(IS_WEB||IS_IOS){ try{ if(/^\?u=/.test(location.search)) history.replaceState(null,'',location.pathname+location.hash); }catch(e){} setTimeout(()=>{ if(navigator.onLine!==false) checkWebUpdate(true); },4000); }
 })();
