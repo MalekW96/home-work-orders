@@ -418,8 +418,8 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
-const APP_VERSION='4.2.0.0';
-const RELEASE_NOTES=['Tap the big Spent number on the Dashboard to see where the money went, by category, then equipment, with parts, labour and other.','Equipment can be filtered by category with the chips above the cards.','History on an equipment card lists all its tasks, including those on its accessories.'];
+const APP_VERSION='4.3.0.0';
+const RELEASE_NOTES=['Corrective maintenance tasks no longer have a due date.','Preventive maintenance tasks keep their due date and Overdue flag.','Older corrective tasks that had a due date no longer show as overdue.'];
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -456,7 +456,7 @@ const isUrgent=o=>isCorrective(o)&&o.priority==='High'&&isActive(o);
 const followUpAt=o=>{ if(!isUrgent(o)||o.status!=='Further action'||!o.furtherAt) return null; const t=Date.parse(o.furtherAt); return isFinite(t)?t+FURTHER_DAYS*864e5:null; };
 const followUpDue=o=>{ const t=followUpAt(o); return t!==null&&t<=Date.now(); };
 const bang=o=>isUrgent(o)?'<span class="bang" title="High-priority corrective task" aria-label="High priority">!</span>':'';
-const isOverdue=o=>isActive(o)&&o.dueOn&&o.dueOn<todayISO();
+const isOverdue=o=>isActive(o)&&!isCorrective(o)&&o.dueOn&&o.dueOn<todayISO();
 /* what the person sees: stored values stay 'Open' and 'Completed' so older records keep working */
 const STATUS_LABEL={'Open':'Not started','Completed':'Closed'};
 const statusLabel=s=>STATUS_LABEL[s]||s;
@@ -1173,7 +1173,7 @@ function renderWO(focusId){
      <label class="fld"><span>Priority</span><select id="wo-priority" data-f="priority">${opt(PRIORITIES.map(t=>[t,t]),w.priority)}</select></label>
      <label class="fld"><span>Status</span><select id="wo-status" data-f="status">${opt((w.status==='Cancelled'?STATUSES.concat(['Cancelled']):w.isNew&&ckRequired(w)?STATUSES.filter(t=>t!=='Completed'):STATUSES).map(t=>[t,statusLabel(t)]),w.status)}</select></label>
      <label class="fld"><span>Opened</span><input id="wo-opened" data-f="openedOn" type="date" value="${esc(w.openedOn)}"></label>
-     <label class="fld"><span>Due</span><input id="wo-due" data-f="dueOn" type="date" value="${esc(w.dueOn)}"></label>
+     ${isCorrective(w)?'':`<label class="fld"><span>Due</span><input id="wo-due" data-f="dueOn" type="date" value="${esc(w.dueOn)}"></label>`}
      ${w.status==='Completed'?`<label class="fld"><span>Completed</span><input id="wo-completed" data-f="completedOn" type="date" value="${esc(w.completedOn)}"></label>`:''}
      ${unit?`<label class="fld"><span>Reading (${esc(unit)})</span><input id="wo-meter" data-f="meter" type="number" min="0" step="any" inputmode="decimal" value="${esc(w.meter)}" placeholder="${unit==='h'?'Hours':'Odometer'}"></label>`:''}
      ${w.isNew?'':`<label class="fld"><span>Done by</span><input id="wo-doneby" data-f="doneBy" type="text" value="${esc(w.doneBy)}" placeholder="Me, or the workshop name" autocomplete="off"></label>`}
@@ -1569,7 +1569,7 @@ async function saveWO(){
   if(w.status==='Completed'){ const g=ckGate(w); if(g){ toast(g,true); return; } }
   const lines=w.lines.filter(l=>l.name.trim()||num(l.unitCost)).map(l=>({kind:l.kind,name:l.name.trim(),partNo:(l.partNo||'').trim(),supplier:(l.supplier||'').trim(),qty:num(l.qty===''?1:l.qty),unitCost:num(l.unitCost)}));
   const now=new Date().toISOString();
-  const doc={title:w.title.trim(),assetId:w.assetId,type:w.type,priority:w.priority,status:w.status,openedOn:w.openedOn||todayISO(),dueOn:w.dueOn||'',
+  const doc={title:w.title.trim(),assetId:w.assetId,type:w.type,priority:w.priority,status:w.status,openedOn:w.openedOn||todayISO(),dueOn:isCorrective(w)?'':(w.dueOn||''),
     completedOn:w.status==='Completed'?(w.completedOn||todayISO()):'',meter:w.meter===''?null:Number(w.meter),doneBy:w.doneBy.trim(),description:w.description.trim(),notes:w.notes.trim(),lines,
     followUpOf:w.followUpOf||'',sample:!!w.sample,updatedAt:now,
     furtherAt:w.status==='Further action'?(w.furtherAt||now):'',

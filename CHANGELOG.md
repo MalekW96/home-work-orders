@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.3.0.0
+
+- Corrective maintenance (and Repair) tasks have no due date: the field is hidden, nothing is saved for it, and they never show as Overdue. Preventive tasks are unchanged.
+
 ## 4.2.0.0
 
 - History on an equipment card lists every related task, including tasks on its accessories.
