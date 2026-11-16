@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.3.0.0
+
+- Check List photos are optional and marked "Recommended". Only the Yes / No and fill-in questions count towards signing.
+- Equipment card: the edit pen moved to the top right corner, and a line shows when the equipment was added and when it was last edited.
+
 ## 3.2.0.0
 
 - Equipment page: new Attributes button opens a page where you add attributes (extra details such as Year or Location) with an Active / Not active menu. Active attributes appear when adding or editing equipment, and on the equipment card.

@@ -225,7 +225,7 @@ textarea{min-height:76px;resize:vertical}
 
 /* asset cards */
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(17rem,1fr));gap:14px}
-.nm{display:flex;align-items:center;gap:4px}.nm h3{margin:0}.pen{width:30px;height:30px;font-size:inherit;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;flex:none}
+.acard{position:relative}.pen-tr{position:absolute;top:10px;right:10px}.acard .ahead>div:last-child{padding-right:34px}.astamp{margin:0}.pen{width:30px;height:30px;font-size:inherit;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;flex:none}
 .attr-t{display:flex;flex-direction:column;gap:8px}.attr-r{display:grid;grid-template-columns:1fr 140px;gap:8px;align-items:center}.attr-hd{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink2)}
 .acard{display:flex;flex-direction:column;gap:10px}
 .ahead{display:flex;gap:12px;align-items:flex-start}.ahead>div:last-child{min-width:0}
@@ -403,8 +403,8 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
-const APP_VERSION='3.2.0.0';
-const RELEASE_NOTES=['New Attributes page under Equipment: add your own details and set each one Active or Not active.','Equipment cards have a pen icon next to the name to edit, then save changes.','An unfinished Check List shows when it was started, with the option to start a new one underneath.'];
+const APP_VERSION='3.3.0.0';
+const RELEASE_NOTES=['Photos in the Check List are optional and marked Recommended.','The edit pen sits in the top right corner of each equipment card.','Each equipment card shows when it was added and when it was last edited.'];
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -1029,6 +1029,11 @@ function assetStats(){
   }
   return m;
 }
+function assetStampLine(a){
+  const add=a.createdAt?pmStamp(a.createdAt):''; const ed=a.updatedAt&&a.updatedAt!==a.createdAt?pmStamp(a.updatedAt):'';
+  if(!add&&!ed) return '';
+  return `<p class="hint astamp">${add?'Added '+esc(add):''}${add?' · ':''}${ed?'Last edited '+esc(ed):'No edits yet'}</p>`;
+}
 function assetsView(){
   const stats=assetStats();
   const all=[...S.assets.values()].sort(byName);
@@ -1040,9 +1045,9 @@ function assetsView(){
     const s=stats.get(a.id)||{n:0,open:0,spent:0,last:'',meter:null};
     const kids=kidsOf(a.id); const par=a.parentId?S.assets.get(a.parentId):null; const pic=photoOf(a);
     const ident=[].concat(activeAttrs().map(t=>{ const v=a.attrs&&a.attrs[t.id]; return v?[t.name,v]:null; }),[a.plate?['Number plate',a.plate]:null,a.vin?['VIN',a.vin]:null,(a.brand||a.model)&&a.category!=='Vehicle'?['Brand / model',joinUniq([a.brand,a.model])]:null,a.serial?['Serial',a.serial]:null]).filter(Boolean);
-    return `<article class="panel acard${a.archived?' arch':''}"><div class="ahead">${pic?`<button type="button" class="apic-b" data-action="view-photo" data-id="${esc(a.id)}" data-k="att" data-i="0" aria-label="View attachment"><img class="apic" src="${pic}" alt=""></button>`:icoFor(effCat(a))}<div><p class="tagline">${esc(effCat(a)||'Other')}${par?' · Accessory':''}${a.archived?' · Archived':''}</p><div class="nm"><h3>${esc(a.name)}</h3><button type="button" class="icon pen" data-action="edit-asset" data-id="${esc(a.id)}" aria-label="Edit ${esc(a.name)}" title="Edit"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button></div>${par?`<p class="muted">Accessory of ${esc(par.name)}</p>`:''}${a.details?`<p class="muted">${esc(a.details)}</p>`:''}</div></div>
+    return `<article class="panel acard${a.archived?' arch':''}"><button type="button" class="icon pen pen-tr" data-action="edit-asset" data-id="${esc(a.id)}" aria-label="Edit ${esc(a.name)}" title="Edit"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><div class="ahead">${pic?`<button type="button" class="apic-b" data-action="view-photo" data-id="${esc(a.id)}" data-k="att" data-i="0" aria-label="View attachment"><img class="apic" src="${pic}" alt=""></button>`:icoFor(effCat(a))}<div><p class="tagline">${esc(effCat(a)||'Other')}${par?' · Accessory':''}${a.archived?' · Archived':''}</p><h3>${esc(a.name)}</h3>${par?`<p class="muted">Accessory of ${esc(par.name)}</p>`:''}${a.details?`<p class="muted">${esc(a.details)}</p>`:''}</div></div>
       <dl class="facts">${ident.map(r=>`<dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd>`).join('')}${kids.length?`<dt>Accessories</dt><dd>${esc(kids.map(k=>k.name).join(', '))}</dd>`:''}<dt>Tasks</dt><dd>${s.n}${s.open?` (${s.open} open)`:''}</dd><dt>Total spent</dt><dd>${money(s.spent)}</dd><dt>Last service</dt><dd>${s.last?fmtDate(s.last):'—'}</dd>${a.meterUnit?`<dt>Last reading</dt><dd>${fmtMeter(s.meter,a.meterUnit)}</dd>`:''}</dl>
-      <div class="acts"><button type="button" class="btn sm" data-action="asset-history" data-id="${esc(a.id)}">History</button><button type="button" class="btn sm" data-action="asset-wo" data-id="${esc(a.id)}"${canWrite()&&!a.archived?'':' disabled'}>New task</button></div></article>`;
+      ${assetStampLine(a)}<div class="acts"><button type="button" class="btn sm" data-action="asset-history" data-id="${esc(a.id)}">History</button><button type="button" class="btn sm" data-action="asset-wo" data-id="${esc(a.id)}"${canWrite()&&!a.archived?'':' disabled'}>New task</button></div></article>`;
   }).join('')}</div>`;
 }
 
@@ -1256,7 +1261,7 @@ const PM_SECTIONS=[
   {id:'r4',sub:'Wheels',t:'yn',q:'Any noticeable damage on the tyres?'},
   {id:'r5',sub:'Fan belt',t:'yn',q:'Any damage on the fan belt?'},
   {id:'r6',sub:'Fan belt',t:'yn',q:'Did you have to adjust or tighten it?'},
-  {id:'r7',sub:'Windshield wipers',t:'yn',q:'Rub your finger across the rubber of the blade. Does it feel stiff and hard?',hint:'If not, it is fine. If it is, it is time to change it, especially if it is cracked or torn.',opt:true,photo:'Attach a photo of how you checked (optional)'}]},
+  {id:'r7',sub:'Windshield wipers',t:'yn',q:'Rub your finger across the rubber of the blade. Does it feel stiff and hard?',hint:'If not, it is fine. If it is, it is time to change it, especially if it is cracked or torn.',opt:true,photo:'Recommended: attach a photo of how you checked'}]},
  {h:'OBD scanner',items:[
   {id:'b1',t:'yn',q:'Are there any alerts on the scanner?'},
   {id:'b2',t:'yn',q:'Are they resolved and cleared without issues?',only:{id:'b1',v:'y'}}]}
@@ -1267,12 +1272,12 @@ const pmExtraOn=(it,x)=>!!it.x&&(it.x.when==='a'?!!x.v:it.x.when===x.v);
 function pmItemDone(it,a){
   const x=a[it.id]||{};
   if(it.t==='yn'){ if(x.v!=='y'&&x.v!=='n') return false; if(it.x&&it.x.req&&pmExtraOn(it,x)&&!String(x.x||'').trim()) return false; return true; }
-  if(it.t==='photo') return !!(x.p&&x.p.length);
+  if(it.t==='photo') return true;
   return !!String(x.v||'').trim();
 }
 function pmProgress(pm){
   const a=(pm&&pm.a)||{}; let total=0, done=0;
-  PM_SECTIONS.forEach(s=>s.items.forEach(it=>{ if(!pmShown(it,a)) return; total++; if(pmItemDone(it,a)) done++; }));
+  PM_SECTIONS.forEach(s=>s.items.forEach(it=>{ if(!pmShown(it,a)||it.t==='photo') return; total++; if(pmItemDone(it,a)) done++; }));
   return {done,total};
 }
 const pmComplete=pm=>{ const p=pmProgress(pm); return p.done===p.total; };
@@ -1295,10 +1300,14 @@ function pmItemHTML(it,w,lock){
   if(it.t==='yn') body=`<div class="seg" role="group" aria-label="${esc(it.q)}"><button type="button" data-action="pm-yn" data-id="${it.id}" data-v="y" aria-pressed="${x.v==='y'}"${dis}>Yes</button><button type="button" data-action="pm-yn" data-id="${it.id}" data-v="n" aria-pressed="${x.v==='n'}"${dis}>No</button></div>`;
   else if(it.t==='date') body=`<input type="date" data-pm="${it.id}" data-k="v" value="${esc(x.v||'')}"${dis}>`;
   else if(it.t==='text') body=`<input type="text" data-pm="${it.id}" data-k="v" value="${esc(x.v||'')}" placeholder="${esc(it.ph||'')}" autocomplete="off"${dis}>`;
-  else if(it.t==='photo') body=pmPhotoHTML(it,x,'Required',lock);
+  else if(it.t==='photo') body=pmPhotoHTML(it,x,'Recommended',lock);
   const extra=it.t==='yn'&&pmExtraOn(it,x)?`<label class="fld"><span>${esc(it.x.label)}${it.x.req?'':' (optional)'}</span><input type="${it.x.kind==='num'?'number':'text'}"${it.x.kind==='num'?' step="any" inputmode="decimal"':''} data-pm="${it.id}" data-k="x" value="${esc(x.x||'')}" autocomplete="off"${dis}></label>`:'';
   const ph=it.photo?pmPhotoHTML(it,x,it.photo,lock):'';
   return `<div class="pm-i${pmItemDone(it,a)?' ok':''}"><p class="pm-q">${esc(it.q)}</p>${it.hint?`<p class="hint">${esc(it.hint)}</p>`:''}${body}${extra}${ph}</div>`;
+}
+function pmActsHTML(w,p,lock){
+  const sig=w.pm&&w.pm.sig, ready=p.done===p.total&&!w.locked;
+  return `${sig?'<button type="button" class="btn" data-action="pm-pdf">Export PDF</button>':(ready?'<button type="button" class="btn primary" data-action="pm-sign">Sign</button>':'')}<button type="button" class="btn${sig||ready?'':' primary'}" data-action="pm-close">${lock?'Close':'Done'}</button>`;
 }
 function renderPM(){
   const host=$('#modal2'); const w=S.wo;
@@ -1314,7 +1323,7 @@ function renderPM(){
     ${PM_SECTIONS.map(s=>{ let last=''; return `<div class="pm-s"><h3 class="sec-h">${esc(s.h)}</h3>${s.items.filter(it=>pmShown(it,a)).map(it=>{ let h=''; if(it.sub&&it.sub!==last){ h=`<h4 class="pm-sub">${esc(it.sub)}</h4>`; } last=it.sub||''; return h+pmItemHTML(it,w,lock); }).join('')}</div>`; }).join('')}
     ${w.pm&&w.pm.sig?`<div class="pm-sig"><strong>Signed</strong><img src="${w.pm.sig.img}" alt="Signature"><span class="hint">${esc(pmStamp(w.pm.sig.at))}</span></div>`:(p.done===p.total&&!w.locked?'<p class="hint">Every question is answered. Press Sign to finish.</p>':'')}
    </div>
-   <footer class="sheet-f"><span class="hint" id="pm-count">${p.done} of ${p.total} answered</span><div class="acts">${w.pm&&w.pm.sig?'<button type="button" class="btn" data-action="pm-pdf">Export PDF</button>':(p.done===p.total&&!w.locked?'<button type="button" class="btn primary" data-action="pm-sign">Sign</button>':'')}<button type="button" class="btn${w.pm&&w.pm.sig||(p.done===p.total&&!w.locked)?'':' primary'}" data-action="pm-close">${lock?'Close':'Done'}</button></div></footer>
+   <footer class="sheet-f"><span class="hint" id="pm-count">${p.done} of ${p.total} answered</span><div class="acts" id="pm-acts">${pmActsHTML(w,p,lock)}</div></footer>
   </section>`;
   keepStill(host,was);
   const sb=$('.sheet-b',host); if(sb) sb.scrollTop=sc;
@@ -1325,7 +1334,7 @@ function pmSet(id,k,v){
   if(!w.pm) w.pm={a:{}}; if(!w.pm.a[id]) w.pm.a[id]={};
   w.pm.a[id][k]=v;
 }
-function pmUpdateCount(){ const p=pmProgress(S.wo&&S.wo.pm); const c=$('#pm-count'); if(c) c.textContent=p.done+' of '+p.total+' answered'; }
+function pmUpdateCount(){ const p=pmProgress(S.wo&&S.wo.pm); const c=$('#pm-count'); if(c) c.textContent=p.done+' of '+p.total+' answered'; const ac=$('#pm-acts'); if(ac&&S.wo) ac.innerHTML=pmActsHTML(S.wo,p,pmLocked(S.wo)); }
 function pmOpen(){ if(!S.wo||S.wo.isNew) return; if(!pmLocked(S.wo)&&(!S.wo.pm||!S.wo.pm.startedAt)){ if(!S.wo.pm) S.wo.pm={a:{}}; S.wo.pm.startedAt=new Date().toISOString(); } S.pmOpen=true; S.pmSign=false; renderPM(); }
 async function pmClose(){
   if(S.pmSign){ S.pmSign=false; S.sg=null; renderPM(); return; }
@@ -1410,7 +1419,7 @@ function buildChecklistPDF(JsPDF,w){
       if(it.sub&&it.sub!==last){ need(7); doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(...MUT); doc.text(pdfText(it.sub.toUpperCase()),M,y); y+=5; } last=it.sub||'';
       const q=doc.splitTextToSize(pdfText(it.q),CW-34); need(q.length*4.6+3);
       doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...INK); doc.text(q,M,y);
-      let ans=''; if(it.t==='yn') ans=x.v==='y'?'Yes':x.v==='n'?'No':'-'; else if(it.t==='photo') ans=(x.p&&x.p.length)?'Photo':'-'; else ans=String(x.v||'-');
+      let ans=''; if(it.t==='yn') ans=x.v==='y'?'Yes':x.v==='n'?'No':'-'; else if(it.t==='photo') ans=(x.p&&x.p.length)?'Photo attached':'No photo'; else ans=String(x.v||'-');
       doc.setFont('helvetica','bold'); doc.text(pdfText(ans),W-M,y,{align:'right'}); y+=q.length*4.6;
       if(it.t==='yn'&&x.x&&pmExtraOn(it,x)){ doc.setFont('helvetica','normal'); doc.setTextColor(...MUT); doc.text(pdfText(it.x.label+': '+x.x),M+4,y); y+=4.6; }
       if(x.p&&x.p[0]){ try{ const pr=doc.getImageProperties(x.p[0]); const iw=56, ih=Math.min(60,iw*pr.height/pr.width); need(ih+3); doc.addImage(x.p[0],'JPEG',M,y,iw,ih); y+=ih+2; }catch(e){} }
