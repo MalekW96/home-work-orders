@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.6.0.0
+
+- Cases: an umbrella over tasks. New Cases tab shows a tree (case, then its tasks) with progress and cost; Open/Closed filter; "Tasks without a case" group.
+- Create cases from the Cases tab or the + menu; add tasks into a case, link or unlink existing tasks; Case field on tasks; case shown in task lists, the Service Report PDF and search; changes recorded in the task activity log. Cases are included in the JSON backup.
+
 ## 5.5.0.0
 
 - Resources tab for service manuals, documentation, warranties and certificates: add, search, filter by category, link to equipment, open, edit, delete. Files up to 3 MB; they sync with the account.

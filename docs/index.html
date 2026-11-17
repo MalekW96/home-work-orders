@@ -271,6 +271,20 @@ textarea{min-height:76px;resize:vertical}
 #lb img{max-width:100%;max-height:calc(100vh - 90px);object-fit:contain;border-radius:8px}
 #lb figcaption{color:#fff;font-size:15px;text-align:center}
 .atts{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
+.tree,.tn-k{list-style:none;margin:0;padding:0}
+.tree{display:flex;flex-direction:column;gap:10px}
+.tn-case{background:var(--panel);border-radius:var(--r);box-shadow:var(--shadow);padding:6px 8px}
+.tn-h{display:flex;align-items:center;gap:6px}
+.tn-x{width:32px;height:32px;border:0;background:none;font-size:16px;color:var(--ink2)}
+.tn-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;text-align:left;border:0;background:none;padding:6px 4px;color:var(--ink)}
+.tn-b span{font-size:13px;color:var(--ink2)}
+.chip-s{font-size:12px;font-weight:600;padding:3px 9px;border-radius:99px;background:var(--panel2);color:var(--ink2)}
+.chip-s.op{background:#e6f0fd;color:#1f5fbf}.chip-s.cl{background:#e7f6ee;color:#1d7a46}
+.tn-k{margin:2px 0 6px 16px;padding-left:14px;border-left:2px solid var(--line2);display:flex;flex-direction:column;gap:4px}
+.tn-t2{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;background:var(--panel2);border-radius:10px;padding:8px 10px;color:var(--ink)}
+.tn-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.tn-main span{font-size:12px;color:var(--ink2)}
+.tn-amt{font-size:12px;color:var(--ink2);white-space:nowrap}
 .srch-g{display:flex;flex-direction:column;gap:6px;margin-bottom:6px}
 .srch-r{display:flex;flex-direction:column;gap:2px;align-items:flex-start;text-align:left;width:100%;padding:10px 12px;border:1px solid var(--line2);border-radius:10px;background:var(--panel);color:var(--ink)}
 .srch-r span{font-size:13px;color:var(--ink2)}
@@ -391,12 +405,14 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
       <button type="button" class="btn iconbtn" id="btn-settings" data-action="settings" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.56-1.11 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.01a1.7 1.7 0 0 0 1.03-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.01a1.7 1.7 0 0 0 1.56 1.03H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1.03z"/></svg></button>
       <div class="addmenu" id="addmenu" role="menu" hidden>
         <button type="button" role="menuitem" data-action="new-asset">Add new equipment</button>
+        <button type="button" role="menuitem" data-action="new-case">Create new case</button>
         <button type="button" role="menuitem" data-action="new-wo">Create new task</button>
       </div>
     </div>
   </header>
   <nav class="tabs" role="tablist" aria-label="Sections">
     <button type="button" class="tab" role="tab" id="tab-dashboard" data-action="tab" data-view="dashboard">Dashboard</button>
+    <button type="button" class="tab" role="tab" id="tab-cases" data-action="tab" data-view="cases">Cases<span class="n" id="n-cases"></span></button>
     <button type="button" class="tab" role="tab" id="tab-orders" data-action="tab" data-view="orders">Tasks<span class="n" id="n-orders"></span></button>
     <button type="button" class="tab" role="tab" id="tab-assets" data-action="tab" data-view="assets">Equipment<span class="n" id="n-assets"></span></button>
     <button type="button" class="tab" role="tab" id="tab-parts" data-action="tab" data-view="parts">Parts</button>
@@ -435,8 +451,8 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['transport','Transport'],['travel','Travel'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],transport:['Quantity','Cost each'],travel:['Trips','Cost per trip'],other:['Quantity','Amount each']};
-const APP_VERSION='5.5.0.0';
-const RELEASE_NOTES=['New Resources tab: store service manuals, documentation, warranties and certificates (files up to 3 MB), link them to equipment, and open them any time. They sync with your account.','Search replaces the PDF report button next to + and the gear. Type a word to find that exact word; add * (like brak*) to find every word containing it. It searches tasks, equipment, parts and resources.','The PDF report moved to Settings, under Reports.'];
+const APP_VERSION='5.6.0.0';
+const RELEASE_NOTES=['New Cases tab: a case is the umbrella and the tasks (work orders) belong to it. A tree shows each case with its tasks underneath, progress, and cost.','Create a case from the Cases tab or the + menu, add new tasks straight into it, link existing tasks, or take them out again. Tasks have a Case field, and cases are searchable.','A case can only be closed when all its tasks are closed or cancelled. Deleting a case keeps its tasks. Changes show in each task\'s activity log.'];
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -446,7 +462,7 @@ const IS_WEB=!!window.HWO_WEB&&!IS_APP; /* the installable web app (Add to Home 
 const CURRENCIES=['SAR','AED','KWD','QAR','BHD','OMR','EGP','JOD','USD','EUR','GBP','INR','PKR','TRY'];
 
 const S={db:null,user:null,downloads:null,noStore:false,readOnly:false,timedOut:false,
-  assets:new Map(),orders:[],resources:[],resQ:'',rcat:'',settings:{currency:'SAR'},ready:{assets:false,orders:false},
+  assets:new Map(),orders:[],resources:[],cases:[],cf:'',ctog:{},resQ:'',rcat:'',settings:{currency:'SAR'},ready:{assets:false,orders:false},
   view:'dashboard',range:'year',f:{status:'open',asset:'',year:'',q:''},partsQ:'',acat:'',showArchived:false,showFilters:false,
   wo:null,asset:null,saving:false,confirmClear:false,sheet:'',report:null,restore:null,upd:null};
 const HOLDER='h'+Math.random().toString(36).slice(2,10);
@@ -718,6 +734,7 @@ async function boot(){
     S.orders=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
     S.ready.orders=true; ok(); render(); syncReminders();
   },bad);
+  db.collection('cases').onSnapshot(snap=>{ S.cases=snap.docs.map(d=>Object.assign({id:d.id},d.data())); render(); },()=>{});
   db.collection('resources').onSnapshot(snap=>{ S.resources=snap.docs.map(d=>Object.assign({id:d.id},d.data())); render(); },()=>{});
   db.doc('meta/attributes').onSnapshot(s=>{
     S.attrs={list:s.exists&&Array.isArray(s.data().list)?s.data().list:[]};
@@ -1119,9 +1136,10 @@ function syncBlock(){
 function render(){ renderChrome(); renderView(); if(S.sheet==='settings') renderSettings(); }
 
 function renderChrome(){
-  ['dashboard','orders','assets','parts','resources'].forEach(v=>{ const t=$('#tab-'+v); t.setAttribute('aria-selected',String(S.view===v)); t.tabIndex=S.view===v?0:-1; });
+  ['dashboard','cases','orders','assets','parts','resources'].forEach(v=>{ const t=$('#tab-'+v); t.setAttribute('aria-selected',String(S.view===v)); t.tabIndex=S.view===v?0:-1; });
   const open=S.orders.filter(isActive).length;
   $('#n-orders').textContent=open?String(open):'';
+  $('#n-cases').textContent=S.cases.filter(c=>c.status!=='Closed').length||'';
   $('#n-resources').textContent=S.resources.length?String(S.resources.length):'';
   $('#n-assets').textContent=S.assets.size?String([...S.assets.values()].filter(a=>!a.archived).length):'';
   $('#btn-add').disabled=!canWrite(); if(!canWrite()) closeAddMenu();
@@ -1142,7 +1160,7 @@ function renderView(){
   if(S.view==='orders'&&f==='f-q'&&$('#orders-results')){ $('#orders-results').innerHTML=ordersResults(); return; }
   if(S.view==='parts'&&f==='p-q'&&$('#parts-results')){ $('#parts-results').innerHTML=partsResults(); return; }
   if(S.view==='resources'&&f==='r-q'&&$('#res-results')){ $('#res-results').innerHTML=resResults(); return; }
-  v.innerHTML=S.view==='orders'?ordersView():S.view==='assets'?assetsView():S.view==='parts'?partsView():S.view==='resources'?resourcesView():dashboardView();
+  v.innerHTML=S.view==='orders'?ordersView():S.view==='assets'?assetsView():S.view==='parts'?partsView():S.view==='resources'?resourcesView():S.view==='cases'?casesView():dashboardView();
 }
 
 function emptyIntro(loading){
@@ -1157,7 +1175,7 @@ function orderRow(o){
   const st=startedAtOf(o); const od=isOverdue(o); const pr=o.priority||'Normal';
   return `<button type="button" class="tkt" data-action="open-wo" data-id="${esc(o.id)}">
     ${icoFor(assetCat(o.assetId))}
-    <span class="tkt-main"><span class="tkt-title">${bang(o)}${esc(fmtNo(o.number||o.id))}</span><span class="tkt-meta">${esc(assetName(o.assetId))}</span><span class="tkt-meta wrap"><span class="c-pri ${pr==='High'?'pri-high':''}">${esc(pr)}<span class="c-w"> priority</span></span><span class="c-w"> · </span><span class="c-start">${st?'<span class="c-w">Started </span>'+esc(fmtDT(st)):'Not started yet'}</span></span></span>
+    <span class="tkt-main"><span class="tkt-title">${bang(o)}${esc(fmtNo(o.number||o.id))}</span><span class="tkt-meta">${esc(assetName(o.assetId))}${o.caseId&&caseOf(o.caseId)?' · '+esc(caseOf(o.caseId).number):''}</span><span class="tkt-meta wrap"><span class="c-pri ${pr==='High'?'pri-high':''}">${esc(pr)}<span class="c-w"> priority</span></span><span class="c-w"> · </span><span class="c-start">${st?'<span class="c-w">Started </span>'+esc(fmtDT(st)):'Not started yet'}</span></span></span>
     <span class="tkt-r">${stDot(o.status)}${od?'<span class="st over"><i></i>Overdue</span>':''}</span></button>`;
 }
 function dashboardView(){
@@ -1337,7 +1355,7 @@ function srchMatch(q,text,any){
 const flat=v=>{ const out=[]; (function w(x){ if(x==null) return; if(Array.isArray(x)) x.forEach(w); else if(typeof x==='object') Object.keys(x).forEach(k=>{ if(k!=='src') w(x[k]); }); else { const t=String(x); if(t.length<1500&&t.indexOf('data:')!==0) out.push(t); } })(v); return out; };
 function taskFields(o){
   const a=S.assets.get(o.assetId)||{};
-  return [['Number',[o.number,fmtNo(o.number)]],['Title',[o.title]],['Equipment',[a.name,a.plate,a.vin]],['Type',[o.type,statusLabel(o.status),o.priority]],['Work performed',[o.description]],['Notes',[o.notes]],['Done by',[o.doneBy]],
+  return [['Number',[o.number,fmtNo(o.number)]],['Title',[o.title]],['Case',[caseLabel(o.caseId)]],['Equipment',[a.name,a.plate,a.vin]],['Type',[o.type,statusLabel(o.status),o.priority]],['Work performed',[o.description]],['Notes',[o.notes]],['Done by',[o.doneBy]],
     ['Parts and costs',(o.lines||[]).map(l=>[l.name,l.partNo,l.supplier].join(' '))],['Garage visit',[o.visit&&o.visit.name,o.visit&&o.visit.contact]],['Check list',((o.checklist&&o.checklist.items)||[]).map(i=>i.text)],
     ['Attachments',(o.atts||(o.visit&&o.visit.atts)||[]).map(x=>[x.caption,x.name].join(' '))]].map(([l,v])=>[l,v.filter(Boolean).join(' ')]).filter(x=>x[1]);
 }
@@ -1349,15 +1367,17 @@ function searchAll(q){
   const tasks=S.orders.filter(o=>all(taskFields(o))).sort((a,b)=>byNumberDesc(a,b));
   const assets=[...S.assets.values()].filter(a=>all(assetFields(a)));
   const res=S.resources.filter(r=>all(resFields(r)));
+  const cases=S.cases.filter(c=>all(caseFields(c)));
   const parts=[]; S.orders.forEach(o=>{ if(o.status==='Cancelled') return; (o.lines||[]).forEach(l=>{ if(l.kind==='part'&&srchMatch(q,[l.name,l.partNo,l.supplier].join(' '))) parts.push({o,l}); }); });
-  return {tasks,assets,res,parts};
+  return {tasks,assets,res,parts,cases};
 }
 function searchHTML(q){
   q=String(q||'').trim();
   if(!q) return '<p class="hint">Type a word to find that exact word. Put an asterisk next to it, like <b>brak*</b>, to find every word containing it. Searches tasks, equipment, parts and resources.</p>';
   const r=searchAll(q); const LIM=30;
   const grp=(t,arr,row)=>arr.length?`<h3 class="sec-h">${t} · ${arr.length}</h3><div class="srch-g">${arr.slice(0,LIM).map(row).join('')}${arr.length>LIM?`<p class="hint">${arr.length-LIM} more. Make the search more specific to narrow it down.</p>`:''}</div>`:'';
-  const out=grp('Tasks',r.tasks,o=>`<button type="button" class="srch-r" data-action="srch-open" data-k="wo" data-id="${esc(o.id)}"><b>${esc(o.title||'Untitled')}</b><span>${esc(fmtNo(o.number))} · ${esc(assetName(o.assetId))} · ${esc(statusLabel(o.status))}</span><em>Found in ${esc(foundIn(q,taskFields(o)))}</em></button>`)
+  const out=grp('Cases',r.cases,c=>`<button type="button" class="srch-r" data-action="srch-open" data-k="case" data-id="${esc(c.id)}"><b>${esc(c.title)}</b><span>${esc(c.number)} · ${esc(c.status||'Open')} · ${tasksOfCase(c.id).length} task${tasksOfCase(c.id).length===1?'':'s'}</span><em>Found in ${esc(foundIn(q,caseFields(c)))}</em></button>`)
+   +grp('Tasks',r.tasks,o=>`<button type="button" class="srch-r" data-action="srch-open" data-k="wo" data-id="${esc(o.id)}"><b>${esc(o.title||'Untitled')}</b><span>${esc(fmtNo(o.number))} · ${esc(assetName(o.assetId))} · ${esc(statusLabel(o.status))}</span><em>Found in ${esc(foundIn(q,taskFields(o)))}</em></button>`)
    +grp('Equipment',r.assets,a=>`<button type="button" class="srch-r" data-action="srch-open" data-k="asset" data-id="${esc(a.id)}"><b>${esc(a.name||'Unnamed')}</b><span>${esc([effCat(a),a.plate,a.vin].filter(Boolean).join(' · '))}</span><em>Found in ${esc(foundIn(q,assetFields(a)))}</em></button>`)
    +grp('Parts',r.parts,x=>`<button type="button" class="srch-r" data-action="srch-open" data-k="wo" data-id="${esc(x.o.id)}"><b>${esc(x.l.name||'Part')}${x.l.partNo?' · '+esc(x.l.partNo):''}</b><span>${esc(x.l.qty)} × ${esc(money(num(x.l.unitCost)))}${x.l.supplier?' · '+esc(x.l.supplier):''} · ${esc(fmtNo(x.o.number))}</span></button>`)
    +grp('Resources',r.res,x=>`<button type="button" class="srch-r" data-action="srch-open" data-k="res" data-id="${esc(x.id)}"><b>${esc(x.title)}</b><span>${esc([x.category,x.assetId?assetName(x.assetId):'',x.fileName].filter(Boolean).join(' · '))}</span><em>Found in ${esc(foundIn(q,resFields(x)))}</em></button>`);
@@ -1455,11 +1475,89 @@ async function resOpen(id){
   }catch(e){ if(!(e&&e.code==='declined')) toast('The file could not be opened.',true); }
 }
 
+/* ---------- cases: the umbrella over tasks ---------- */
+const caseOf=id=>id?S.cases.find(c=>c.id===id):null;
+const caseLabel=id=>{ const c=typeof id==='string'?caseOf(id):id; return c?c.number+' · '+c.title:(id?'a deleted case':''); };
+const tasksOfCase=id=>S.orders.filter(o=>o.caseId===id).sort((a,b)=>byNumberDesc(a,b));
+const caseFields=c=>[['Number',[c.number]],['Title',[c.title]],['Equipment',[c.assetId?assetName(c.assetId):'']],['Notes',[c.notes]],['Status',[c.status]]].map(([l,v])=>[l,v.filter(Boolean).join(' ')]).filter(x=>x[1]);
+function caseStats(c){ const t=tasksOfCase(c.id); const live=t.filter(o=>o.status!=='Cancelled'); const done=live.filter(o=>o.status==='Completed').length; return {n:t.length,live:live.length,done,open:t.filter(isActive).length,spent:t.filter(o=>o.status!=='Cancelled').reduce((s,o)=>s+orderTotals(o).all,0)}; }
+function nextCaseNo(){ const y=new Date().getFullYear(); let m=0; S.cases.forEach(c=>{ const x=/^CS-(\d{4})-(\d+)$/.exec(c.number||''); if(x&&+x[1]===y) m=Math.max(m,+x[2]); }); return 'CS-'+y+'-'+String(m+1).padStart(4,'0'); }
+function caseTaskRow(o){ return `<li class="tn tn-task"><button type="button" class="tn-t2" data-action="open-wo" data-id="${esc(o.id)}">${stDot(o.status)}<span class="tn-main"><b>${esc(fmtNo(o.number||o.id))}${o.title?' · '+esc(o.title):''}</b><span>${esc(assetName(o.assetId))} · ${esc(o.type||'')}${money(orderTotals(o).all)?'':''}</span></span><span class="tn-amt">${esc(money(orderTotals(o).all))}</span></button></li>`; }
+function casesView(){
+  const all=S.cases.slice().sort((a,b)=>String(b.number).localeCompare(String(a.number)));
+  const nOpen=all.filter(c=>c.status!=='Closed').length, nClosed=all.length-nOpen;
+  const list=all.filter(c=>S.cf==='open'?c.status!=='Closed':S.cf==='closed'?c.status==='Closed':true);
+  const loose=S.orders.filter(o=>!o.caseId||!caseOf(o.caseId)).sort((a,b)=>byNumberDesc(a,b));
+  const chips=`<div class="chips" role="group" aria-label="Filter cases"><button type="button" class="chip" data-action="cf" data-cf="" aria-pressed="${!S.cf}">All · ${all.length}</button><button type="button" class="chip" data-action="cf" data-cf="open" aria-pressed="${S.cf==='open'}">Open · ${nOpen}</button><button type="button" class="chip" data-action="cf" data-cf="closed" aria-pressed="${S.cf==='closed'}">Closed · ${nClosed}</button></div>`;
+  const head=`<div class="toolbar"><div><strong>Cases and tasks</strong><p class="hint" style="margin:2px 0 0">A case is the umbrella. The tasks (work orders) that belong to it sit underneath.</p></div><button type="button" class="btn primary" data-action="new-case"${canWrite()?'':' disabled'}>New case</button></div>`;
+  const node=c=>{ const st=caseStats(c); const ex=c.id in S.ctog?S.ctog[c.id]:c.status!=='Closed'; const kids=tasksOfCase(c.id);
+    return `<li class="tn tn-case"><div class="tn-h"><button type="button" class="tn-x" data-action="case-toggle" data-id="${esc(c.id)}" aria-expanded="${ex}" aria-label="${ex?'Collapse':'Expand'} ${esc(c.title)}">${ex?'▾':'▸'}</button>
+      <button type="button" class="tn-b" data-action="case-open" data-id="${esc(c.id)}"><b>${esc(c.title)}</b><span>${esc(c.number)}${c.assetId?' · '+esc(assetName(c.assetId)):''} · ${st.live?st.done+' of '+st.live+' task'+(st.live===1?'':'s')+' done':'No tasks yet'}${st.spent?' · '+esc(money(st.spent)):''}</span></button>
+      <span class="chip-s ${c.status==='Closed'?'cl':'op'}">${c.status==='Closed'?'Closed':'Open'}</span></div>
+      ${ex?`<ul class="tn-k">${kids.map(caseTaskRow).join('')||'<li class="tn hint">No tasks in this case yet.</li>'}${c.status!=='Closed'&&canWrite()?`<li class="tn"><button type="button" class="btn sm" data-action="case-addtask" data-id="${esc(c.id)}">Add task to this case</button></li>`:''}</ul>`:''}</li>`; };
+  const lex='none' in S.ctog?S.ctog.none:false;
+  const looseNode=loose.length?`<li class="tn tn-case tn-none"><div class="tn-h"><button type="button" class="tn-x" data-action="case-toggle" data-id="none" aria-expanded="${lex}" aria-label="${lex?'Collapse':'Expand'} tasks without a case">${lex?'▾':'▸'}</button><span class="tn-b"><b>Tasks without a case</b><span>${loose.length} task${loose.length===1?'':'s'}</span></span></div>${lex?`<ul class="tn-k">${loose.map(caseTaskRow).join('')}</ul>`:''}</li>`:'';
+  if(!all.length&&!loose.length) return head+`<div class="empty small"><h2>No cases yet</h2><p>Create a case for a bigger job or an ongoing problem, then add the tasks that belong to it.</p></div>`;
+  if(!all.length) return head+`<p class="hint">No cases yet. Create one for a bigger job or an ongoing problem, then add the tasks that belong to it.</p><ul class="tree" role="tree">${looseNode}</ul>`;
+  return head+chips+`<ul class="tree" role="tree">${list.map(node).join('')||'<li class="tn hint">No cases match this filter.</li>'}${looseNode}</ul>`;
+}
+function caseForm(c){ S.cs=Object.assign({isNew:!c,id:c?c.id:'',title:c?c.title:'',assetId:c?(c.assetId||''):'',status:c?(c.status||'Open'):'Open',notes:c?(c.notes||''):'',confirmDel:false},{}); S.sheet='case'; renderCase(); }
+function renderCase(focus){
+  const c=S.cs; if(!c) return; const host=$('#modal'); const was=!host.hidden&&!!host.querySelector('#cs-h'); host.hidden=false;
+  const assets=[...S.assets.values()].filter(a=>!a.archived).sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+  const kids=c.isNew?[]:tasksOfCase(c.id); const loose=S.orders.filter(o=>(!o.caseId||!caseOf(o.caseId))&&o.status!=='Cancelled');
+  host.innerHTML=`<div class="scrim" data-action="close-modal"></div>
+  <section class="sheet narrow" role="dialog" aria-modal="true" aria-labelledby="cs-h">
+   <header class="sheet-h"><div><span class="mono">${c.isNew?'New case':esc((caseOf(c.id)||{}).number||'')}</span><h2 id="cs-h">${c.isNew?'Create case':'Case'}</h2></div><button type="button" class="icon" data-action="close-modal" aria-label="Close">&times;</button></header>
+   <div class="sheet-b">
+    <label class="fld"><span>Title</span><input id="cs-title" data-cf2="title" type="text" value="${esc(c.title)}" placeholder="e.g. Hilux brake system overhaul" autocomplete="off"></label>
+    <label class="fld"><span>Equipment (optional)</span><select id="cs-asset" data-cf2="assetId"><option value="">Not tied to one piece of equipment</option>${assets.map(a=>`<option value="${esc(a.id)}"${a.id===c.assetId?' selected':''}>${esc(a.name)}</option>`).join('')}</select></label>
+    <label class="fld"><span>Status</span><select id="cs-status" data-cf2="status"><option${c.status==='Open'?' selected':''}>Open</option><option${c.status==='Closed'?' selected':''}>Closed</option></select></label>
+    <label class="fld"><span>Notes (optional)</span><textarea id="cs-notes" data-cf2="notes" rows="3">${esc(c.notes)}</textarea></label>
+    ${c.isNew?'<p class="hint">Save the case first, then add tasks to it.</p>':`<h3 class="sec-h">Tasks in this case · ${kids.length}</h3>
+     <div class="srch-g">${kids.map(o=>`<div class="ck-i"><button type="button" class="srch-r" data-action="open-wo" data-id="${esc(o.id)}"><b>${esc(fmtNo(o.number))}${o.title?' · '+esc(o.title):''}</b><span>${esc(assetName(o.assetId))} · ${esc(statusLabel(o.status))}</span></button><button type="button" class="icon" data-action="case-unlink" data-id="${esc(o.id)}" aria-label="Remove ${esc(fmtNo(o.number))} from this case" title="Remove from case">&times;</button></div>`).join('')||'<p class="hint">No tasks yet.</p>'}</div>
+     ${canWrite()?`<div class="addrow"><button type="button" class="btn sm" data-action="case-addtask" data-id="${esc(c.id)}">Add new task</button></div>
+     ${loose.length?`<label class="fld"><span>Add an existing task</span><select id="cs-link"><option value="">Choose a task…</option>${loose.sort((a,b)=>byNumberDesc(a,b)).map(o=>`<option value="${esc(o.id)}">${esc(fmtNo(o.number))}${o.title?' · '+esc(o.title):''} · ${esc(assetName(o.assetId))}</option>`).join('')}</select></label>`:''}`:''}
+     <div class="fld"><button type="button" class="btn sm${c.confirmDel?' danger':''}" data-action="case-del">${c.confirmDel?'Press again to delete the case (its tasks are kept)':'Delete case'}</button></div>`}
+   </div>
+   <footer class="sheet-f"><span></span><div class="acts"><button type="button" class="btn" data-action="close-modal">Cancel</button><button type="button" class="btn primary" data-action="case-save"${S.saving?' disabled':''}>${S.saving?'Saving…':'Save'}</button></div></footer></section>`;
+  keepStill(host,was); syncInert(); if(focus){ const f=$('#'+focus); if(f) f.focus(); }
+}
+async function caseSave(){
+  const c=S.cs; if(!c||S.saving) return;
+  if(!c.title.trim()){ toast('Give the case a title.',true); return; }
+  const old=c.isNew?null:caseOf(c.id);
+  if(c.status==='Closed'&&(!old||old.status!=='Closed')){ const n=tasksOfCase(c.id).filter(isActive).length; if(n){ toast(n+' task'+(n===1?' is':'s are')+' still open. Close or cancel '+(n===1?'it':'them')+' first.',true); return; } }
+  S.saving=true; renderCase();
+  try{
+    const id=c.id||('c'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)); const now=new Date().toISOString();
+    const doc=Object.assign({},old||{}); delete doc.id;
+    Object.assign(doc,{title:c.title.trim(),assetId:c.assetId||'',status:c.status,notes:c.notes.trim(),updatedAt:now}); if(!old){ doc.createdAt=now; doc.number=nextCaseNo(); }
+    if(c.status==='Closed'&&!(old&&old.status==='Closed')) doc.closedAt=now; if(c.status!=='Closed') doc.closedAt='';
+    await S.db.doc('cases/'+id).set(doc); S.saving=false;
+    if(!old){ S.cs=Object.assign(c,{isNew:false,id}); toast('Case created'); renderCase(); } else { closeSheet('case'); toast('Case saved'); }
+    render();
+  }catch(e){ S.saving=false; renderCase(); fail(e,'Not saved'); }
+}
+async function setTaskCase(orderId,caseId){
+  const o=S.orders.find(x=>x.id===orderId); if(!o) return false;
+  if((o.caseId||'')===(caseId||'')) return true;
+  try{ const doc=Object.assign({},o); delete doc.id; const t=caseId?(o.caseId?'Moved from case '+caseLabel(o.caseId)+' to ':'Added to case ')+caseLabel(caseId):'Removed from case '+caseLabel(o.caseId);
+    doc.caseId=caseId||''; doc.updatedAt=new Date().toISOString(); doc.log=logMerge(logBase(o),[t]); await S.db.doc('workorders/'+o.id).set(doc); return true; }
+  catch(e){ fail(e,'Not saved'); return false; }
+}
+async function caseDelete(){
+  const c=S.cs; if(!c||c.isNew) return;
+  if(!c.confirmDel){ c.confirmDel=true; renderCase(); return; }
+  try{ for(const o of tasksOfCase(c.id)) await setTaskCase(o.id,''); await S.db.doc('cases/'+c.id).delete(); closeSheet('case'); toast('Case deleted. Its tasks were kept.'); render(); }
+  catch(e){ fail(e,'Not deleted'); }
+}
+
 /* ---------- task sheet ---------- */
 function blankVisit(){ return {on:false,name:'',contact:'',loc:null,atts:[]}; }
 function blankWO(p){
   p=p||{};
-  return {isNew:true,fromAsset:!!p.assetId,pm:null,sig:null,atts:[],log:[],number:'',title:p.title||'',assetId:p.assetId||'',type:p.type||'Preventive maintenance',priority:'Normal',status:'Open',openedOn:todayISO(),dueOn:'',completedOn:'',meter:'',doneBy:'',description:'',notes:'',lines:[],followUpOf:p.followUpOf||'',furtherAt:'',startedAt:'',closedAt:'',checklist:null,locked:false,visit:blankVisit()};
+  return {caseId:p.caseId||'',isNew:true,fromAsset:!!p.assetId,pm:null,sig:null,atts:[],log:[],number:'',title:p.title||'',assetId:p.assetId||'',type:p.type||'Preventive maintenance',priority:'Normal',status:'Open',openedOn:todayISO(),dueOn:'',completedOn:'',meter:'',doneBy:'',description:'',notes:'',lines:[],followUpOf:p.followUpOf||'',furtherAt:'',startedAt:'',closedAt:'',checklist:null,locked:false,visit:blankVisit()};
 }
 function openWO(id,prefill){
   if(id){
@@ -1501,6 +1599,7 @@ function renderWO(focusId){
     <div class="grid">
      ${!isCorrective(w)?'':`<label class="fld" style="grid-column:1/-1"><span>What needs doing</span><input id="wo-title" data-f="title" type="text" value="${esc(w.title)}" placeholder="Oil and filter change" autocomplete="off"></label>`}
      <label class="fld"><span>Equipment</span><select id="wo-asset" data-f="assetId">${opt([['','Choose the equipment…']].concat(assets.map(x=>[x.id,x.parentId&&S.assets.get(x.parentId)?x.name+' (accessory of '+S.assets.get(x.parentId).name+')':x.name])).concat([['__new','Add new equipment…']]),w.assetId)}</select></label>
+     <label class="fld"><span>Case (optional)</span><select id="wo-case" data-f="caseId">${opt([['','Not part of a case']].concat(S.cases.filter(c=>c.status!=='Closed'||c.id===w.caseId).map(c=>[c.id,c.number+' · '+c.title])),w.caseId||'')}</select></label>
      <label class="fld"><span>Type</span><select id="wo-type" data-f="type">${opt(TYPES.map(t=>[t,t]),w.type)}</select></label>
      <label class="fld"><span>Priority</span><select id="wo-priority" data-f="priority">${opt(PRIORITIES.map(t=>[t,t]),w.priority)}</select></label>
      <label class="fld"><span>Status</span><select id="wo-status" data-f="status">${opt((w.status==='Cancelled'?STATUSES.concat(['Cancelled']):w.isNew&&ckRequired(w)?STATUSES.filter(t=>t!=='Completed'):STATUSES).map(t=>[t,statusLabel(t)]),w.status)}</select></label>
@@ -1656,6 +1755,7 @@ function orderLog(o,d){
   const out=[]; const nz=v=>v==null?'':String(v); const isNewT=!o;
   if(isNewT){ out.push('Task created: '+q(d.title)+' · '+assetName(d.assetId)+' · '+d.type+' · '+d.priority+' priority'); o={title:d.title,assetId:d.assetId,type:d.type,priority:d.priority,openedOn:d.openedOn,status:'Open',lines:[],atts:[],visit:null,checklist:null,sig:null,pm:null}; }
   if(o.status!==d.status) out.push(d.status==='Completed'?'Task closed (status changed from '+statusLabel(o.status)+' to Completed'+(d.completedOn?', completed on '+d.completedOn:'')+')':'Status changed from '+statusLabel(o.status)+' to '+statusLabel(d.status));
+  if(nz(o.caseId)!==nz(d.caseId)) out.push(d.caseId?(o.caseId?'Moved from case '+caseLabel(o.caseId)+' to ':'Added to case ')+caseLabel(d.caseId):'Removed from case '+caseLabel(o.caseId));
   if(o.assetId!==d.assetId) out.push('Equipment changed from '+assetName(o.assetId)+' to '+assetName(d.assetId));
   [['title','Title'],['priority','Priority'],['type','Type'],['dueOn','Due date'],['openedOn','Opened date'],['doneBy','Done by'],['meter','Reading'],['completedOn','Completed date']].forEach(([k,l])=>{ if(nz(o[k])!==nz(d[k])&&!(k==='completedOn'&&o.status!==d.status&&d.status==='Completed')) out.push(l+' changed from '+(nz(o[k])?q(o[k]):'empty')+' to '+(nz(d[k])?q(d[k]):'empty')); });
   if(nz(o.description)!==nz(d.description)) out.push('Work performed '+(nz(o.description)?'changed from '+q(o.description)+' to ':'entered: ')+(nz(d.description)?(nz(o.description)?q(d.description):q(d.description)):'empty'));
@@ -2046,7 +2146,7 @@ async function saveWO(){
   const now=new Date().toISOString();
   const doc={title:w.title.trim(),assetId:w.assetId,type:w.type,priority:w.priority,status:w.status,openedOn:w.openedOn||todayISO(),dueOn:isCorrective(w)?'':(w.dueOn||''),
     completedOn:w.status==='Completed'?(w.completedOn||todayISO()):'',meter:w.meter===''?null:Number(w.meter),doneBy:w.doneBy.trim(),description:w.description.trim(),notes:w.notes.trim(),lines,
-    followUpOf:w.followUpOf||'',sample:!!w.sample,updatedAt:now,
+    followUpOf:w.followUpOf||'',caseId:S.cases.some(c=>c.id===w.caseId)?w.caseId:'',sample:!!w.sample,updatedAt:now,
     furtherAt:w.status==='Further action'?(w.furtherAt||now):'',
     startedAt:w.startedAt||(w.status!=='Open'?(w.isNew?now:(w.createdAt||now)):''),closedAt:w.status==='Completed'?(w.closedAt||now):'',
     reports:w.reports||[],
@@ -2331,8 +2431,9 @@ function readRestore(file){
       const j=JSON.parse(String(rd.result||''));
       const assets=Array.isArray(j.assets)?j.assets.filter(a=>a&&a.id&&a.name):[];
       const orders=Array.isArray(j.workOrders)?j.workOrders.filter(o=>o&&(o.number||o.id)&&o.title):[];
+      const cases=Array.isArray(j.cases)?j.cases.filter(c=>c&&c.id&&c.title):[];
       if(!assets.length&&!orders.length) throw new Error('empty');
-      S.restore={ok:true,assets,orders,msg:'Found '+assets.length+' equipment and '+orders.length+' task'+(orders.length===1?'':'s')+' in '+file.name+'. Records with the same number are replaced.'};
+      S.restore={ok:true,assets,orders,cases,msg:'Found '+assets.length+' equipment and '+orders.length+' task'+(orders.length===1?'':'s')+' in '+file.name+'. Records with the same number are replaced.'};
     }catch(e){ S.restore={ok:false,msg:'That file is not a backup made by this app.'}; }
     renderSettings();
   };
@@ -2344,6 +2445,7 @@ async function doRestore(){
   S.saving=true;
   try{
     for(const a of r.assets){ const doc=Object.assign({},a); delete doc.id; await S.db.doc('assets/'+a.id).set(doc); }
+    for(const c of (r.cases||[])){ const doc=Object.assign({},c); delete doc.id; await S.db.doc('cases/'+c.id).set(doc); }
     for(const o of r.orders){
       const doc=Object.assign({},o); const no=String(o.number||o.id); delete doc.id; doc.number=no;
       const m=/^WO-(?:([A-Z])-?)?(\d{4})-?(\d{4,})$/.exec(no); if(m){ doc.year=Number(m[2]); doc.seq=Number(m[3]); if(m[1]) doc.code=m[1]; }
@@ -2379,7 +2481,7 @@ async function exportData(what){
     data=toCSV(rows);
   } else {
     filename='home-work-orders-backup-'+todayISO()+'.json';
-    data=JSON.stringify({exportedAt:new Date().toISOString(),currency:S.settings.currency,assets:[...S.assets.values()],workOrders:orders},null,2);
+    data=JSON.stringify({exportedAt:new Date().toISOString(),currency:S.settings.currency,assets:[...S.assets.values()],cases:S.cases,workOrders:orders},null,2);
   }
   try{ await S.downloads.save({filename,data}); if(IS_APP&&!IS_IOS) toast('Saved '+filename+' to Downloads'); }
   catch(e){ if(e&&e.code!=='declined') toast(e&&e.code==='unavailable'?'Downloads are not available here.':'The file could not be saved.',true); }
@@ -2514,7 +2616,7 @@ function buildTaskPDF(deps,w){
   const det=[['Task type',w.type],['Priority',w.priority],['Status',statusLabel(w.status)],['Opened',pdfDate(w.openedOn)],
     (!isCorrective(w)&&w.dueOn)?['Due',pdfDate(w.dueOn)]:null,w.startedAt?['Started',pdfDate(String(w.startedAt).slice(0,10))]:null,
     w.status==='Completed'?['Completed',pdfDate(w.completedOn||todayISO())]:null,(w.meter!==''&&w.meter!=null)?['Reading',String(w.meter)+(unit?' '+unit:'')]:null,
-    w.doneBy?['Done by',w.doneBy]:null,w.followUpOf?['Follow-up of',fmtNo(w.followUpOf)]:null].filter(Boolean);
+    w.doneBy?['Done by',w.doneBy]:null,(w.caseId&&caseOf(w.caseId))?['Case',caseOf(w.caseId).number]:null,w.followUpOf?['Follow-up of',fmtNo(w.followUpOf)]:null].filter(Boolean);
   const cols=4, cwid=CW/cols; const rowsN=Math.ceil(det.length/cols);
   for(let r=0;r<rowsN;r++){ need(13); for(let c=0;c<cols;c++){ const d=det[r*cols+c]; if(!d) continue; const x=M+c*cwid;
       doc.setFont('helvetica','normal'); doc.setFontSize(6.8); doc.setTextColor(...MUT); doc.text(d[0].toUpperCase(),x+2,y+3,{charSpace:0.3});
@@ -2777,7 +2879,7 @@ function syncInert(){
 }
 function closeSheet(which){
   S.pmOpen=false; S.pmSign=false;
-  if(which==='wo'||which==='settings'||which==='report'||which==='attrs'||which==='share'||which==='spend'||which==='res'||which==='search'){ S.res=null; S.wo=null; S.sheet=''; const h=$('#modal'); h.innerHTML=''; h.hidden=true; }
+  if(which==='wo'||which==='settings'||which==='report'||which==='attrs'||which==='share'||which==='spend'||which==='res'||which==='search'||which==='case'){ S.res=null; S.cs=null; S.wo=null; S.sheet=''; const h=$('#modal'); h.innerHTML=''; h.hidden=true; }
   syncInert();
 }
 function closeAddMenu(){ const m=$('#addmenu'); if(m&&!m.hidden){ m.hidden=true; const b=$('#btn-add'); if(b) b.setAttribute('aria-expanded','false'); return true; } return false; }
@@ -2800,7 +2902,15 @@ document.addEventListener('click',e=>{
   switch(a){
     case 'tab': setView(el.dataset.view); break;
     case 'search': openSearch(); break;
-    case 'srch-open': { const k=el.dataset.k; if(k==='asset'){ openAsset(id); } else if(k==='res'){ closeSheet('search'); const r=S.resources.find(x=>x.id===id); if(r) resForm(r); } else { closeSheet('search'); openWO(id); } break; }
+    case 'new-case': if(canWrite()) caseForm(null); break;
+    case 'case-open': { const c=caseOf(id); if(c) caseForm(c); break; }
+    case 'case-toggle': { const c=caseOf(id); S.ctog[id]=id in S.ctog?!S.ctog[id]:(id==='none'?true:!(c&&c.status!=='Closed')); renderView(); break; }
+    case 'cf': S.cf=el.dataset.cf||''; renderView(); break;
+    case 'case-addtask': { const c=caseOf(id); if(c&&canWrite()){ if(S.sheet==='case') closeSheet('case'); openWO(null,{caseId:c.id,assetId:c.assetId||''}); } break; }
+    case 'case-unlink': setTaskCase(id,'').then(ok=>{ if(ok&&S.cs) renderCase(); }); break;
+    case 'case-save': caseSave(); break;
+    case 'case-del': caseDelete(); break;
+    case 'srch-open': { const k=el.dataset.k; if(k==='asset'){ openAsset(id); } else if(k==='case'){ closeSheet('search'); const c=caseOf(id); if(c) caseForm(c); } else if(k==='res'){ closeSheet('search'); const r=S.resources.find(x=>x.id===id); if(r) resForm(r); } else { closeSheet('search'); openWO(id); } break; }
     case 'rcat': S.rcat=el.dataset.cat||''; renderView(); break;
     case 'res-new': if(canWrite()) resForm(null); break;
     case 'res-edit': { const r=S.resources.find(x=>x.id===id); if(r&&canWrite()) resForm(r); break; }
@@ -2906,6 +3016,8 @@ function onInput(e){
     else if(k==='parentId'){ renderAsset(t.id); }
     return;
   }
+  if(S.sheet==='case'&&S.cs&&t.dataset&&t.dataset.cf2!==undefined){ S.cs[t.dataset.cf2]=t.value; return; }
+  if(t.id==='cs-link'&&S.cs&&t.value){ const id=t.value; setTaskCase(id,S.cs.id).then(()=>{ if(S.cs) renderCase(); }); return; }
   if(S.sheet==='res'&&S.res&&t.dataset&&t.dataset.rf!==undefined){ S.res[t.dataset.rf]=t.value; return; }
   if(t.id==='srch-q'){ if(t.value===S.srchQ&&S.srchDone) return; S.srchQ=t.value; S.srchDone=true; const h=$('#srch-results'); if(h) h.innerHTML=searchHTML(t.value); return; }
   if(t.id==='r-q'){ if(t.value===S.resQ&&e.type==='change') return; S.resQ=t.value; const h=$('#res-results'); if(h) h.innerHTML=resResults(); return; }
@@ -2930,8 +3042,8 @@ document.addEventListener('change',e=>{
   onInput(e);
 });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target&&e.target.id==='sy-pass'){ e.preventDefault(); const b=$('[data-action="sync-in"]'); if(b) b.click(); return; } if(e.key==='Enter'&&e.target&&e.target.id==='ck-new'){ e.preventDefault(); ckAdd(); return; } if(e.key==='Escape'&&(!$('#modal').hidden||!$('#modal2').hidden||!$('#addmenu').hidden)){ e.preventDefault(); closeTop(); } });
-window.addEventListener('hashchange',()=>{ const h=location.hash.slice(1); if(['dashboard','orders','assets','parts','resources'].indexOf(h)>=0&&h!==S.view){ S.view=h; render(); } });
-(function(){ const h=location.hash.slice(1); if(['dashboard','orders','assets','parts','resources'].indexOf(h)>=0) S.view=h; })();
+window.addEventListener('hashchange',()=>{ const h=location.hash.slice(1); if(['dashboard','cases','orders','assets','parts','resources'].indexOf(h)>=0&&h!==S.view){ S.view=h; render(); } });
+(function(){ const h=location.hash.slice(1); if(['dashboard','cases','orders','assets','parts','resources'].indexOf(h)>=0) S.view=h; })();
 (function(){ if(!/^#qr=/.test(location.hash)) return; const link=PAGES_URL+location.hash; try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
   setTimeout(()=>{ if(SY.sess&&SY.sess.verified) qrOpenWith(link); else toast('To sign in with a code, open Settings and choose Sign in with a QR code.',true); },1500); })();
 
