@@ -421,8 +421,8 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['transport','Transport'],['travel','Travel'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],transport:['Quantity','Cost each'],travel:['Trips','Cost per trip'],other:['Quantity','Amount each']};
-const APP_VERSION='5.2.0.0';
-const RELEASE_NOTES=['Export PDF is now always on the task, whether it is new, open or closed, with the details, costs, photos and signature.','A Signature section at the end of the task: press Sign, sign in the white block, before or after closing.','Photos can still be added, captioned and removed after a task is closed.'];
+const APP_VERSION='5.3.0.0';
+const RELEASE_NOTES=['The task PDF is now a Service Report: customer and owner, service location, equipment and product cards, work order details, work performed, then parts, labour, travel, transport and expenses, a cost summary, photos and signature boxes.','New modern look for every PDF: clean header with status, soft cards, light tables and page footers. The Check List and Maintenance report use it too.','Technician signature is the task signature; the customer or owner box is left to sign on paper.'];
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -1679,15 +1679,40 @@ async function pmSignOk(){
   S.pmSign=false; S.sg=null; renderPM(); toast('Signed');
   await pmPersist(w);
 }
+/* ---------- shared look for every PDF ---------- */
+const PK={ACC:[31,95,191],INK:[20,32,46],MUT:[102,114,127],LINE:[223,229,236],SOFT:[245,247,250]};
+const PILL={Completed:[[222,244,234],[22,120,84]],'In progress':[[222,235,252],[31,95,191]],'Further action':[[253,240,214],[160,104,10]],Cancelled:[[236,238,241],[102,114,127]],Open:[[236,238,241],[60,72,86]]};
+function pdfHead(doc,o){
+  const W=doc.internal.pageSize.getWidth(), M=14;
+  doc.setFillColor(...PK.ACC); doc.rect(0,0,W,3,'F');
+  doc.roundedRect(M,9.5,7,7,1.8,1.8,'F');
+  doc.setDrawColor(255,255,255); doc.setLineWidth(0.8); doc.line(M+1.8,13.1,M+3.1,14.5); doc.line(M+3.1,14.5,M+5.4,11.5);
+  doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(...PK.INK); doc.text('I Got This',M+10,14.8);
+  let x=W-M;
+  (o.meta||[]).slice().reverse().forEach(m=>{
+    doc.setFont('helvetica','bold'); doc.setFontSize(10); const vw=doc.getTextWidth(pdfText(m[1]));
+    doc.setFontSize(6.8); const lw=doc.getTextWidth(String(m[0]).toUpperCase())+String(m[0]).length*0.3; const w=Math.max(vw,lw); x-=w;
+    doc.setFont('helvetica','normal'); doc.setTextColor(...PK.MUT); doc.text(String(m[0]).toUpperCase(),x,11.4,{charSpace:0.3});
+    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(...PK.INK); doc.text(pdfText(m[1]),x,16); x-=9;
+  });
+  doc.setFont('helvetica','bold'); doc.setFontSize(23); doc.setTextColor(...PK.INK); doc.text(o.title,M,31);
+  if(o.pill){ const tw=(doc.setFontSize(23),doc.getTextWidth(o.title)); doc.setFontSize(8); const t=String(o.pill.text).toUpperCase(); const pw=doc.getTextWidth(t)+8+t.length*0.25; const c=o.pill.c||PILL.Open;
+    doc.setFillColor(...c[0]); doc.roundedRect(M+tw+5,25.2,pw,7,3.5,3.5,'F'); doc.setTextColor(...c[1]); doc.text(t,M+tw+9,30,{charSpace:0.25}); }
+  if(o.sub){ doc.setFont('helvetica','normal'); doc.setFontSize(9.5); doc.setTextColor(...PK.MUT); doc.text(pdfText(o.sub),M,37.5); }
+  doc.setDrawColor(...PK.LINE); doc.setLineWidth(0.3); doc.line(M,41,W-M,41);
+  return 47;
+}
+function pdfFoot(doc,left){
+  const W=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight(), M=14, n=doc.getNumberOfPages();
+  for(let i=1;i<=n;i++){ doc.setPage(i); doc.setDrawColor(...PK.LINE); doc.setLineWidth(0.3); doc.line(M,H-13,W-M,H-13);
+    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...PK.MUT); doc.text(pdfText(left),M,H-8); doc.text('Page '+i+' of '+n,W-M,H-8,{align:'right'}); }
+}
 function buildChecklistPDF(JsPDF,w){
   const doc=new JsPDF({unit:'mm',format:'a4'}); const W=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight(), M=14, CW=W-2*M;
   const ACC=[31,95,191], INK=[20,32,46], MUT=[102,114,127];
-  const a=(w.pm&&w.pm.a)||{}; let y=20;
-  const need=h=>{ if(y+h>H-16){ doc.addPage(); y=18; } };
-  doc.setFont('helvetica','bold'); doc.setFontSize(20); doc.setTextColor(...INK); doc.text('Check List',M,y); y+=6;
-  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...MUT); doc.text('I Got This',M,y); y+=5;
-  doc.text(pdfText([fmtNo(w.number),assetName(w.assetId)+(assetIdent(w.assetId)?' ('+assetIdent(w.assetId)+')':''),w.type].join('   |   ')),M,y); y+=4;
-  doc.setDrawColor(...ACC); doc.setLineWidth(0.6); doc.line(M,y,W-M,y); y+=7;
+  const a=(w.pm&&w.pm.a)||{}; let y;
+  const need=h=>{ if(y+h>H-18){ doc.addPage(); y=20; } };
+  y=pdfHead(doc,{title:'Check List',sub:assetName(w.assetId)+(assetIdent(w.assetId)?' ('+assetIdent(w.assetId)+')':'')+'   |   '+w.type,meta:[['Task',fmtNo(w.number)]].concat(pmDoneAt(w.pm)?[['Completed',pdfDate(String(pmDoneAt(w.pm)).slice(0,10))]]:[])});
   PM_SECTIONS.forEach(s=>{
     need(14); doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.setTextColor(...ACC); doc.text(pdfText(s.h.replace('·','-')),M,y); y+=6; let last='';
     s.items.filter(it=>pmShown(it,a)).forEach(it=>{
@@ -1708,8 +1733,7 @@ function buildChecklistPDF(JsPDF,w){
     try{ const pr=doc.getImageProperties(w.pm.sig.img); const iw=90, ih=iw*pr.height/pr.width; need(ih+10); doc.setDrawColor(200,206,212); doc.rect(M,y,iw,ih); doc.addImage(w.pm.sig.img,'JPEG',M,y,iw,ih); y+=ih+5; }catch(e){}
     doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...MUT); doc.text(pdfText((w.pm.sig.no||fmtNo(w.number))+'  |  Signed '+pmStamp(w.pm.sig.at)),M,y);
   }
-  const n=doc.getNumberOfPages();
-  for(let i=1;i<=n;i++){ doc.setPage(i); doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...MUT); doc.text(pdfText(fmtNo(w.number)+' - Check List'),M,H-8); doc.text('Page '+i+' of '+n,W-M,H-8,{align:'right'}); }
+  pdfFoot(doc,fmtNo(w.number)+'  -  Check List');
   return doc;
 }
 async function pmExportPDF(){
@@ -2146,11 +2170,7 @@ function buildReportPDF(deps,opt){
   const ACC=[31,95,191], INK=[20,32,46], MUT=[102,114,127];
   const periodLabel={year:'This year ('+new Date().getFullYear()+')','12m':'Last 12 months',all:'All time'}[opt.period]||'All time';
   const assetLabel=opt.asset?assetName(opt.asset):'All equipment';
-  doc.setFont('helvetica','bold'); doc.setFontSize(20); doc.setTextColor(INK[0],INK[1],INK[2]); doc.text('Maintenance report',M,20);
-  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(MUT[0],MUT[1],MUT[2]);
-  doc.text('I Got This',M,26);
-  doc.text(pdfText('Period: '+periodLabel+'    Equipment: '+assetLabel+'    Generated: '+pdfDate(todayISO())),M,31);
-  doc.setDrawColor(ACC[0],ACC[1],ACC[2]); doc.setLineWidth(0.6); doc.line(M,34,W-M,34);
+  pdfHead(doc,{title:'Maintenance report',sub:'Period: '+periodLabel+'    Equipment: '+assetLabel,meta:[['Generated',pdfDate(todayISO())]]});
 
   const tot={part:0,labour:0,transport:0,travel:0,other:0,all:0}; let done=0, open=0; const byAsset=new Map();
   for(const o of list){
@@ -2159,7 +2179,7 @@ function buildReportPDF(deps,opt){
     const e=byAsset.get(o.assetId)||{n:0,part:0,labour:0,transport:0,travel:0,other:0,all:0};
     e.n++; e.part+=t.part; e.labour+=t.labour; e.transport+=t.transport; e.travel+=t.travel; e.other+=t.other; e.all+=t.all; byAsset.set(o.assetId,e);
   }
-  let y=44;
+  let y=50;
   const figs=[['Total cost',pdfMoney(tot.all)],['Tasks',String(list.length)],['Completed',String(done)],['Open',String(open)]];
   const cw=(W-2*M)/figs.length;
   figs.forEach((f,i)=>{
@@ -2204,54 +2224,105 @@ function buildReportPDF(deps,opt){
         columnStyles:{0:{cellWidth:19},2:{cellWidth:22},3:{cellWidth:10,halign:'right'},4:{cellWidth:22,halign:'right'},5:{cellWidth:22,halign:'right'},7:{cellWidth:27}}});
     }
   }
-  const n=doc.getNumberOfPages();
-  for(let i=1;i<=n;i++){
-    doc.setPage(i); doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(MUT[0],MUT[1],MUT[2]);
-    doc.text('Cancelled tasks are not included.',M,H-8); doc.text('Page '+i+' of '+n,W-M,H-8,{align:'right'});
-  }
+  pdfFoot(doc,'I Got This  -  Cancelled tasks are not included.');
   return doc;
 }
 /* ---------- one task as a PDF (works for open, new and closed tasks, from what is on screen) ---------- */
+const taskFromOrder=o=>Object.assign(JSON.parse(JSON.stringify(o)),{isNew:false,number:o.number||o.id,atts:o.atts||(o.visit&&o.visit.atts)||[],sig:o.sig||null,type:o.type==='Repair'?'Corrective maintenance':(o.type||'Preventive maintenance')});
 function buildTaskPDF(deps,w){
   const doc=new deps.JsPDF({unit:'mm',format:'a4'}); const W=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight(), M=14, CW=W-2*M;
-  const ACC=[31,95,191], INK=[20,32,46], MUT=[102,114,127]; let y=20;
-  const need=h=>{ if(y+h>H-16){ doc.addPage(); y=18; } };
-  const txt=(t,size,bold,col)=>{ doc.setFont('helvetica',bold?'bold':'normal'); doc.setFontSize(size); doc.setTextColor(...(col||INK)); const lines=doc.splitTextToSize(pdfText(t),CW); lines.forEach(l=>{ need(size*0.45+1); doc.text(l,M,y); y+=size*0.42+1.2; }); };
-  const section=t=>{ need(14); y+=3; doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(...INK); doc.text(t,M,y); y+=3; };
-  const table=o=>{ const cfg=Object.assign({startY:y,margin:{left:M,right:M,bottom:16},theme:'striped',styles:{font:'helvetica',fontSize:9,cellPadding:1.8,textColor:INK,overflow:'linebreak'},headStyles:{fillColor:ACC,textColor:255,fontStyle:'bold'},footStyles:{fillColor:[230,235,241],textColor:INK,fontStyle:'bold'},alternateRowStyles:{fillColor:[245,247,249]}},o); if(deps.autoTable) deps.autoTable(doc,cfg); else doc.autoTable(cfg); y=doc.lastAutoTable.finalY+6; };
-  const a=S.assets.get(w.assetId)||{};
-  doc.setFont('helvetica','bold'); doc.setFontSize(20); doc.setTextColor(...INK); doc.text('Task report',M,y); y+=6;
-  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...MUT); doc.text(pdfText('I Got This   |   '+(w.isNew?'New task (not saved yet)':fmtNo(w.number))+'   |   Generated '+pdfDate(todayISO())),M,y); y+=3;
-  doc.setDrawColor(...ACC); doc.setLineWidth(0.6); doc.line(M,y,W-M,y); y+=7;
-  if(w.title){ txt(w.title,13,true); y+=1; }
+  const {ACC,INK,MUT,LINE,SOFT}=PK; const a=S.assets.get(w.assetId)||{}; const par=a.parentId?S.assets.get(a.parentId):null; let y;
+  const no=w.isNew?'Not saved yet':fmtNo(w.number);
+  y=pdfHead(doc,{title:'Service Report',pill:{text:statusLabel(w.status),c:PILL[w.status]||PILL.Open},sub:w.title||'',meta:[['Task no.',no],['Date',pdfDate(w.status==='Completed'&&w.completedOn?w.completedOn:w.openedOn)]]});
+  const need=h=>{ if(y+h>H-18){ doc.addPage(); y=20; } };
+  const section=t=>{ need(34); y+=4; doc.setFillColor(...ACC); doc.rect(M,y-3.3,1.2,4.4,'F'); doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(...INK); doc.text(t.toUpperCase(),M+3.4,y,{charSpace:0.4}); y+=5.8; };
+  const para=t=>{ doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...INK); doc.splitTextToSize(pdfText(t),CW).forEach(l=>{ need(5); doc.text(l,M,y); y+=4.7; }); y+=1; };
+  let cfgCols=null;
+  const table=o=>{ cfgCols=o.columnStyles||null; const cfg=Object.assign({startY:y,margin:{left:M,right:M,bottom:18},theme:'plain',
+    styles:{font:'helvetica',fontSize:9,cellPadding:{top:2.4,bottom:2.4,left:2,right:2},textColor:INK,overflow:'linebreak',lineWidth:0},
+    headStyles:{fillColor:SOFT,textColor:MUT,fontStyle:'bold',fontSize:7.5},footStyles:{fillColor:SOFT,textColor:INK,fontStyle:'bold'},
+    didParseCell:d=>{ const cs=d.section==='head'&&cfgCols&&cfgCols[d.column.index]; if(cs&&cs.halign) d.cell.styles.halign=cs.halign; },
+    didDrawCell:d=>{ if(d.section==='body'){ doc.setDrawColor(...LINE); doc.setLineWidth(0.2); doc.line(d.cell.x,d.cell.y+d.cell.height,d.cell.x+d.cell.width,d.cell.y+d.cell.height); } }},o);
+    if(deps.autoTable) deps.autoTable(doc,cfg); else doc.autoTable(cfg); y=doc.lastAutoTable.finalY+4; };
+  /* four cards: owner, location, equipment, product */
+  const lines4=t=>String(t||'').split(/\n+/).map(x=>x.trim()).filter(Boolean);
+  const v=(w.visit&&(w.visit.on||w.visit.on===undefined)&&(w.visit.name||w.visit.contact||w.visit.loc))?w.visit:null;
+  const cards=[
+    ['Customer / owner',lines4(a.ownerLoc).length?lines4(a.ownerLoc):['-']],
+    ['Service location',v?[v.name,v.contact,v.loc?'GPS '+Number(v.loc.lat).toFixed(5)+', '+Number(v.loc.lng).toFixed(5):''].filter(Boolean):['On site']],
+    ['Equipment',[assetName(w.assetId)].concat(par?['Accessory of '+assetName(par.id)]:[],a.category?[a.category]:[])],
+    ['Product details',[(a.brand||a.make||a.model)?joinUniq([a.brand,a.make,a.model]):'',a.plate?'Plate: '+a.plate:'',a.vin?'VIN: '+a.vin:'',a.serial?'Serial: '+a.serial:'',a.colour?'Colour: '+a.colour:'',(!a.plate&&!a.vin&&!a.serial&&a.details)?a.details:''].filter(Boolean).concat([]) ]];
+  if(!cards[3][1].length) cards[3][1]=['-'];
+  const gap=3, cw=(CW-gap*3)/4; doc.setFontSize(8.8);
+  const wrapped=cards.map(c=>c[1].flatMap(t=>doc.splitTextToSize(pdfText(t),cw-6)));
+  const ch=Math.max(...wrapped.map(l=>l.length))*4.1+11;
+  need(ch+4);
+  cards.forEach((c,i)=>{ const x=M+i*(cw+gap); doc.setFillColor(...SOFT); doc.roundedRect(x,y,cw,ch,2,2,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(6.8); doc.setTextColor(...MUT); doc.text(c[0].toUpperCase(),x+3,y+5.2,{charSpace:0.3});
+    doc.setFont('helvetica','normal'); doc.setFontSize(8.8); doc.setTextColor(...INK); wrapped[i].forEach((l,k)=>doc.text(l,x+3,y+10.5+k*4.1)); });
+  y+=ch+3;
+  /* work order details grid */
+  section('Work order details');
   const unit=a.meterUnit||'';
-  const facts=[['Equipment',assetName(w.assetId)+(assetIdent(w.assetId)?' ('+assetIdent(w.assetId)+')':'')],['Type',w.type],['Priority',w.priority],['Status',statusLabel(w.status)],['Opened',pdfDate(w.openedOn)],
-    (!isCorrective(w)&&w.dueOn)?['Due',pdfDate(w.dueOn)]:null,(w.status==='Completed')?['Completed',pdfDate(w.completedOn||todayISO())]:null,w.meter!==''&&w.meter!=null?['Reading',String(w.meter)+(unit?' '+unit:'')]:null,
-    w.doneBy?['Done by',w.doneBy]:null,(w.visit&&w.visit.on&&w.visit.name)?['Garage / technician',w.visit.name+(w.visit.contact?' ('+w.visit.contact+')':'')]:null].filter(Boolean);
-  table({body:facts.map(f=>[pdfText(f[0]),pdfText(f[1])]),theme:'plain',styles:{font:'helvetica',fontSize:9.5,cellPadding:1.2,textColor:INK},columnStyles:{0:{cellWidth:42,fontStyle:'bold',textColor:MUT}}});
-  if(w.description){ section('Work performed'); y+=2; txt(w.description,10,false); }
-  if(w.notes){ section('Notes'); y+=2; txt(w.notes,10,false); }
-  const lines=(w.lines||[]).filter(l=>String(l.name||'').trim()||num(l.unitCost));
-  if(lines.length){
-    section('Parts, labour and costs'); const kn=Object.fromEntries(KINDS); const total=lines.reduce((t,l)=>t+lineTotal(l),0);
-    table({head:[['Type','Description','Qty','Unit cost','Total']],body:lines.map(l=>[kn[l.kind]||'Other',pdfText(l.name+(l.partNo?' ('+l.partNo+')':'')),String(num(l.qty===''?1:l.qty)),pdfMoney(num(l.unitCost)),pdfMoney(lineTotal({qty:l.qty===''?1:l.qty,unitCost:l.unitCost}))]),
-      foot:[['','Order total','','',pdfMoney(lines.reduce((t,l)=>t+lineTotal({qty:l.qty===''?1:l.qty,unitCost:l.unitCost}),0))]],showFoot:'lastPage',columnStyles:{0:{cellWidth:24},2:{cellWidth:16,halign:'right'},3:{cellWidth:30,halign:'right'},4:{cellWidth:32,halign:'right'}}});
+  const det=[['Task type',w.type],['Priority',w.priority],['Status',statusLabel(w.status)],['Opened',pdfDate(w.openedOn)],
+    (!isCorrective(w)&&w.dueOn)?['Due',pdfDate(w.dueOn)]:null,w.startedAt?['Started',pdfDate(String(w.startedAt).slice(0,10))]:null,
+    w.status==='Completed'?['Completed',pdfDate(w.completedOn||todayISO())]:null,(w.meter!==''&&w.meter!=null)?['Reading',String(w.meter)+(unit?' '+unit:'')]:null,
+    w.doneBy?['Done by',w.doneBy]:null,w.followUpOf?['Follow-up of',fmtNo(w.followUpOf)]:null].filter(Boolean);
+  const cols=4, cwid=CW/cols; const rowsN=Math.ceil(det.length/cols);
+  for(let r=0;r<rowsN;r++){ need(13); for(let c=0;c<cols;c++){ const d=det[r*cols+c]; if(!d) continue; const x=M+c*cwid;
+      doc.setFont('helvetica','normal'); doc.setFontSize(6.8); doc.setTextColor(...MUT); doc.text(d[0].toUpperCase(),x+2,y+3,{charSpace:0.3});
+      doc.setFont('helvetica','bold'); doc.setFontSize(9.5); doc.setTextColor(...INK); doc.text(doc.splitTextToSize(pdfText(d[1]),cwid-4)[0],x+2,y+8); }
+    y+=11; doc.setDrawColor(...LINE); doc.setLineWidth(0.2); doc.line(M,y-1.5,W-M,y-1.5); }
+  y+=1;
+  /* narrative */
+  section('Service requested'); doc.setFont('helvetica','bold'); doc.setFontSize(10.5); doc.setTextColor(...INK); doc.splitTextToSize(pdfText(w.title||'-'),CW).forEach(l=>{ need(5.5); doc.text(l,M,y); y+=5; }); y+=1;
+  if(w.description){ section('Work performed / solution'); para(w.description); }
+  if(w.notes){ section('Notes'); para(w.notes); }
+  /* cost tables by kind */
+  const L=(w.lines||[]).filter(l=>String(l.name||'').trim()||num(l.unitCost)).map(l=>({kind:l.kind||'part',name:String(l.name||''),partNo:l.partNo||'',supplier:l.supplier||'',qty:num(l.qty===''||l.qty==null?1:l.qty),unitCost:num(l.unitCost)}));
+  const tot=x=>x.qty*x.unitCost, sum=k=>L.filter(l=>k.includes(l.kind)).reduce((t,l)=>t+tot(l),0);
+  const R={halign:'right'};
+  const parts=L.filter(l=>l.kind==='part');
+  if(parts.length){ section('Parts used'); table({head:[['Part','Part no.','Supplier','Qty','Unit cost','Total']],body:parts.map(l=>[pdfText(l.name),pdfText(l.partNo),pdfText(l.supplier),String(l.qty),pdfMoney(l.unitCost),pdfMoney(tot(l))]),columnStyles:{3:Object.assign({cellWidth:14},R),4:Object.assign({cellWidth:28},R),5:Object.assign({cellWidth:28},R)}}); }
+  const kindTable=(title,kind,qh,ch2)=>{ const rows=L.filter(l=>l.kind===kind); if(!rows.length) return; section(title);
+    table({head:[['Description',qh,ch2,'Total']],body:rows.map(l=>[pdfText(l.name),String(l.qty),pdfMoney(l.unitCost),pdfMoney(tot(l))]),columnStyles:{1:Object.assign({cellWidth:22},R),2:Object.assign({cellWidth:32},R),3:Object.assign({cellWidth:32},R)}}); };
+  kindTable('Labour','labour','Hours','Rate per hour'); kindTable('Travel','travel','Trips','Cost per trip'); kindTable('Transport','transport','Qty','Cost each');
+  const oth=L.filter(l=>!['part','labour','travel','transport'].includes(l.kind));
+  if(oth.length){ section('Other expenses'); table({head:[['Description','Qty','Amount each','Total']],body:oth.map(l=>[pdfText(l.name),String(l.qty),pdfMoney(l.unitCost),pdfMoney(tot(l))]),columnStyles:{1:Object.assign({cellWidth:22},R),2:Object.assign({cellWidth:32},R),3:Object.assign({cellWidth:32},R)}}); }
+  if(L.length){
+    const sm=[['Parts',sum(['part'])],['Labour',sum(['labour'])],['Travel',sum(['travel'])],['Transport',sum(['transport'])],['Other',L.filter(l=>!['part','labour','travel','transport'].includes(l.kind)).reduce((t,l)=>t+tot(l),0)]].filter(r=>r[1]);
+    need(sm.length*7+16); y+=1;
+    table({body:sm.map(r=>[r[0],pdfMoney(r[1])]),foot:[['Order total',pdfMoney(L.reduce((t,l)=>t+tot(l),0))]],showFoot:'lastPage',margin:{left:M+CW*0.52,right:M,bottom:18},styles:{font:'helvetica',fontSize:9.5,cellPadding:{top:2.2,bottom:2.2,left:3,right:3},textColor:INK,lineWidth:0},footStyles:{fillColor:ACC,textColor:255,fontStyle:'bold',fontSize:11},columnStyles:{1:R}});
   }
-  if(w.pm&&pmDoneAt(w.pm)){ section('Check List'); y+=2; txt('Completed '+pmStamp(pmDoneAt(w.pm))+(w.pm.sig?', signed':', not signed')+'. The Check List can be exported separately from the task.',10,false); }
+  if(w.pm&&pmDoneAt(w.pm)){ section('Check List'); para('Completed '+pmStamp(pmDoneAt(w.pm))+(w.pm.sig?' and signed.':', not signed.')+' The full Check List is exported separately from the task.'); }
+  /* photos */
   const ph=(w.atts||[]).filter(x=>x&&x.src);
   if(ph.length){
-    section('Attachments'); y+=3; const cw=(CW-6)/2;
-    for(let i=0;i<ph.length;i+=2){
-      const row=ph.slice(i,i+2).map(x=>{ let pr; try{ pr=doc.getImageProperties(x.src); }catch(e){ return null; } const h=Math.min(75,cw*pr.height/pr.width); return {x,h,w:h<cw*pr.height/pr.width?h*pr.width/pr.height:cw}; });
+    section('Attachments'); y+=1; const per=3, pw=(CW-(per-1)*4)/per;
+    for(let i=0;i<ph.length;i+=per){
+      const row=ph.slice(i,i+per).map(x=>{ let pr; try{ pr=doc.getImageProperties(x.src); }catch(e){ return null; } let ww=pw, hh=pw*pr.height/pr.width; if(hh>52){ hh=52; ww=hh*pr.width/pr.height; } return {x,w:ww,h:hh}; });
       const rh=Math.max(...row.map(r=>r?r.h:0))+(row.some(r=>r&&r.x.caption)?7:2); need(rh);
-      row.forEach((r,j)=>{ if(!r) return; const x0=M+j*(cw+6); try{ doc.addImage(r.x.src,'JPEG',x0,y,r.w,r.h); }catch(e){} if(r.x.caption){ doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(...MUT); doc.text(doc.splitTextToSize(pdfText(r.x.caption),cw)[0],x0,y+r.h+4.5); } });
+      row.forEach((r,j)=>{ if(!r) return; const x0=M+j*(pw+4); try{ doc.addImage(r.x.src,'JPEG',x0,y,r.w,r.h); doc.setDrawColor(...LINE); doc.setLineWidth(0.2); doc.rect(x0,y,r.w,r.h); }catch(e){}
+        if(r.x.caption){ doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...MUT); doc.text(doc.splitTextToSize(pdfText(r.x.caption),pw)[0],x0,y+r.h+4.2); } });
       y+=rh+2;
     }
   }
-  need(w.sig&&w.sig.img?62:24); section('Signature'); y+=2;
-  if(w.sig&&w.sig.img){ let sh=32; try{ const pr=doc.getImageProperties(w.sig.img); sh=80*pr.height/pr.width; }catch(e){} need(sh+12); try{ doc.addImage(w.sig.img,'JPEG',M,y,80,sh); }catch(e){} y+=sh+4; doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...MUT); doc.text('Signed '+pdfText(pmStamp(w.sig.at))+(w.sig.no?'   |   '+pdfText(w.sig.no):''),M,y); y+=5; }
-  else txt('Not signed.',10,false,MUT);
-  const n=doc.getNumberOfPages(); for(let i=1;i<=n;i++){ doc.setPage(i); doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...MUT); doc.text('Page '+i+' of '+n,W-M,H-8,{align:'right'}); }
+  /* signatures */
+  need(58); section('Signatures'); y+=1;
+  const bw=(CW-6)/2, bh=46;
+  [['Technician',w.doneBy||''],['Customer / owner','']].forEach((b,i)=>{
+    const x=M+i*(bw+6); doc.setDrawColor(...LINE); doc.setLineWidth(0.3); doc.roundedRect(x,y,bw,bh,2,2,'S');
+    doc.setFont('helvetica','bold'); doc.setFontSize(6.8); doc.setTextColor(...MUT); doc.text(b[0].toUpperCase(),x+4,y+6,{charSpace:0.3});
+    doc.setFont('helvetica','normal'); doc.setFontSize(9.5); doc.setTextColor(...INK); doc.text(b[1]?pdfText(b[1]):'Name:',x+4,y+12);
+    if(!b[1]){ doc.setDrawColor(...LINE); doc.line(x+16,y+12.4,x+bw-4,y+12.4); }
+    if(i===0&&w.sig&&w.sig.img){ try{ const pr=doc.getImageProperties(w.sig.img); let sw=bw-10, sh=sw*pr.height/pr.width; if(sh>26){ sh=26; sw=sh*pr.width/pr.height; } doc.addImage(w.sig.img,'JPEG',x+5,y+15,sw,sh); }catch(e){} }
+    doc.setDrawColor(...LINE); doc.line(x+4,y+bh-9,x+bw-4,y+bh-9);
+    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...MUT);
+    doc.text(i===0?(w.sig?'Signed '+pdfText(pmStamp(w.sig.at)):'Not signed'):'Signature',x+4,y+bh-4.6);
+    if(i===1) doc.text('Date:',x+bw-30,y+bh-4.6);
+  });
+  y+=bh+4;
+  pdfFoot(doc,'I Got This  -  '+(w.isNew?'Service report':fmtNo(w.number)+' - Service report'));
   return doc;
 }
 async function exportTaskPDF(){
@@ -2435,7 +2506,8 @@ async function makeReport(){
   if(!reportData(S.report).list.length){ toast('No tasks match these choices.',true); return; }
   S.saving=true; renderReport();
   try{
-    const doc=buildReportPDF({JsPDF:jp,autoTable:window.jspdf.autoTable},S.report);
+    const one=S.report.task&&S.orders.find(o=>o.id===S.report.task);
+    const doc=one?buildTaskPDF({JsPDF:jp,autoTable:window.jspdf.autoTable},taskFromOrder(one)):buildReportPDF({JsPDF:jp,autoTable:window.jspdf.autoTable},S.report);
     const data=doc.output('arraybuffer');
     const name=(S.report.task?'task-report-'+fmtNo((S.orders.find(o=>o.id===S.report.task)||{}).number||'')+'-':'maintenance-report-')+todayISO()+'.pdf';
     await S.downloads.save({filename:name,data});

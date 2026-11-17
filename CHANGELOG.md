@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.3.0.0
+
+- Task PDF rebuilt as a Service Report (customer / owner, service location, equipment, product details, work order details, service requested, work performed, notes, parts, labour, travel, transport, other expenses, cost summary, photos, technician and customer signature boxes) with a modern look.
+- Same header and footer style on the Check List and Maintenance report PDFs.
+
 ## 5.2.0.0
 
 - Export PDF button on every task (new, open or closed): details, work performed, notes, costs, check list status, photos and signature.
