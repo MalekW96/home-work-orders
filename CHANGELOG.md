@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.4.3.0
+
+- Activity log records full details when Save changes is pressed: cost lines added, removed or changed with quantity, unit cost and totals; old and new values for edited fields; check list items; garage visit changes.
+- Uploads and deletes list the file name, type, size and description. PDF exports (Service Report, Check List) are logged with file name, pages and size.
+
 ## 5.4.0.0
 
 - Attachments: an empty task shows only an Add attachments button. Attachments (photos and PDFs up to 500 KB) are listed with the description and the day and time they were uploaded. Edit lets you change descriptions, add more or delete, also on closed tasks.

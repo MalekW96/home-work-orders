@@ -428,8 +428,8 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['transport','Transport'],['travel','Travel'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],transport:['Quantity','Cost each'],travel:['Trips','Cost per trip'],other:['Quantity','Amount each']};
-const APP_VERSION='5.4.0.0';
-const RELEASE_NOTES=['Attachments: with nothing uploaded you see just an Add attachments button. Photos and PDFs (up to 500 KB each) are listed with their description and the day and time they were added.','Press Edit on the attachments list to change a description, add more, or delete one. This works on closed tasks too.','New Activity log at the end of every task: a scrollable list of everything done on it, newest first, with the date and time.'];
+const APP_VERSION='5.4.3.0';
+const RELEASE_NOTES=['The activity log now spells out the details when you press Save changes: each part, labour, travel or transport line added, removed or changed (quantity, unit cost, total), and the new order total.','Uploads and deletes are listed with the file name, type, size and description. PDF exports are listed with the file name, pages and size.','Edits show the old and new value (status, priority, due date, notes, work performed, garage visit, check list items).'];
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -1452,7 +1452,7 @@ async function addVisitPhoto(input){
         w.atts.push({src,caption:'',at:new Date().toISOString(),kind:'pdf',name:file.name||'attachment.pdf'});
       } else {
         const url=await shrink(file,1280,.72); if(!S.wo) return;
-        w.atts.push({src:url,caption:'',at:new Date().toISOString()});
+        w.atts.push({src:url,caption:'',at:new Date().toISOString(),name:file.name||'photo.jpg'});
       }
       added++;
     }catch(e){ toast(e&&e.message?e.message:'The attachment could not be added.',true); }
@@ -1477,37 +1477,69 @@ function updateTotals(){
   let sum=0; S.wo.lines.forEach((l,i)=>{ const v=lineTotal(l); sum+=v; const el=document.getElementById('ln-'+i+'-total'); if(el) el.textContent=money(v); });
   const t=$('#wo-total'); if(t) t.textContent=money(sum);
 }
-const attKeep=x=>{ const r={src:x.src,caption:String(x.caption||'').trim()}; if(x.at) r.at=x.at; if(x.kind==='pdf'){ r.kind='pdf'; r.name=x.name||'attachment.pdf'; } return r; };
+const attKeep=x=>{ const r={src:x.src,caption:String(x.caption||'').trim()}; if(x.at) r.at=x.at; if(x.name) r.name=x.name; if(x.kind==='pdf'){ r.kind='pdf'; r.name=x.name||'attachment.pdf'; } return r; };
 const attsDoc=w=>(w.atts||[]).map(attKeep);
 const attLabel=x=>(x.caption||x.name||(x.kind==='pdf'?'PDF':'photo'));
 /* ---------- activity log ---------- */
+const kb=n=>n>=1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB';
+const attBytes=x=>Math.round(String(x.src||'').length*0.75);
+const q=v=>'"'+String(v==null?'':v).replace(/"/g,"'").replace(/\s+/g,' ').trim().slice(0,70)+(String(v||'').length>70?'…':'')+'"';
+const attDesc=x=>(x.kind==='pdf'?'PDF':'Photo')+' '+(x.name||'(unnamed)')+' ('+kb(attBytes(x))+')';
 function attLog(oldA,newA){
   const out=[]; const om=new Map((oldA||[]).map(x=>[x.src,x])); const nm=new Map((newA||[]).map(x=>[x.src,x]));
-  (newA||[]).forEach(x=>{ const o=om.get(x.src); if(!o) out.push('Attachment added: '+attLabel(x)); else if(String(o.caption||'')!==String(x.caption||'')) out.push('Attachment description changed: '+(x.caption||attLabel(x))); });
-  (oldA||[]).forEach(x=>{ if(!nm.has(x.src)) out.push('Attachment removed: '+attLabel(x)); });
+  (newA||[]).forEach(x=>{ const o=om.get(x.src);
+    if(!o) out.push((x.kind==='pdf'?'PDF':'Photo')+' uploaded: '+(x.name||'(unnamed)')+' ('+kb(attBytes(x))+')'+(x.caption?' · description '+q(x.caption):' · no description')+(x.at?' · added '+fmtDT(x.at):''));
+    else if(String(o.caption||'')!==String(x.caption||'')) out.push('Description of '+(x.name||'attachment')+' changed from '+q(o.caption)+' to '+q(x.caption)); });
+  (oldA||[]).forEach(x=>{ if(!nm.has(x.src)) out.push((x.kind==='pdf'?'PDF':'Photo')+' deleted: '+(x.name||'(unnamed)')+(x.caption?' · description '+q(x.caption):'')); });
   return out;
 }
-const linesSig=a=>JSON.stringify((a||[]).map(l=>[l.kind||'part',l.name||'',l.partNo||'',l.supplier||'',Number(l.qty)||0,Number(l.unitCost)||0]));
+const kindName=k=>(KINDS.find(x=>x[0]===k)||[k,k])[1];
+const lineKey=l=>[l.kind||'part',l.name||'',l.partNo||'',l.supplier||'',Number(l.qty)||0,Number(l.unitCost)||0].join('|');
+const lineText=l=>kindName(l.kind||'part')+' '+q(l.name||'(no description)')+(l.partNo?' · part no. '+l.partNo:'')+(l.supplier?' · '+l.supplier:'')+' · '+(Number(l.qty)||0)+' × '+money(Number(l.unitCost)||0)+' = '+money(lineTotal(l));
+function linesLog(oldL,newL){
+  const out=[]; let o=(oldL||[]).slice(), n=(newL||[]).slice();
+  for(let i=n.length-1;i>=0;i--){ const k=lineKey(n[i]); const j=o.findIndex(x=>lineKey(x)===k); if(j>=0){ o.splice(j,1); n.splice(i,1); } }
+  const pair=l=>(l.kind||'part')+'|'+(l.name||'');
+  for(let i=0;i<n.length;i++){ const j=o.findIndex(x=>pair(x)===pair(n[i])); if(j<0) continue; const a=o[j], b=n[i]; const ch=[];
+    if((Number(a.qty)||0)!==(Number(b.qty)||0)) ch.push('quantity '+(Number(a.qty)||0)+' to '+(Number(b.qty)||0));
+    if((Number(a.unitCost)||0)!==(Number(b.unitCost)||0)) ch.push('unit cost '+money(Number(a.unitCost)||0)+' to '+money(Number(b.unitCost)||0));
+    if((a.partNo||'')!==(b.partNo||'')) ch.push('part no. '+(a.partNo||'none')+' to '+(b.partNo||'none'));
+    if((a.supplier||'')!==(b.supplier||'')) ch.push('supplier '+(a.supplier||'none')+' to '+(b.supplier||'none'));
+    out.push(kindName(b.kind||'part')+' '+q(b.name)+' changed: '+ch.join(', ')+' (now '+money(lineTotal(b))+')'); o.splice(j,1); n.splice(i,1); i--; }
+  o.forEach(l=>out.push('Removed '+lineText(l))); n.forEach(l=>out.push('Added '+lineText(l)));
+  const tot=a=>(a||[]).reduce((s,l)=>s+lineTotal(l),0);
+  if(out.length) out.push('Order total is now '+money(tot(newL)));
+  return out;
+}
 function orderLog(o,d){
-  const out=[]; const nz=v=>v==null?'':String(v);
-  if(!o){ out.push('Task created'); if(d.status!=='Open') out.push('Status set to '+statusLabel(d.status)); if(d.atts&&d.atts.length) out.push(...attLog([],d.atts)); return out; }
-  if(o.status!==d.status) out.push(d.status==='Completed'?'Task closed':'Status changed from '+statusLabel(o.status)+' to '+statusLabel(d.status));
-  if(o.assetId!==d.assetId) out.push('Equipment changed to '+assetName(d.assetId));
-  [['title','Title'],['priority','Priority'],['type','Type'],['dueOn','Due date'],['openedOn','Opened date'],['doneBy','Done by'],['meter','Reading']].forEach(([k,l])=>{ if(nz(o[k])!==nz(d[k])) out.push(l+' changed'+(nz(d[k])?' to '+d[k]:' (cleared)')); });
-  if(nz(o.description)!==nz(d.description)) out.push('Work performed updated');
-  if(nz(o.notes)!==nz(d.notes)) out.push('Notes updated');
-  if(linesSig(o.lines)!==linesSig(d.lines)){ const t=(d.lines||[]).reduce((a,l)=>a+lineTotal(l),0); out.push('Costs updated: '+(d.lines||[]).length+' line'+((d.lines||[]).length===1?'':'s')+', total '+money(t)); }
-  const ck=x=>x&&x.items?x.items.filter(i=>i.done).length+'/'+x.items.length:'';
-  if(ck(o.checklist)!==ck(d.checklist)&&d.checklist) out.push('Check list updated: '+d.checklist.items.filter(i=>i.done).length+' of '+d.checklist.items.length+' done');
-  if(JSON.stringify(o.visit||null)!==JSON.stringify(d.visit||null)) out.push('Garage visit details updated');
+  const out=[]; const nz=v=>v==null?'':String(v); const isNewT=!o;
+  if(isNewT){ out.push('Task created: '+q(d.title)+' · '+assetName(d.assetId)+' · '+d.type+' · '+d.priority+' priority'); o={title:d.title,assetId:d.assetId,type:d.type,priority:d.priority,openedOn:d.openedOn,status:'Open',lines:[],atts:[],visit:null,checklist:null,sig:null,pm:null}; }
+  if(o.status!==d.status) out.push(d.status==='Completed'?'Task closed (status changed from '+statusLabel(o.status)+' to Completed'+(d.completedOn?', completed on '+d.completedOn:'')+')':'Status changed from '+statusLabel(o.status)+' to '+statusLabel(d.status));
+  if(o.assetId!==d.assetId) out.push('Equipment changed from '+assetName(o.assetId)+' to '+assetName(d.assetId));
+  [['title','Title'],['priority','Priority'],['type','Type'],['dueOn','Due date'],['openedOn','Opened date'],['doneBy','Done by'],['meter','Reading'],['completedOn','Completed date']].forEach(([k,l])=>{ if(nz(o[k])!==nz(d[k])&&!(k==='completedOn'&&o.status!==d.status&&d.status==='Completed')) out.push(l+' changed from '+(nz(o[k])?q(o[k]):'empty')+' to '+(nz(d[k])?q(d[k]):'empty')); });
+  if(nz(o.description)!==nz(d.description)) out.push('Work performed '+(nz(o.description)?'changed from '+q(o.description)+' to ':'entered: ')+(nz(d.description)?(nz(o.description)?q(d.description):q(d.description)):'empty'));
+  if(nz(o.notes)!==nz(d.notes)) out.push('Notes '+(nz(o.notes)?'changed from '+q(o.notes)+' to ':'entered: ')+(nz(d.notes)?q(d.notes):'empty'));
+  out.push(...linesLog(o.lines,d.lines));
+  { const oi=new Map(((o.checklist&&o.checklist.items)||[]).map(x=>[x.id,x])), ni=new Map(((d.checklist&&d.checklist.items)||[]).map(x=>[x.id,x]));
+    ni.forEach((x,id)=>{ const y=oi.get(id); if(!y) out.push('Check list item added: '+q(x.text)+(x.done?' (done)':'')); else { if(y.text!==x.text) out.push('Check list item renamed from '+q(y.text)+' to '+q(x.text)); if(!!y.done!==!!x.done) out.push('Check list item '+(x.done?'checked':'unchecked')+': '+q(x.text)); } });
+    oi.forEach((x,id)=>{ if(!ni.has(id)) out.push('Check list item removed: '+q(x.text)); });
+    if(!o.checklist&&d.checklist&&!d.checklist.items.length) out.push('Check list started'); }
+  { const a=o.visit,b=d.visit;
+    if(!a&&b) out.push('Garage visit added: '+q(b.name)+(b.contact?' · contact '+b.contact:'')+(b.loc?' · location '+b.loc.lat+', '+b.loc.lng:''));
+    else if(a&&!b) out.push('Garage visit removed ('+q(a.name)+')');
+    else if(a&&b){ if(nz(a.name)!==nz(b.name)) out.push('Garage visit name changed from '+q(a.name)+' to '+q(b.name)); if(nz(a.contact)!==nz(b.contact)) out.push('Garage visit contact changed from '+q(a.contact)+' to '+q(b.contact));
+      if(JSON.stringify(a.loc||null)!==JSON.stringify(b.loc||null)) out.push(b.loc?'Garage visit location '+(a.loc?'updated':'saved')+': '+b.loc.lat+', '+b.loc.lng+(b.loc.acc?' (within '+b.loc.acc+' m)':''):'Garage visit location cleared'); } }
   out.push(...attLog(o.atts||(o.visit&&o.visit.atts)||[],d.atts||[]));
-  if(!o.sig&&d.sig) out.push('Task signed'); else if(o.sig&&d.sig&&o.sig.at!==d.sig.at) out.push('Signature updated');
+  if(!o.sig&&d.sig) out.push('Task signed (signature captured '+fmtDT(d.sig.at)+')'); else if(o.sig&&d.sig&&o.sig.at!==d.sig.at) out.push('Signature replaced (signed '+fmtDT(d.sig.at)+')');
   return out;
 }
 const logBase=o=>Array.isArray(o.log)&&o.log.length?o.log:(o.createdAt?[{at:o.createdAt,text:'Task created'}]:[]);
 function logMerge(base,texts,at){
   const log=Array.isArray(base)?base.slice():[]; const t=at||new Date().toISOString();
-  texts.forEach(x=>{ const last=log[log.length-1]; if(last&&last.text===x&&Math.abs(new Date(t)-new Date(last.at))<120000){ last.at=t; return; } log.push({at:t,text:x}); });
+  texts.forEach(x=>{ const last=log[log.length-1]; const near=last&&Math.abs(new Date(t)-new Date(last.at))<120000;
+    if(near&&last.text===x){ last.at=t; return; }
+    if(near){ const a=/^(Description of .* changed) from "([^"]*)" to "(.*)"$/.exec(last.text), b=/^(Description of .* changed) from "([^"]*)" to "(.*)"$/.exec(x); if(a&&b&&a[1]===b[1]){ log[log.length-1]={at:t,text:a[1]+' from "'+a[2]+'" to "'+b[3]+'"'}; return; } }
+    log.push({at:t,text:x}); });
   return log.length>400?log.slice(-400):log;
 }
 function logOf(w){
@@ -1520,11 +1552,12 @@ function logHTML(w){
    ${L.length?`<ol class="alog" tabindex="0" aria-label="Activity log, newest first">${L.map(e=>`<li><span class="al-t">${esc(e.text)}</span><time>${esc(fmtDT(e.at))}</time></li>`).join('')}</ol>`:'<p class="hint">Everything done on this task will be listed here with the time and date.</p>'}</div>`;
 }
 /* A closed task is read-only, except its signature and attachments, which can still be added. These write straight away. */
-async function woPatch(w,fields){
+async function woPatch(w,fields,extra){
   const o=w&&!w.isNew&&S.orders.find(x=>x.id===w.id); if(!o) return false;
   try{ const doc=Object.assign({},o); delete doc.id; const ent=[];
     if(fields.atts) ent.push(...attLog(o.atts||(o.visit&&o.visit.atts)||[],fields.atts));
-    if(fields.sig) ent.push(o.sig?'Signature updated':'Task signed');
+    if(fields.sig) ent.push(o.sig?'Signature replaced (signed '+fmtDT(fields.sig.at)+')':'Task signed (signature captured '+fmtDT(fields.sig.at)+')');
+    if(extra) ent.push(...extra);
     Object.assign(doc,fields,{updatedAt:new Date().toISOString()}); doc.log=logMerge(logBase(o),ent); await S.db.doc('workorders/'+o.id).set(doc); if(S.wo===w) w.log=doc.log; return true; }
   catch(e){ toast('That could not be saved yet. Try again.',true); return false; }
 }
@@ -1723,7 +1756,7 @@ function renderSign(){
 async function pmPersist(w){
   if(!w||w.isNew) return true;
   const o=S.orders.find(x=>x.id===w.id); if(!o||isClosed(o)) return true;
-  try{ const doc=Object.assign({},o); delete doc.id; doc.pm=w.pm||null; doc.updatedAt=new Date().toISOString(); const ent=[],op=o.pm||{},np=w.pm||{}; if(!op.startedAt&&np.startedAt) ent.push('Preventive check list started'); if(!op.completedAt&&np.completedAt) ent.push('Preventive check list completed'); if(!(op.sig)&&np.sig) ent.push('Preventive check list signed'); if(ent.length) doc.log=logMerge(logBase(o),ent); await S.db.doc('workorders/'+o.id).set(doc); if(ent.length&&S.wo===w) w.log=doc.log; return true; }
+  try{ const doc=Object.assign({},o); delete doc.id; doc.pm=w.pm||null; doc.updatedAt=new Date().toISOString(); const ent=[],op=o.pm||{},np=w.pm||{}; if(!op.startedAt&&np.startedAt) ent.push('Preventive check list started '+fmtDT(np.startedAt)); if(!op.completedAt&&np.completedAt) ent.push('Preventive check list completed '+fmtDT(np.completedAt)); if(!(op.sig)&&np.sig) ent.push('Preventive check list signed '+fmtDT(np.sig.at)); if(ent.length) doc.log=logMerge(logBase(o),ent); await S.db.doc('workorders/'+o.id).set(doc); if(ent.length&&S.wo===w) w.log=doc.log; return true; }
   catch(e){ toast('The Check List could not be saved yet. Press Save changes on the task.',true); return false; }
 }
 async function pmCompleteDo(){
@@ -1812,7 +1845,8 @@ async function pmExportPDF(){
   if(!S.downloads){ toast('Downloads are not available in this view.',true); return; }
   try{
     const doc=buildChecklistPDF(jp,w); const data=doc.output('arraybuffer');
-    await S.downloads.save({filename:'check-list-'+fmtNo(w.number)+'-'+todayISO()+'.pdf',data});
+    const cn='check-list-'+fmtNo(w.number)+'-'+todayISO()+'.pdf'; await S.downloads.save({filename:cn,data});
+    logExport(w,'Check List PDF exported: '+cn+' ('+doc.getNumberOfPages()+' page'+(doc.getNumberOfPages()===1?'':'s')+', '+kb(data.byteLength)+')');
     toast(IS_IOS?'PDF ready':IS_APP?'PDF saved to Downloads':'PDF saved');
   }catch(e){ if(!(e&&e.code==='declined')) toast('The PDF could not be created.',true); }
 }
@@ -1880,7 +1914,7 @@ async function saveWO(){
     checklist:w.checklist?{items:w.checklist.items.map(x=>({id:x.id,text:x.text,done:!!x.done}))}:null,
     visit:w.visit&&w.visit.on?{name:w.visit.name.trim(),contact:w.visit.contact.trim(),loc:w.visit.loc||null,atts:[]}:null,
     atts:(w.atts||[]).map(attKeep)};
-  { const o0=w.isNew?null:S.orders.find(x=>x.id===w.id); doc.log=logMerge(o0?logBase(o0):[],orderLog(o0,doc),now); }
+  { const o0=w.isNew?null:S.orders.find(x=>x.id===w.id); doc.log=logMerge(o0?logBase(o0):[],orderLog(o0,doc).concat(w.pend||[]),now); }
   S.saving=true; renderWO();
   try{
     if(w.isNew){
@@ -2395,6 +2429,7 @@ function buildTaskPDF(deps,w){
   pdfFoot(doc,'I Got This  -  '+(w.isNew?'Service report':fmtNo(w.number)+' - Service report'));
   return doc;
 }
+function logExport(w,text){ if(!w) return; if(w.locked&&!w.isNew) woPatch(w,{},[text]); else (w.pend=w.pend||[]).push(text); }
 async function exportTaskPDF(){
   const w=S.wo; if(!w) return;
   const jp=window.jspdf&&window.jspdf.jsPDF;
@@ -2403,7 +2438,8 @@ async function exportTaskPDF(){
   try{
     const doc=buildTaskPDF({JsPDF:jp,autoTable:window.jspdf.autoTable},w);
     const name='task-'+(w.isNew?'new':fmtNo(w.number))+'-'+todayISO()+'.pdf';
-    await S.downloads.save({filename:name,data:doc.output('arraybuffer')});
+    const buf=doc.output('arraybuffer'); await S.downloads.save({filename:name,data:buf});
+    logExport(w,'Service Report PDF exported: '+name+' ('+doc.getNumberOfPages()+' page'+(doc.getNumberOfPages()===1?'':'s')+', '+kb(buf.byteLength)+')');
     toast(IS_IOS?'PDF ready':IS_APP?'PDF saved to Downloads':'PDF saved');
   }catch(e){ if(!(e&&e.code==='declined')) toast(e&&e.code==='unavailable'?'Downloads are not available here.':'The PDF could not be created.',true); }
 }
@@ -2559,7 +2595,7 @@ async function attachReport(taskId,name,data){
   try{
     const o=S.orders.find(x=>x.id===taskId); if(!o||data.byteLength>1500000) return;
     const doc=Object.assign({},o); delete doc.id;
-    doc.reports=(o.reports||[]).concat([{name,at:new Date().toISOString(),src:bufToDataUri(data)}]); doc.log=logMerge(logBase(o),['PDF exported: '+name]);
+    doc.reports=(o.reports||[]).concat([{name,at:new Date().toISOString(),src:bufToDataUri(data)}]); doc.log=logMerge(logBase(o),['Service Report PDF exported: '+name+' ('+kb(data.byteLength)+')']);
     await S.db.doc('workorders/'+o.id).set(doc);
   }catch(e){ toast('The report was saved, but could not be kept on the task.',true); }
 }
