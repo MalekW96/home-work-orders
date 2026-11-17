@@ -16,7 +16,7 @@
   --st-done-bg:#dcf3df; --st-done-fg:#0b5d1e;
   --st-cancel-bg:#e8ebef; --st-cancel-fg:#566170;
   --st-over-bg:#fbe0e0; --st-over-fg:#a02222;
-  --c1:#2a78d6; --c2:#eb6834; --c3:#1baf7a;
+  --c1:#2a78d6; --c2:#eb6834; --c3:#1baf7a; --c4:#8a5cd6; --c5:#d6a21b;
   --shadow:0 1px 2px rgba(20,32,46,.08),0 1px 1px rgba(20,32,46,.04);
   --hero1:#1f5fbf; --hero2:#174a96; --hero-sh:0 8px 20px rgba(31,95,191,.28);
   --r:16px;
@@ -32,7 +32,7 @@
     --st-done-bg:#12301a; --st-done-fg:#7fd38d;
     --st-cancel-bg:#262d36; --st-cancel-fg:#9aa6b4;
     --st-over-bg:#3c1a1a; --st-over-fg:#f19a9a;
-    --c1:#3987e5; --c2:#d95926; --c3:#199e70;
+    --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#9d74e0; --c5:#e0b13a;
     --shadow:0 1px 2px rgba(0,0,0,.45); --hero1:#2b66b3; --hero2:#1d4a85; --hero-sh:0 8px 20px rgba(0,0,0,.35);
     color-scheme:dark;
   }
@@ -47,7 +47,7 @@
   --st-done-bg:#12301a; --st-done-fg:#7fd38d;
   --st-cancel-bg:#262d36; --st-cancel-fg:#9aa6b4;
   --st-over-bg:#3c1a1a; --st-over-fg:#f19a9a;
-  --c1:#3987e5; --c2:#d95926; --c3:#199e70;
+  --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#9d74e0; --c5:#e0b13a;
   --shadow:0 1px 2px rgba(0,0,0,.45); --hero1:#2b66b3; --hero2:#1d4a85; --hero-sh:0 8px 20px rgba(0,0,0,.35);
   color-scheme:dark;
 }
@@ -418,10 +418,10 @@ const WO_CODES={'Vehicle':'V','Air conditioner':'C','TV / Radio':'E','Gaming con
 const WO_CODE_DEFAULT='G';
 const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
-const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
-const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
-const APP_VERSION='5.0.0.0';
-const RELEASE_NOTES=['Sign in on a new device with a QR code: choose Sign in with a QR code, then scan it from a device that is already signed in.','On a signed-in device, Settings now has Sign in another device, which scans the code and asks you to approve.','Two-factor sign-in is not part of this version yet.'];
+const KINDS=[['part','Part'],['labour','Labour'],['transport','Transport'],['travel','Travel'],['other','Other']];
+const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],transport:['Quantity','Cost each'],travel:['Trips','Cost per trip'],other:['Quantity','Amount each']};
+const APP_VERSION='5.1.0.0';
+const RELEASE_NOTES=['Cost lines on a task can now be Part, Labour, Transport, Travel or Other, with Add transport and Add travel buttons.','Transport and travel show separately on the Dashboard, in the category breakdown, the CSV export and the PDF report.','Existing tasks are not changed.'];
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -445,8 +445,8 @@ function money(n){
 const num=v=>{ const n=Number(v); return isFinite(n)?n:0; };
 const lineTotal=l=>num(l.qty)*num(l.unitCost);
 function orderTotals(o){
-  const t={part:0,labour:0,other:0,all:0};
-  for(const l of (o.lines||[])){ const v=lineTotal(l); const k=(l.kind==='part'||l.kind==='labour')?l.kind:'other'; t[k]+=v; t.all+=v; }
+  const t={part:0,labour:0,transport:0,travel:0,other:0,all:0};
+  for(const l of (o.lines||[])){ const v=lineTotal(l); const k=(l.kind==='part'||l.kind==='labour'||l.kind==='transport'||l.kind==='travel')?l.kind:'other'; t[k]+=v; t.all+=v; }
   return t;
 }
 const orderDate=o=>o.completedOn||o.openedOn||'';
@@ -1151,8 +1151,8 @@ function dashboardView(){
   }
   const start=rangeStart(); const inR=o=>o.status!=='Cancelled'&&(!start||orderDate(o)>=start);
   const ro=S.orders.filter(inR);
-  let spend=0; const kinds={part:0,labour:0,other:0}; const byAsset=new Map();
-  for(const o of ro){ const t=orderTotals(o); spend+=t.all; kinds.part+=t.part; kinds.labour+=t.labour; kinds.other+=t.other;
+  let spend=0; const kinds={part:0,labour:0,transport:0,travel:0,other:0}; const byAsset=new Map();
+  for(const o of ro){ const t=orderTotals(o); spend+=t.all; kinds.part+=t.part; kinds.labour+=t.labour; kinds.transport+=t.transport; kinds.travel+=t.travel; kinds.other+=t.other;
     const e=byAsset.get(o.assetId)||{sum:0,n:0}; e.sum+=t.all; e.n++; byAsset.set(o.assetId,e); }
   const active=S.orders.filter(isActive);
   const overdue=active.filter(isOverdue);
@@ -1163,7 +1163,7 @@ function dashboardView(){
   const rows=[...byAsset.entries()].sort((a,b)=>b[1].sum-a[1].sum).slice(0,6);
   const max=rows.length?Math.max(...rows.map(r=>r[1].sum)):0;
   const bars=rows.filter(r=>r[1].sum>0).map(r=>`<li title="${esc(assetName(r[0]))}: ${esc(money(r[1].sum))}"><span class="bar-l">${esc(assetName(r[0]))}<em>${r[1].n} task${r[1].n===1?'':'s'}</em></span><span class="bar-t"><span class="bar-f" style="width:${Math.max(2,Math.round(r[1].sum/max*100))}%"></span></span><span class="bar-v">${money(r[1].sum)}</span></li>`).join('');
-  const kinfo=[['Parts',kinds.part,'--c1'],['Labour',kinds.labour,'--c2'],['Other',kinds.other,'--c3']];
+  const kinfo=[['Parts',kinds.part,'--c1'],['Labour',kinds.labour,'--c2'],['Transport',kinds.transport,'--c4'],['Travel',kinds.travel,'--c5'],['Other',kinds.other,'--c3']];
   const kbar=kinfo.filter(k=>k[1]>0).map(k=>`<i style="flex:${k[1]};background:var(${k[2]})" title="${k[0]}: ${esc(money(k[1]))}"></i>`).join('');
   const klegend=kinfo.map(k=>`<li><b style="background:var(${k[2]})"></b><span>${k[0]}</span><span>${money(k[1])}</span></li>`).join('');
   return `<button type="button" class="hero" data-action="spend-cats" aria-label="Spent ${esc(rl)}: ${esc(money(spend))}. Show spending by category"><div class="k-l">Spent · ${esc(rl)}</div><div class="hero-v">${money(spend)}</div><div class="hero-s">${ro.length} job${ro.length===1?'':'s'} · ${esc(rl)} · tap for categories</div><span class="hero-go" aria-hidden="true">&rsaquo;</span></button>
@@ -1182,7 +1182,7 @@ function dashboardView(){
       <div class="seg" role="group" aria-label="Period">${[['year','This year'],['12m','12 months'],['all','All time']].map(r=>`<button type="button" data-action="range" data-range="${r[0]}" aria-pressed="${S.range===r[0]}">${r[1]}</button>`).join('')}</div></div>
       ${bars?`<ul class="bars">${bars}</ul>`:`<p class="muted">No costs logged for this period yet.</p>`}</section>
     <section class="panel"><div class="panel-h"><h2>Where the money goes</h2></div>
-      ${kbar?`<div class="split" role="img" aria-label="Cost split between parts, labour and other">${kbar}</div>`:''}<ul class="legend">${klegend}</ul></section>
+      ${kbar?`<div class="split" role="img" aria-label="Cost split between parts, labour, transport, travel and other">${kbar}</div>`:''}<ul class="legend">${klegend}</ul></section>
   </div></div>`;
 }
 
@@ -1192,8 +1192,8 @@ function spendByCat(){
   for(const o of S.orders){
     if(o.status==='Cancelled'||(start&&orderDate(o)<start)) continue;
     const a=S.assets.get(o.assetId); const c=effCat(a)||'Other'; const t=orderTotals(o);
-    let e=cats.get(c); if(!e){ e={cat:c,sum:0,part:0,labour:0,other:0,n:0,eq:new Map()}; cats.set(c,e); }
-    e.sum+=t.all; e.part+=t.part; e.labour+=t.labour; e.other+=t.other; e.n++; total+=t.all;
+    let e=cats.get(c); if(!e){ e={cat:c,sum:0,part:0,labour:0,transport:0,travel:0,other:0,n:0,eq:new Map()}; cats.set(c,e); }
+    e.sum+=t.all; e.part+=t.part; e.labour+=t.labour; e.transport+=t.transport; e.travel+=t.travel; e.other+=t.other; e.n++; total+=t.all;
     const q=e.eq.get(o.assetId)||{sum:0,n:0}; q.sum+=t.all; q.n++; e.eq.set(o.assetId,q);
   }
   return {total,rows:[...cats.values()].sort((a,b)=>b.sum-a.sum||a.cat.localeCompare(b.cat))};
@@ -1205,7 +1205,7 @@ function renderSpend(){
   const rows=d.rows.map(r=>{
     const pct=d.total>0?Math.round(r.sum/d.total*100):0;
     const eq=[...r.eq.entries()].sort((a,b)=>b[1].sum-a[1].sum).map(e=>`<li><span>${esc(assetName(e[0]))} <em class="muted">· ${e[1].n} task${e[1].n===1?'':'s'}</em></span><span>${money(e[1].sum)}</span></li>`).join('');
-    return `<details class="catrow"><summary><span class="cn">${esc(r.cat)}</span><span class="cv">${money(r.sum)}</span><span class="cm">${r.n} task${r.n===1?'':'s'} · ${pct}% of spend</span><span class="cm" style="text-align:right">Parts ${money(r.part)} · Labour ${money(r.labour)} · Other ${money(r.other)}</span><span class="bar-t"><span class="bar-f" style="width:${max>0?Math.max(2,Math.round(r.sum/max*100)):0}%"></span></span></summary>
+    return `<details class="catrow"><summary><span class="cn">${esc(r.cat)}</span><span class="cv">${money(r.sum)}</span><span class="cm">${r.n} task${r.n===1?'':'s'} · ${pct}% of spend</span><span class="cm" style="text-align:right">Parts ${money(r.part)} · Labour ${money(r.labour)} · Transport ${money(r.transport)} · Travel ${money(r.travel)} · Other ${money(r.other)}</span><span class="bar-t"><span class="bar-f" style="width:${max>0?Math.max(2,Math.round(r.sum/max*100)):0}%"></span></span></summary>
       <div class="cd"><ul>${eq}</ul><button type="button" class="btn sm" data-action="cat-equipment" data-cat="${esc(r.cat)}">Show ${esc(r.cat)} equipment</button></div></details>`;
   }).join('');
   host.innerHTML=`<div class="scrim" data-action="close-modal"></div>
@@ -1326,7 +1326,7 @@ function lineHTML(l,i){
   const lab=KIND_LABELS[l.kind]||KIND_LABELS.other; const isPart=l.kind==='part';
   return `<div class="line"><div class="line-r1">
     <label class="fld"><span>Type</span><select id="ln-${i}-kind" data-i="${i}" data-lf="kind">${opt(KINDS,l.kind)}</select></label>
-    <label class="fld"><span>Description</span><input id="ln-${i}-name" data-i="${i}" data-lf="name" type="text" value="${esc(l.name)}" placeholder="${isPart?'Front brake pads':l.kind==='labour'?'Workshop labour':'Disposal fee'}" autocomplete="off"></label>
+    <label class="fld"><span>Description</span><input id="ln-${i}-name" data-i="${i}" data-lf="name" type="text" value="${esc(l.name)}" placeholder="${isPart?'Front brake pads':l.kind==='labour'?'Workshop labour':l.kind==='transport'?'Towing or delivery':l.kind==='travel'?'Technician travel':'Disposal fee'}" autocomplete="off"></label>
     <button type="button" class="icon" data-action="del-line" data-i="${i}" aria-label="Remove this line">&times;</button></div>
     <div class="line-r2">
     ${isPart?`<label class="fld"><span>Part no.</span><input id="ln-${i}-partNo" data-i="${i}" data-lf="partNo" type="text" value="${esc(l.partNo)}" autocomplete="off"></label><label class="fld"><span>Supplier</span><input id="ln-${i}-supplier" data-i="${i}" data-lf="supplier" type="text" value="${esc(l.supplier)}" autocomplete="off"></label>`:''}
@@ -1370,8 +1370,8 @@ function renderWO(focusId){
     </div>`}
     ${w.isNew?'<p class="hint">The garage visit and the checklist are available once the task is created.</p>':(w.type==='Preventive maintenance'?pmBoxHTML(w):checklistHTML(w))}
     <div><h3 class="sec-h">Parts, labour and costs</h3>
-     <div class="lines" id="wo-lines">${w.lines.length?w.lines.map(lineHTML).join(''):'<p class="hint">No cost lines yet. Add the parts you used and any labour.</p>'}</div>
-     <div class="addrow" style="margin-top:10px"><button type="button" class="btn sm" data-action="add-line" data-kind="part">Add part</button><button type="button" class="btn sm" data-action="add-line" data-kind="labour">Add labour</button><button type="button" class="btn sm" data-action="add-line" data-kind="other">Add other cost</button></div></div>
+     <div class="lines" id="wo-lines">${w.lines.length?w.lines.map(lineHTML).join(''):'<p class="hint">No cost lines yet. Add the parts you used, labour, transport and travel.</p>'}</div>
+     <div class="addrow" style="margin-top:10px"><button type="button" class="btn sm" data-action="add-line" data-kind="part">Add part</button><button type="button" class="btn sm" data-action="add-line" data-kind="labour">Add labour</button><button type="button" class="btn sm" data-action="add-line" data-kind="transport">Add transport</button><button type="button" class="btn sm" data-action="add-line" data-kind="travel">Add travel</button><button type="button" class="btn sm" data-action="add-line" data-kind="other">Add other cost</button></div></div>
     ${attachmentsHTML(w)}
    </div>
    <footer class="sheet-f"><div class="tot"><span>Order total</span><strong id="wo-total">${money(total)}</strong></div>
@@ -2073,9 +2073,9 @@ async function exportData(what){
   let filename,data;
   if(what==='orders'){
     filename='work-orders-'+todayISO()+'.csv';
-    data=toCSV([['Task','Title','Equipment','Category','Type','Priority','Status','Opened','Due','Completed','Reading','Unit','Done by','Parts','Labour','Other','Total','Work performed','Notes','Garage / technician','Contact','Location']].concat(orders.map(o=>{
+    data=toCSV([['Task','Title','Equipment','Category','Type','Priority','Status','Opened','Due','Completed','Reading','Unit','Done by','Parts','Labour','Transport','Travel','Other','Total','Work performed','Notes','Garage / technician','Contact','Location']].concat(orders.map(o=>{
       const a=S.assets.get(o.assetId)||{}; const t=orderTotals(o);
-      return [fmtNo(o.number),o.title,a.name,a.category,o.type,o.priority,statusLabel(o.status),o.openedOn,o.dueOn,o.completedOn,o.meter,a.meterUnit,o.doneBy,t.part.toFixed(2),t.labour.toFixed(2),t.other.toFixed(2),t.all.toFixed(2),o.description,o.notes,o.visit?o.visit.name:'',o.visit?o.visit.contact:'',o.visit&&o.visit.loc?o.visit.loc.lat+', '+o.visit.loc.lng:''];
+      return [fmtNo(o.number),o.title,a.name,a.category,o.type,o.priority,statusLabel(o.status),o.openedOn,o.dueOn,o.completedOn,o.meter,a.meterUnit,o.doneBy,t.part.toFixed(2),t.labour.toFixed(2),t.transport.toFixed(2),t.travel.toFixed(2),t.other.toFixed(2),t.all.toFixed(2),o.description,o.notes,o.visit?o.visit.name:'',o.visit?o.visit.contact:'',o.visit&&o.visit.loc?o.visit.loc.lat+', '+o.visit.loc.lng:''];
     })));
   } else if(what==='lines'){
     filename='cost-lines-'+todayISO()+'.csv'; const rows=[['Task','Date','Equipment','Type','Description','Part no.','Supplier','Qty','Unit cost','Line total']];
@@ -2127,12 +2127,12 @@ function buildReportPDF(deps,opt){
   doc.text(pdfText('Period: '+periodLabel+'    Equipment: '+assetLabel+'    Generated: '+pdfDate(todayISO())),M,31);
   doc.setDrawColor(ACC[0],ACC[1],ACC[2]); doc.setLineWidth(0.6); doc.line(M,34,W-M,34);
 
-  const tot={part:0,labour:0,other:0,all:0}; let done=0, open=0; const byAsset=new Map();
+  const tot={part:0,labour:0,transport:0,travel:0,other:0,all:0}; let done=0, open=0; const byAsset=new Map();
   for(const o of list){
-    const t=orderTotals(o); tot.part+=t.part; tot.labour+=t.labour; tot.other+=t.other; tot.all+=t.all;
+    const t=orderTotals(o); tot.part+=t.part; tot.labour+=t.labour; tot.transport+=t.transport; tot.travel+=t.travel; tot.other+=t.other; tot.all+=t.all;
     if(o.status==='Completed') done++; else if(isActive(o)) open++;
-    const e=byAsset.get(o.assetId)||{n:0,part:0,labour:0,other:0,all:0};
-    e.n++; e.part+=t.part; e.labour+=t.labour; e.other+=t.other; e.all+=t.all; byAsset.set(o.assetId,e);
+    const e=byAsset.get(o.assetId)||{n:0,part:0,labour:0,transport:0,travel:0,other:0,all:0};
+    e.n++; e.part+=t.part; e.labour+=t.labour; e.transport+=t.transport; e.travel+=t.travel; e.other+=t.other; e.all+=t.all; byAsset.set(o.assetId,e);
   }
   let y=44;
   const figs=[['Total cost',pdfMoney(tot.all)],['Tasks',String(list.length)],['Completed',String(done)],['Open',String(open)]];
@@ -2159,9 +2159,9 @@ function buildReportPDF(deps,opt){
   if(!opt.asset&&byAsset.size){
     section('Spend by equipment');
     const rows=[...byAsset.entries()].sort((a,b)=>b[1].all-a[1].all);
-    table({head:[['Equipment','Tasks','Parts','Labour','Other','Total']],
-      body:rows.map(r=>[pdfText(assetName(r[0])),String(r[1].n),pdfMoney(r[1].part),pdfMoney(r[1].labour),pdfMoney(r[1].other),pdfMoney(r[1].all)]),
-      foot:[['All equipment',String(list.length),pdfMoney(tot.part),pdfMoney(tot.labour),pdfMoney(tot.other),pdfMoney(tot.all)]],
+    table({head:[['Equipment','Tasks','Parts','Labour','Transport','Travel','Other','Total']],
+      body:rows.map(r=>[pdfText(assetName(r[0])),String(r[1].n),pdfMoney(r[1].part),pdfMoney(r[1].labour),pdfMoney(r[1].transport),pdfMoney(r[1].travel),pdfMoney(r[1].other),pdfMoney(r[1].all)]),
+      foot:[['All equipment',String(list.length),pdfMoney(tot.part),pdfMoney(tot.labour),pdfMoney(tot.transport),pdfMoney(tot.travel),pdfMoney(tot.other),pdfMoney(tot.all)]],
       showFoot:'lastPage',columnStyles:right});
   }
 

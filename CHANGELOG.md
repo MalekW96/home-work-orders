@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.1.0.0
+
+- Cost lines can be Part, Labour, Transport, Travel or Other. Transport and Travel have Add buttons on the task and appear separately in the Dashboard split, the Spent by category sheet, the CSV export and the PDF report.
+
 ## 5.0.0.0
 
 - Sign in on another device with a QR code. The new device shows a code (Settings, Sign in with a QR code); a signed-in device scans it (Settings, Sign in another device) and approves. The session is handed over encrypted with a key that only exists inside the QR code. Codes last 5 minutes and work once. Code link can be pasted if the camera is unavailable.
