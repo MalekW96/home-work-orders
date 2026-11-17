@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import android.webkit.GeolocationPermissions
+import android.webkit.PermissionRequest
 import android.content.ContentValues
 import android.content.Intent
 import android.net.Uri
@@ -52,6 +53,17 @@ class MainActivity : AppCompatActivity() {
 
     private var pendingGeo: Pair<String, GeolocationPermissions.Callback>? = null
     private var askedNotifications = false
+    private var pendingCam: PermissionRequest? = null
+
+    private val cameraPermission = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { ok ->
+        val req = pendingCam
+        pendingCam = null
+        if (req != null) {
+            if (ok) req.grant(arrayOf(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) else req.deny()
+        }
+    }
 
     private val locationPermission = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -155,6 +167,24 @@ class MainActivity : AppCompatActivity() {
         }
 
         webView.webChromeClient = object : WebChromeClient() {
+            // The QR scanner (sign in another device) asks the page for the camera.
+            override fun onPermissionRequest(request: PermissionRequest) {
+                val wantsVideo = request.resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE)
+                if (!wantsVideo || request.origin.host != WebViewAssetLoader.DEFAULT_DOMAIN) {
+                    request.deny()
+                    return
+                }
+                runOnUiThread {
+                    if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                        request.grant(arrayOf(PermissionRequest.RESOURCE_VIDEO_CAPTURE))
+                    } else {
+                        pendingCam?.deny()
+                        pendingCam = request
+                        cameraPermission.launch(Manifest.permission.CAMERA)
+                    }
+                }
+            }
+
             override fun onGeolocationPermissionsShowPrompt(origin: String, callback: GeolocationPermissions.Callback) {
                 if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                     callback.invoke(origin, true, false)

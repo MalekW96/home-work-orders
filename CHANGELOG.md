@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.0.0.0
+
+- Sign in on another device with a QR code. The new device shows a code (Settings, Sign in with a QR code); a signed-in device scans it (Settings, Sign in another device) and approves. The session is handed over encrypted with a key that only exists inside the QR code. Codes last 5 minutes and work once. Code link can be pasted if the camera is unavailable.
+- Android and iOS apps can use the camera for the scanner (asked on first use).
+- Two-factor sign-in is not included yet.
+
 ## 4.4.0.0
 
 - New equipment field: Owner address / location (free text, one owner per line if more than one). Shown on the equipment card, on add and edit. Not included in shared cards.

@@ -132,6 +132,9 @@ button.hero:active{transform:scale(.99)}
 .catrow .cd ul{margin:8px 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;font-size:14px}
 .catrow .cd li{display:flex;justify-content:space-between;gap:10px}
 .catrow .cd li span:last-child{font-variant-numeric:tabular-nums}
+.qrbox{background:#fff;border-radius:12px;padding:12px;max-width:270px;margin:10px auto;box-shadow:var(--shadow)}
+.qrbox svg{display:block;width:100%;height:auto}
+.qrvid{width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px;background:#000;margin:8px 0}
 .strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:6px}
 .strip>div{background:var(--panel);border-radius:14px;box-shadow:var(--shadow);padding:12px 14px;container-type:inline-size;min-width:0}
 .k-l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.09em}
@@ -417,8 +420,8 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],other:['Quantity','Amount each']};
-const APP_VERSION='4.4.0.0';
-const RELEASE_NOTES=['Equipment now records the owner address / location, with room for more than one owner. It shows on the equipment card.','Available when adding new equipment and when editing existing equipment.','The address is private: it is never included when you share an equipment card.'];
+const APP_VERSION='5.0.0.0';
+const RELEASE_NOTES=['Sign in on a new device with a QR code: choose Sign in with a QR code, then scan it from a device that is already signed in.','On a signed-in device, Settings now has Sign in another device, which scans the code and asks you to approve.','Two-factor sign-in is not part of this version yet.'];
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -795,7 +798,186 @@ async function fbConfirmed(){
   catch(e){ SY.err=syNetErr(e)||fbMsg(e); }
   SY.busy=false; syPaint();
 }
-function sbSignOut(){ SY.sess=null; lsSet(SB_SESSION,null); SY.st={cursor:null,dirty:SY.st.dirty,known:{},init:false,uid:''}; syStore(); SY.err=''; SY.msg=''; syPaint(); }
+/* ---------- sign in with a QR code ----------
+   The new device shows a QR code. A device that is already signed in scans it and approves. The signed-in
+   device then hands over its session, encrypted with a key that only exists inside the QR code, through a
+   short-lived record in Firestore (transfers/{id}). The key never goes to the server. */
+const QR_TTL=5*60*1000;
+const b64u=u=>{ let t=''; for(let i=0;i<u.length;i++) t+=String.fromCharCode(u[i]); return btoa(t).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); };
+const unb64u=t=>{ t=String(t).replace(/-/g,'+').replace(/_/g,'/'); while(t.length%4) t+='='; const r=atob(t),u=new Uint8Array(r.length); for(let i=0;i<r.length;i++) u[i]=r.charCodeAt(i); return u; };
+const catU8=(...a)=>{ const n=a.reduce((x,y)=>x+y.length,0), o=new Uint8Array(n); let k=0; a.forEach(y=>{ o.set(y,k); k+=y.length; }); return o; };
+const SHA=(()=>{ const pr=[]; for(let n=2;pr.length<64;n++){ let ok=true; for(const q of pr){ if(q*q>n) break; if(n%q===0){ ok=false; break; } } if(ok) pr.push(n); } const f=x=>Math.floor((x-Math.floor(x))*4294967296)>>>0; return {k:pr.map(q=>f(Math.cbrt(q))),h:pr.slice(0,8).map(q=>f(Math.sqrt(q)))}; })();
+function sha256(m){
+  const l=m.length, n=((l+9+63)>>6)<<6, b=new Uint8Array(n); b.set(m); b[l]=0x80;
+  const dv=new DataView(b.buffer); dv.setUint32(n-8,Math.floor(l/0x20000000)); dv.setUint32(n-4,(l<<3)>>>0);
+  const h=SHA.h.slice(), w=new Uint32Array(64), K=SHA.k, R=(x,c)=>(x>>>c)|(x<<(32-c));
+  for(let o=0;o<n;o+=64){
+    for(let i=0;i<16;i++) w[i]=dv.getUint32(o+i*4);
+    for(let i=16;i<64;i++){ const a=w[i-15], c=w[i-2]; w[i]=(w[i-16]+(R(a,7)^R(a,18)^(a>>>3))+w[i-7]+(R(c,17)^R(c,19)^(c>>>10)))>>>0; }
+    let [a,b2,c,d,e,f,g,hh]=h;
+    for(let i=0;i<64;i++){
+      const t1=(hh+(R(e,6)^R(e,11)^R(e,25))+((e&f)^(~e&g))+K[i]+w[i])>>>0, t2=((R(a,2)^R(a,13)^R(a,22))+((a&b2)^(a&c)^(b2&c)))>>>0;
+      hh=g; g=f; f=e; e=(d+t1)>>>0; d=c; c=b2; b2=a; a=(t1+t2)>>>0;
+    }
+    [a,b2,c,d,e,f,g,hh].forEach((v,i)=>{ h[i]=(h[i]+v)>>>0; });
+  }
+  const out=new Uint8Array(32); h.forEach((v,i)=>{ out[i*4]=v>>>24; out[i*4+1]=v>>>16&255; out[i*4+2]=v>>>8&255; out[i*4+3]=v&255; }); return out;
+}
+function hmac256(key,msg){
+  let k=key.length>64?sha256(key):key; const kp=new Uint8Array(64); kp.set(k);
+  const ip=kp.map(x=>x^0x36), op=kp.map(x=>x^0x5c);
+  return sha256(catU8(op,sha256(catU8(ip,msg))));
+}
+function qrXor(key,iv,data){
+  const out=new Uint8Array(data.length);
+  for(let i=0,c=0;i<data.length;i+=32,c++){ const ks=hmac256(key,catU8(iv,new Uint8Array([c>>>24&255,c>>>16&255,c>>>8&255,c&255,1]))); for(let j=0;j<32&&i+j<data.length;j++) out[i+j]=data[i+j]^ks[j]; }
+  return out;
+}
+const U8=t=>new TextEncoder().encode(t);
+function qrSeal(key,text){ const iv=crypto.getRandomValues(new Uint8Array(16)); const ct=qrXor(key,iv,U8(text)); return b64u(catU8(iv,ct,hmac256(key,catU8(U8('tag'),iv,ct)))); }
+function qrOpen(key,tok){
+  const b=unb64u(tok); if(b.length<49) throw new Error('bad'); const iv=b.slice(0,16), ct=b.slice(16,b.length-32), tag=b.slice(b.length-32);
+  const want=hmac256(key,catU8(U8('tag'),iv,ct)); let d=0; for(let i=0;i<32;i++) d|=want[i]^tag[i]; if(d) throw new Error('bad');
+  return new TextDecoder().decode(qrXor(key,iv,ct));
+}
+const libP={};
+function loadLib(n){ return libP[n]||(libP[n]=new Promise((res,rej)=>{ const sc=document.createElement('script'); sc.src='libs/'+n+'.min.js'; sc.onload=()=>res(); sc.onerror=()=>{ delete libP[n]; rej(new Error('lib')); }; document.head.appendChild(sc); })); }
+function deviceLabel(){
+  const ua=navigator.userAgent||''; const os=/Android/i.test(ua)?'Android':/iPhone|iPad|iPod/i.test(ua)?'iPhone or iPad':/Windows/i.test(ua)?'Windows':/Mac OS X/i.test(ua)?'Mac':/Linux/i.test(ua)?'Linux':'a device';
+  if(!window.HWO_WEB) return 'The '+os+' app';
+  const br=/Edg\//.test(ua)?'Edge':/Firefox\//.test(ua)?'Firefox':/Chrome\//.test(ua)?'Chrome':/Safari\//.test(ua)?'Safari':'A browser';
+  return br+' on '+os;
+}
+const qrParse=t=>{ const m=/#qr=([A-Za-z0-9_-]{16,40})\.([A-Za-z0-9_-]{43})/.exec(String(t||'')); return m?{id:m[1],key:m[2]}:null; };
+const trUrl=id=>FS_BASE+'/transfers/'+encodeURIComponent(id);
+SY.qr=null;
+function qrCancel(del){
+  const q=SY.qr; SY.qr=null; if(!q) return;
+  if(del) fbFetch(trUrl(q.id)+'?key='+FB.key,{method:'DELETE',headers:{}}).catch(()=>{});
+}
+async function qrStart(){
+  qrCancel(true); SY.err=''; SY.msg='';
+  const idb=crypto.getRandomValues(new Uint8Array(18)), id=b64u(idb).slice(0,24), key=crypto.getRandomValues(new Uint8Array(32));
+  const code=PAGES_URL+'#qr='+id+'.'+b64u(key);
+  const me=SY.qr={id,key,code,exp:Date.now()+QR_TTL,svg:'',err:''}; syPaint();
+  try{
+    await loadLib('qrcode'); const q=qrcode(0,'M'); q.addData(code); q.make(); me.svg=q.createSvgTag({cellSize:4,margin:0,scalable:true});
+    await fbFetch(FS_BASE+'/transfers?documentId='+encodeURIComponent(id)+'&key='+FB.key,{body:JSON.stringify({fields:{label:{stringValue:deviceLabel()},exp:{timestampValue:new Date(me.exp).toISOString()}}})});
+    if(SY.qr!==me) return; syPaint(); qrPoll(me);
+  }catch(e){ if(SY.qr!==me) return; SY.qr=null; SY.err=syNetErr(e)||'The QR code could not be created right now. Try again in a moment.'; syPaint(); }
+}
+async function qrPoll(me){
+  while(SY.qr===me){
+    await sleep(2000); if(SY.qr!==me) return;
+    if(Date.now()>me.exp){ qrCancel(true); SY.err='That QR code expired. Press the button to get a new one.'; syPaint(); return; }
+    try{
+      const j=await fbFetch(trUrl(me.id)+'?key='+FB.key,{method:'GET',headers:{}});
+      const pl=j&&j.fields&&j.fields.payload&&j.fields.payload.stringValue;
+      if(pl){ await qrFinish(me,pl); return; }
+    }catch(e){ if(e.status===404){ if(SY.qr===me){ SY.qr=null; SY.err='That QR code is no longer valid. Press the button to get a new one.'; syPaint(); } return; } }
+  }
+}
+async function qrFinish(me,pl){
+  try{
+    const d=JSON.parse(qrOpen(me.key,pl)); if(!d||!d.r) throw new Error('bad');
+    const j=await fbFetch('https://securetoken.googleapis.com/v1/token?key='+FB.key,{headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=refresh_token&refresh_token='+encodeURIComponent(d.r)});
+    if(SY.qr!==me) return; SY.qr=null;
+    fbNewUser(j.user_id); SY.sess=null; fbStoreSession(j,{name:d.n||'',email:d.e||'',verified:false}); await fbLookup();
+    fsReq('/transfers/'+encodeURIComponent(me.id),null,'DELETE').catch(()=>{});
+    SY.msg='Signed in with a QR code.'; syPaint();
+    if(SY.sess.verified) await syncNow(true);
+  }catch(e){ SY.qr=null; SY.err=syNetErr(e)||'Signing in with the QR code did not work. Start again.'; syPaint(); }
+}
+function qrPanelHTML(){
+  const q=SY.qr; const t=new Date(q.exp); const hh=String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0');
+  return `<div><h3 class="sec-h">Sign in with a QR code</h3>
+   <p class="hint">On a device that is already signed in, open <b>Settings</b>, press <b>Sign in another device</b> and scan this code.</p>
+   ${q.svg?`<div class="qrbox" role="img" aria-label="QR code to sign in this device">${q.svg}</div>`:'<p class="hint">Creating the code…</p>'}
+   <p class="hint" style="text-align:center">Waiting for approval. Valid until ${hh}.</p>
+   <div class="addrow"><button type="button" class="btn sm" data-action="qr-copy">Copy code link</button><button type="button" class="btn sm ghost" data-action="qr-cancel">Cancel</button></div>
+   ${SY.err?`<p class="hint" style="color:var(--danger)">${esc(SY.err)}</p>`:''}</div>`;
+}
+/* the device that is already signed in */
+function qrScanClose(){
+  const st=S.qrScan; S.qrScan=null; if(st){ clearTimeout(st.timer); try{ st.stream&&st.stream.getTracks().forEach(t=>t.stop()); }catch(e){} }
+  const h=$('#modal2'); h.innerHTML=''; h.hidden=true; syncInert();
+}
+function openQrScan(){
+  if(!SY.sess||!SY.sess.verified){ toast('Sign in and confirm your email first.',true); return; }
+  S.qrScan={step:'scan',err:'',pending:null}; renderQrScan(); qrCamStart(S.qrScan);
+}
+function qrOpenWith(link){
+  if(!SY.sess||!SY.sess.verified){ toast('Sign in and confirm your email first.',true); return; }
+  S.qrScan={step:'busy',err:'',pending:null}; renderQrScan(); qrScanned(S.qrScan,link);
+}
+function renderQrScan(){
+  const st=S.qrScan; const host=$('#modal2'); if(!st){ qrScanClose(); return; }
+  host.hidden=false; let body='', foot='';
+  if(st.step==='scan'){
+    body=`<p class="hint">Point the camera at the QR code on the new device.</p><video id="qr-v" class="qrvid" playsinline muted></video>
+     ${st.err?`<p class="hint" style="color:var(--danger)">${esc(st.err)}</p>`:''}
+     <label class="fld"><span>Or paste the code link from the new device</span><input id="qr-paste" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${esc(PAGES_URL)}#qr=…"></label>
+     <div class="addrow"><button type="button" class="btn sm" data-action="qr-use">Use this link</button></div>`;
+  } else if(st.step==='busy'){ body='<p class="hint">Checking the code…</p>'; }
+  else if(st.step==='confirm'){
+    body=`<p>Sign in <b>${esc(st.pending.label)}</b> as <b>${esc(SY.sess.email)}</b>?</p>
+     <p class="hint">Only approve if you are looking at that device's screen right now and started this yourself. Anyone you approve gets full access to your records.</p>
+     ${st.err?`<p class="hint" style="color:var(--danger)">${esc(st.err)}</p>`:''}`;
+    foot=`<button type="button" class="btn primary" data-action="qr-approve"${st.sending?' disabled':''}>${st.sending?'Approving…':'Approve'}</button>`;
+  } else if(st.step==='done'){ body=`<p><b>Done.</b> ${esc(st.pending.label)} is signed in.</p>`; }
+  else if(st.step==='error'){ body=`<p style="color:var(--danger)">${esc(st.err)}</p>`; foot=`<button type="button" class="btn" data-action="qr-rescan">Scan again</button>`; }
+  host.innerHTML=`<div class="scrim" data-action="close-modal2"></div>
+  <section class="sheet narrow" role="dialog" aria-modal="true" aria-labelledby="qs-h">
+   <header class="sheet-h"><div><p class="eyebrow">Account</p><h2 id="qs-h">Sign in another device</h2></div><button type="button" class="icon" data-action="close-modal2" aria-label="Close">&times;</button></header>
+   <div class="sheet-b">${body}</div>
+   <footer class="sheet-f"><span></span><div class="acts"><button type="button" class="btn" data-action="close-modal2">${st.step==='done'?'Close':'Cancel'}</button>${foot}</div></footer></section>`;
+  syncInert();
+  if(st.step==='scan'&&st.stream){ const v=$('#qr-v'); if(v){ v.srcObject=st.stream; v.play().catch(()=>{}); } }
+}
+async function qrCamStart(st){
+  try{
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia) throw new Error('nocam');
+    st.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+  }catch(e){ if(S.qrScan===st){ st.err='The camera is not available. Allow camera access, or paste the code link from the new device.'; renderQrScan(); } return; }
+  if(S.qrScan!==st||st.step!=='scan'){ st.stream.getTracks().forEach(t=>t.stop()); return; }
+  renderQrScan();
+  let det=null; if('BarcodeDetector' in window){ try{ det=new BarcodeDetector({formats:['qr_code']}); }catch(e){} }
+  if(!det){ try{ await loadLib('jsqr'); }catch(e){} }
+  const cv=document.createElement('canvas'), cx=cv.getContext('2d',{willReadFrequently:true});
+  const tick=async()=>{
+    if(S.qrScan!==st||st.step!=='scan') return;
+    const v=$('#qr-v');
+    if(v&&v.readyState>=2&&v.videoWidth){
+      let text='';
+      if(det){ try{ const r=await det.detect(v); text=(r[0]&&r[0].rawValue)||''; }catch(e){} }
+      else if(window.jsQR){ const w=Math.min(640,v.videoWidth), h=Math.round(v.videoHeight*w/v.videoWidth); cv.width=w; cv.height=h; cx.drawImage(v,0,0,w,h); const im=cx.getImageData(0,0,w,h); const r=jsQR(im.data,w,h); text=(r&&r.data)||''; }
+      if(text&&qrParse(text)){ qrScanned(st,text); return; }
+    }
+    st.timer=setTimeout(tick,200);
+  };
+  tick();
+}
+async function qrScanned(st,text){
+  const c=qrParse(text); if(!c){ st.err='That is not a sign-in code from this app.'; renderQrScan(); return; }
+  st.step='busy'; try{ st.stream&&st.stream.getTracks().forEach(t=>t.stop()); }catch(e){} st.stream=null; renderQrScan();
+  try{
+    const j=await fbFetch(trUrl(c.id)+'?key='+FB.key,{method:'GET',headers:{}}); const f=(j&&j.fields)||{};
+    const exp=f.exp&&f.exp.timestampValue?Date.parse(f.exp.timestampValue):0;
+    if(f.payload||!exp||exp<Date.now()) throw Object.assign(new Error('old'),{status:404});
+    st.pending={id:c.id,key:unb64u(c.key),label:String((f.label&&f.label.stringValue)||'A device').slice(0,80)};
+    if(S.qrScan!==st) return; st.step='confirm'; st.err=''; renderQrScan();
+  }catch(e){ if(S.qrScan!==st) return; st.step='error'; st.err=e.status===404?'That code has expired or was already used. Start again on the new device.':(syNetErr(e)||'The code could not be checked. Try again.'); renderQrScan(); }
+}
+async function qrApprove(){
+  const st=S.qrScan; if(!st||!st.pending||st.sending) return; st.sending=true; st.err=''; renderQrScan();
+  try{
+    await fbToken(); if(!SY.sess) throw new Error('out');
+    const pl=qrSeal(st.pending.key,JSON.stringify({r:SY.sess.refresh,e:SY.sess.email,n:SY.sess.name,u:SY.sess.uid}));
+    await fsReq('/transfers/'+encodeURIComponent(st.pending.id)+'?updateMask.fieldPaths=payload&updateMask.fieldPaths=by&currentDocument.exists=true',{fields:{payload:{stringValue:pl},by:{stringValue:SY.sess.uid}}},'PATCH');
+    if(S.qrScan!==st) return; st.sending=false; st.step='done'; renderQrScan();
+  }catch(e){ if(S.qrScan!==st) return; st.sending=false; st.err=e.status===404?'That code has expired. Start again on the new device.':(syNetErr(e)||'Approving did not work. Try again.'); renderQrScan(); }
+}
+function sbSignOut(){ qrCancel(true); SY.sess=null; lsSet(SB_SESSION,null); SY.st={cursor:null,dirty:SY.st.dirty,known:{},init:false,uid:''}; syStore(); SY.err=''; SY.msg=''; syPaint(); }
 const fsDocId=p=>encodeURIComponent(p);
 const fsUser=()=>'/users/'+SY.sess.uid;
 async function fsReq(path,body,method){
@@ -898,8 +1080,10 @@ function syncBlock(){
     const pend=Object.keys(SY.st.dirty).length;
     return `<div><h3 class="sec-h">Account sync</h3>
      <p class="hint">Signed in as <b>${esc(SY.sess.name?SY.sess.name+' ('+SY.sess.email+')':SY.sess.email)}</b>. ${SY.busy?'Syncing…':SY.err?esc(SY.err):SY.last?'Last synced '+esc(fmtDT(SY.last))+'.':'Not synced yet.'}${pend&&!SY.busy?' '+pend+' change'+(pend===1?'':'s')+' waiting to send.':''}</p>
-     <div class="addrow"><button type="button" class="btn sm" data-action="sync-now"${SY.busy?' disabled':''}>Sync now</button><button type="button" class="btn sm ghost" data-action="sync-out">Sign out</button></div></div>`;
+     <div class="addrow"><button type="button" class="btn sm" data-action="sync-now"${SY.busy?' disabled':''}>Sync now</button><button type="button" class="btn sm" data-action="qr-scan"${SY.sess.verified?'':' disabled'}>Sign in another device</button><button type="button" class="btn sm ghost" data-action="sync-out">Sign out</button></div>
+     ${SY.msg?`<p class="hint">${esc(SY.msg)}</p>`:''}</div>`;
   }
+  if(SY.qr) return qrPanelHTML();
   const up=SY.mode==='up', dis=SY.busy?' disabled':'';
   return `<div><h3 class="sec-h">Account sync</h3>
    <p class="hint">Sign in to keep this device in step with your other devices. The records also stay on this device.</p>
@@ -910,7 +1094,7 @@ function syncBlock(){
    <label class="fld"><span>Email</span><input id="sy-email" type="email" autocomplete="username" autocapitalize="off" spellcheck="false" required value="${esc(SY.email||'')}"></label>
    <label class="fld"><span>${up?'Create a password':'Password'}</span><span style="display:flex;gap:8px;align-items:center"><input id="sy-pass" type="password" style="flex:1;min-width:0" autocomplete="${up?'new-password':'current-password'}" required${up?' minlength="8"':''}><button type="button" class="btn sm" id="sy-eye" data-action="pw-toggle" aria-pressed="false" aria-label="Show password">Show</button></span></label>
    ${up?'<p class="hint">At least 8 characters.</p>':''}
-   <div class="addrow"><button type="button" class="btn sm primary" data-action="${up?'sync-up':'sync-in'}"${dis}>${SY.busy?(up?'Creating account…':'Signing in…'):(up?'Sign up':'Sign in')}</button></div>
+   <div class="addrow"><button type="button" class="btn sm primary" data-action="${up?'sync-up':'sync-in'}"${dis}>${SY.busy?(up?'Creating account…':'Signing in…'):(up?'Sign up':'Sign in')}</button>${up?'':`<button type="button" class="btn sm" data-action="qr-start"${dis}>Sign in with a QR code</button>`}</div>
    ${SY.msg?`<p class="hint">${esc(SY.msg)}</p>`:''}
    ${SY.err?`<p class="hint" style="color:var(--danger)">${esc(SY.err)}</p>`:''}</div>`;
 }
@@ -2200,6 +2384,7 @@ function toggleAddMenu(){ const m=$('#addmenu'); if(!m) return; if(!closeAddMenu
 function closeTop(){
   if(closeAddMenu()) return;
   if(closePhoto()) return;
+  if(S.qrScan){ qrScanClose(); return; }
   if(!$('#modal2').hidden){ if(S.pmOpen){ pmClose(); return; } S.asset=null; renderAsset(); return; }
   if(!$('#modal').hidden) closeSheet(S.sheet||'wo');
 }
@@ -2216,7 +2401,7 @@ document.addEventListener('click',e=>{
     case 'new-wo': if(canWrite()) openWO(null); break;
     case 'open-wo': openWO(id); break;
     case 'close-modal': closeSheet(S.sheet||'wo'); break;
-    case 'close-modal2': S.asset=null; renderAsset(); break;
+    case 'close-modal2': if(S.qrScan){ qrScanClose(); break; } S.asset=null; renderAsset(); break;
     case 'pm-open': pmOpen(); break;
     case 'pm-close': pmClose(); break;
     case 'pm-sign': if(S.wo&&pmComplete(S.wo.pm)&&!S.wo.locked&&!(S.wo.pm&&S.wo.pm.sig)){ S.pmSign=true; renderSign(); } break;
@@ -2272,6 +2457,13 @@ document.addEventListener('click',e=>{
     case 'sync-mode': SY.mode=el.dataset.mode==='up'?'up':'in'; SY.err=''; SY.msg=''; syPaint(); break;
     case 'sync-now': syncNow(true); break;
     case 'sync-out': sbSignOut(); break;
+    case 'qr-start': qrStart(); break;
+    case 'qr-cancel': qrCancel(true); syPaint(); break;
+    case 'qr-copy': if(SY.qr){ navigator.clipboard.writeText(SY.qr.code).then(()=>toast('Code link copied'),()=>toast('Press and hold the link to copy it.',true)); } break;
+    case 'qr-scan': openQrScan(); break;
+    case 'qr-use': { const i=$('#qr-paste'); if(S.qrScan&&i){ if(qrParse(i.value)) qrScanned(S.qrScan,i.value); else { S.qrScan.err='That is not a sign-in code from this app.'; renderQrScan(); } } break; }
+    case 'qr-approve': qrApprove(); break;
+    case 'qr-rescan': { S.qrScan={step:'scan',err:'',pending:null}; renderQrScan(); qrCamStart(S.qrScan); break; }
     case 'install-update': startInstall(); break;
     case 'make-report': makeReport(); break;
     case 'clear-samples': clearSamples(); break;
@@ -2323,6 +2515,8 @@ document.addEventListener('change',e=>{
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target&&e.target.id==='sy-pass'){ e.preventDefault(); const b=$('[data-action="sync-in"]'); if(b) b.click(); return; } if(e.key==='Enter'&&e.target&&e.target.id==='ck-new'){ e.preventDefault(); ckAdd(); return; } if(e.key==='Escape'&&(!$('#modal').hidden||!$('#modal2').hidden||!$('#addmenu').hidden)){ e.preventDefault(); closeTop(); } });
 window.addEventListener('hashchange',()=>{ const h=location.hash.slice(1); if(['dashboard','orders','assets','parts'].indexOf(h)>=0&&h!==S.view){ S.view=h; render(); } });
 (function(){ const h=location.hash.slice(1); if(['dashboard','orders','assets','parts'].indexOf(h)>=0) S.view=h; })();
+(function(){ if(!/^#qr=/.test(location.hash)) return; const link=PAGES_URL+location.hash; try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
+  setTimeout(()=>{ if(SY.sess&&SY.sess.verified) qrOpenWith(link); else toast('To sign in with a code, open Settings and choose Sign in with a QR code.',true); },1500); })();
 
 /* called by the phone app's Back button; true means the page handled it */
 window.__back=function(){
