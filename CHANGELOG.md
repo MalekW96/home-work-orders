@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.5.0.0
+
+- Resources tab for service manuals, documentation, warranties and certificates: add, search, filter by category, link to equipment, open, edit, delete. Files up to 3 MB; they sync with the account.
+- Search button replaces PDF report in the header. A plain word finds that exact word; an asterisk (brak*) finds all words containing it. Covers tasks, equipment, parts and resources.
+- PDF report moved to Settings.
+
 ## 5.4.3.0
 
 - Activity log records full details when Save changes is pressed: cost lines added, removed or changed with quantity, unit cost and totals; old and new values for edited fields; check list items; garage visit changes.

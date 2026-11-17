@@ -270,6 +270,11 @@ textarea{min-height:76px;resize:vertical}
 #lb img{max-width:100%;max-height:calc(100vh - 90px);object-fit:contain;border-radius:8px}
 #lb figcaption{color:#fff;font-size:15px;text-align:center}
 .atts{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
+.srch-g{display:flex;flex-direction:column;gap:6px;margin-bottom:6px}
+.srch-r{display:flex;flex-direction:column;gap:2px;align-items:flex-start;text-align:left;width:100%;padding:10px 12px;border:1px solid var(--line2);border-radius:10px;background:var(--panel);color:var(--ink)}
+.srch-r span{font-size:13px;color:var(--ink2)}
+.srch-r em{font-size:12px;color:var(--muted,#66727f);font-style:normal}
+.srch-r:hover,.srch-r:focus-visible{border-color:var(--accent)}
 .att-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
 .att-m{display:flex;flex-direction:column;gap:3px;min-width:0}
 .att-d{font-weight:600;overflow-wrap:anywhere}
@@ -380,7 +385,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
       <span class="mono" id="app-ver" hidden></span>
     </div>
     <div class="actions">
-      <button type="button" class="btn wide-only" id="btn-report" data-action="report" disabled>PDF report</button>
+      <button type="button" class="btn iconbtn" id="btn-search" data-action="search" aria-label="Search" title="Search"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></button>
       <button type="button" class="btn iconbtn addbtn" id="btn-add" data-action="toggle-add" aria-label="Add" aria-haspopup="menu" aria-expanded="false" title="Add"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
       <button type="button" class="btn iconbtn" id="btn-settings" data-action="settings" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.56-1.11 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.01a1.7 1.7 0 0 0 1.03-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.01a1.7 1.7 0 0 0 1.56 1.03H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1.03z"/></svg></button>
       <div class="addmenu" id="addmenu" role="menu" hidden>
@@ -394,6 +399,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
     <button type="button" class="tab" role="tab" id="tab-orders" data-action="tab" data-view="orders">Tasks<span class="n" id="n-orders"></span></button>
     <button type="button" class="tab" role="tab" id="tab-assets" data-action="tab" data-view="assets">Equipment<span class="n" id="n-assets"></span></button>
     <button type="button" class="tab" role="tab" id="tab-parts" data-action="tab" data-view="parts">Parts</button>
+    <button type="button" class="tab" role="tab" id="tab-resources" data-action="tab" data-view="resources">Resources<span class="n" id="n-resources"></span></button>
   </nav>
   <div id="banner"></div>
   <main id="view" aria-live="polite"></main>
@@ -428,8 +434,8 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['transport','Transport'],['travel','Travel'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],transport:['Quantity','Cost each'],travel:['Trips','Cost per trip'],other:['Quantity','Amount each']};
-const APP_VERSION='5.4.3.0';
-const RELEASE_NOTES=['The activity log now spells out the details when you press Save changes: each part, labour, travel or transport line added, removed or changed (quantity, unit cost, total), and the new order total.','Uploads and deletes are listed with the file name, type, size and description. PDF exports are listed with the file name, pages and size.','Edits show the old and new value (status, priority, due date, notes, work performed, garage visit, check list items).'];
+const APP_VERSION='5.5.0.0';
+const RELEASE_NOTES=['New Resources tab: store service manuals, documentation, warranties and certificates (files up to 3 MB), link them to equipment, and open them any time. They sync with your account.','Search replaces the PDF report button next to + and the gear. Type a word to find that exact word; add * (like brak*) to find every word containing it. It searches tasks, equipment, parts and resources.','The PDF report moved to Settings, under Reports.'];
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -439,7 +445,7 @@ const IS_WEB=!!window.HWO_WEB&&!IS_APP; /* the installable web app (Add to Home 
 const CURRENCIES=['SAR','AED','KWD','QAR','BHD','OMR','EGP','JOD','USD','EUR','GBP','INR','PKR','TRY'];
 
 const S={db:null,user:null,downloads:null,noStore:false,readOnly:false,timedOut:false,
-  assets:new Map(),orders:[],settings:{currency:'SAR'},ready:{assets:false,orders:false},
+  assets:new Map(),orders:[],resources:[],resQ:'',rcat:'',settings:{currency:'SAR'},ready:{assets:false,orders:false},
   view:'dashboard',range:'year',f:{status:'open',asset:'',year:'',q:''},partsQ:'',acat:'',showArchived:false,showFilters:false,
   wo:null,asset:null,saving:false,confirmClear:false,sheet:'',report:null,restore:null,upd:null};
 const HOLDER='h'+Math.random().toString(36).slice(2,10);
@@ -711,6 +717,7 @@ async function boot(){
     S.orders=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
     S.ready.orders=true; ok(); render(); syncReminders();
   },bad);
+  db.collection('resources').onSnapshot(snap=>{ S.resources=snap.docs.map(d=>Object.assign({id:d.id},d.data())); render(); },()=>{});
   db.doc('meta/attributes').onSnapshot(s=>{
     S.attrs={list:s.exists&&Array.isArray(s.data().list)?s.data().list:[]};
     render();
@@ -1111,12 +1118,12 @@ function syncBlock(){
 function render(){ renderChrome(); renderView(); if(S.sheet==='settings') renderSettings(); }
 
 function renderChrome(){
-  ['dashboard','orders','assets','parts'].forEach(v=>{ const t=$('#tab-'+v); t.setAttribute('aria-selected',String(S.view===v)); t.tabIndex=S.view===v?0:-1; });
+  ['dashboard','orders','assets','parts','resources'].forEach(v=>{ const t=$('#tab-'+v); t.setAttribute('aria-selected',String(S.view===v)); t.tabIndex=S.view===v?0:-1; });
   const open=S.orders.filter(isActive).length;
   $('#n-orders').textContent=open?String(open):'';
+  $('#n-resources').textContent=S.resources.length?String(S.resources.length):'';
   $('#n-assets').textContent=S.assets.size?String([...S.assets.values()].filter(a=>!a.archived).length):'';
   $('#btn-add').disabled=!canWrite(); if(!canWrite()) closeAddMenu();
-  $('#btn-report').disabled=!reportReady(); $('#btn-report').title=hasDone()?'':'Available once a task is completed';
   const b=$('#banner'); let h='';
   const hasSamples=S.orders.some(o=>o.sample)||[...S.assets.values()].some(a=>a.sample);
   if(S.noStore) h=`<div class="banner warn"><p>Records can't be loaded or saved in this view. Open the page from your Claude artifacts while signed in to use it.</p></div>`;
@@ -1133,7 +1140,8 @@ function renderView(){
   const f=document.activeElement&&document.activeElement.id;
   if(S.view==='orders'&&f==='f-q'&&$('#orders-results')){ $('#orders-results').innerHTML=ordersResults(); return; }
   if(S.view==='parts'&&f==='p-q'&&$('#parts-results')){ $('#parts-results').innerHTML=partsResults(); return; }
-  v.innerHTML=S.view==='orders'?ordersView():S.view==='assets'?assetsView():S.view==='parts'?partsView():dashboardView();
+  if(S.view==='resources'&&f==='r-q'&&$('#res-results')){ $('#res-results').innerHTML=resResults(); return; }
+  v.innerHTML=S.view==='orders'?ordersView():S.view==='assets'?assetsView():S.view==='parts'?partsView():S.view==='resources'?resourcesView():dashboardView();
 }
 
 function emptyIntro(loading){
@@ -1312,6 +1320,138 @@ function partsResults(){
   const total=rows.reduce((s,r)=>s+lineTotal(r.l),0);
   return `<p class="sumline"><span><b>${rows.length}</b> part line${rows.length===1?'':'s'}</span><span>Parts cost <b>${money(total)}</b></span></p>
   <div class="tablewrap"><table><thead><tr><th>Date</th><th>Part</th><th>Part no.</th><th class="num">Qty</th><th class="num">Unit cost</th><th class="num">Total</th><th>Supplier</th><th>Equipment</th><th>Task</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(fmtDate(orderDate(r.o)))}</td><td>${esc(r.l.name)}</td><td class="mono">${esc(r.l.partNo||'')}</td><td class="num">${esc(num(r.l.qty))}</td><td class="num">${money(num(r.l.unitCost))}</td><td class="num">${money(lineTotal(r.l))}</td><td>${esc(r.l.supplier||'')}</td><td>${esc(assetName(r.o.assetId))}</td><td><button type="button" class="linkbtn" data-action="open-wo" data-id="${esc(r.o.id)}">${esc(r.o.number||r.o.id)}</button></td></tr>`).join('')}</tbody></table></div>`;
+}
+
+
+/* ---------- search ---------- */
+function srchMatch(q,text,any){
+  const terms=String(q||'').trim().split(/\s+/).filter(Boolean); if(!terms.length) return true;
+  const low=String(text||'').toLowerCase(); let words=null;
+  const hit=t=>{ t=t.toLowerCase();
+    if(t.indexOf('*')>=0){ const core=t.replace(/\*+/g,''); return !core||low.indexOf(core)>=0; }
+    if(!words) words=new Set(low.split(/[^\p{L}\p{N}]+/u).filter(Boolean));
+    const parts=t.split(/[^\p{L}\p{N}]+/u).filter(Boolean); return parts.length>0&&parts.every(x=>words.has(x)); };
+  return any?terms.some(hit):terms.every(hit);
+}
+const flat=v=>{ const out=[]; (function w(x){ if(x==null) return; if(Array.isArray(x)) x.forEach(w); else if(typeof x==='object') Object.keys(x).forEach(k=>{ if(k!=='src') w(x[k]); }); else { const t=String(x); if(t.length<1500&&t.indexOf('data:')!==0) out.push(t); } })(v); return out; };
+function taskFields(o){
+  const a=S.assets.get(o.assetId)||{};
+  return [['Number',[o.number,fmtNo(o.number)]],['Title',[o.title]],['Equipment',[a.name,a.plate,a.vin]],['Type',[o.type,statusLabel(o.status),o.priority]],['Work performed',[o.description]],['Notes',[o.notes]],['Done by',[o.doneBy]],
+    ['Parts and costs',(o.lines||[]).map(l=>[l.name,l.partNo,l.supplier].join(' '))],['Garage visit',[o.visit&&o.visit.name,o.visit&&o.visit.contact]],['Check list',((o.checklist&&o.checklist.items)||[]).map(i=>i.text)],
+    ['Attachments',(o.atts||(o.visit&&o.visit.atts)||[]).map(x=>[x.caption,x.name].join(' '))]].map(([l,v])=>[l,v.filter(Boolean).join(' ')]).filter(x=>x[1]);
+}
+function assetFields(a){ return [['Name',[a.name,a.category,a.brand,a.make,a.model,a.colour]],['Identity',[a.plate,a.vin,a.serial]],['Owner address',[a.ownerLoc]],['Details',[a.details,a.notes]],['Attributes',flat(a.attrs||{})],['Attachments',(a.attachments||[]).map(x=>x.caption)]].map(([l,v])=>[l,v.filter(Boolean).join(' ')]).filter(x=>x[1]); }
+function resFields(r){ return [['Title',[r.title]],['Category',[r.category]],['Equipment',[assetName(r.assetId)]],['Notes',[r.notes]],['File',[r.fileName]]].map(([l,v])=>[l,v.filter(Boolean).join(' ')]).filter(x=>x[1]); }
+const foundIn=(q,fields)=>{ const f=fields.find(x=>srchMatch(q,x[1],true)); return f?f[0]:''; };
+function searchAll(q){
+  const all=f=>srchMatch(q,f.map(x=>x[1]).join(' \n '));
+  const tasks=S.orders.filter(o=>all(taskFields(o))).sort((a,b)=>byNumberDesc(a,b));
+  const assets=[...S.assets.values()].filter(a=>all(assetFields(a)));
+  const res=S.resources.filter(r=>all(resFields(r)));
+  const parts=[]; S.orders.forEach(o=>{ if(o.status==='Cancelled') return; (o.lines||[]).forEach(l=>{ if(l.kind==='part'&&srchMatch(q,[l.name,l.partNo,l.supplier].join(' '))) parts.push({o,l}); }); });
+  return {tasks,assets,res,parts};
+}
+function searchHTML(q){
+  q=String(q||'').trim();
+  if(!q) return '<p class="hint">Type a word to find that exact word. Put an asterisk next to it, like <b>brak*</b>, to find every word containing it. Searches tasks, equipment, parts and resources.</p>';
+  const r=searchAll(q); const LIM=30;
+  const grp=(t,arr,row)=>arr.length?`<h3 class="sec-h">${t} · ${arr.length}</h3><div class="srch-g">${arr.slice(0,LIM).map(row).join('')}${arr.length>LIM?`<p class="hint">${arr.length-LIM} more. Make the search more specific to narrow it down.</p>`:''}</div>`:'';
+  const out=grp('Tasks',r.tasks,o=>`<button type="button" class="srch-r" data-action="srch-open" data-k="wo" data-id="${esc(o.id)}"><b>${esc(o.title||'Untitled')}</b><span>${esc(fmtNo(o.number))} · ${esc(assetName(o.assetId))} · ${esc(statusLabel(o.status))}</span><em>Found in ${esc(foundIn(q,taskFields(o)))}</em></button>`)
+   +grp('Equipment',r.assets,a=>`<button type="button" class="srch-r" data-action="srch-open" data-k="asset" data-id="${esc(a.id)}"><b>${esc(a.name||'Unnamed')}</b><span>${esc([effCat(a),a.plate,a.vin].filter(Boolean).join(' · '))}</span><em>Found in ${esc(foundIn(q,assetFields(a)))}</em></button>`)
+   +grp('Parts',r.parts,x=>`<button type="button" class="srch-r" data-action="srch-open" data-k="wo" data-id="${esc(x.o.id)}"><b>${esc(x.l.name||'Part')}${x.l.partNo?' · '+esc(x.l.partNo):''}</b><span>${esc(x.l.qty)} × ${esc(money(num(x.l.unitCost)))}${x.l.supplier?' · '+esc(x.l.supplier):''} · ${esc(fmtNo(x.o.number))}</span></button>`)
+   +grp('Resources',r.res,x=>`<button type="button" class="srch-r" data-action="srch-open" data-k="res" data-id="${esc(x.id)}"><b>${esc(x.title)}</b><span>${esc([x.category,x.assetId?assetName(x.assetId):'',x.fileName].filter(Boolean).join(' · '))}</span><em>Found in ${esc(foundIn(q,resFields(x)))}</em></button>`);
+  return out||'<div class="empty small"><h2>Nothing found</h2><p>Try another word, or add * to find words containing it.</p></div>';
+}
+function openSearch(){
+  S.sheet='search'; S.srchDone=false; const host=$('#modal'); host.hidden=false;
+  host.innerHTML=`<div class="scrim" data-action="close-modal"></div>
+  <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="sr-h">
+   <header class="sheet-h"><div><h2 id="sr-h">Search</h2></div><button type="button" class="icon" data-action="close-modal" aria-label="Close">&times;</button></header>
+   <div class="sheet-b"><label class="fld"><span>Search</span><input id="srch-q" type="search" value="${esc(S.srchQ||'')}" placeholder="A word, a task number, a part number" autocomplete="off" autocapitalize="off" spellcheck="false"></label><div id="srch-results">${searchHTML(S.srchQ)}</div></div></section>`;
+  syncInert(); const i=$('#srch-q'); if(i) setTimeout(()=>i.focus(),50);
+}
+
+/* ---------- resources: manuals and documents ---------- */
+const RES_CATS=['Service manual','Documentation','Parts catalogue','Warranty','Certificate','Other'];
+const RES_MAX=3*1024*1024, RES_CHUNK=600000;
+function resFiltered(){ return S.resources.filter(r=>(!S.rcat||r.category===S.rcat)&&srchMatch(S.resQ,resFields(r).map(x=>x[1]).join(' \n '))).sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))); }
+function resourcesView(){
+  const cats=RES_CATS.filter(c=>S.resources.some(r=>r.category===c));
+  const chips=cats.length>1?`<div class="chips" role="group" aria-label="Filter by category"><button type="button" class="chip" data-action="rcat" data-cat="" aria-pressed="${!S.rcat}">All · ${S.resources.length}</button>${cats.map(c=>`<button type="button" class="chip" data-action="rcat" data-cat="${esc(c)}" aria-pressed="${S.rcat===c}">${esc(c)} · ${S.resources.filter(r=>r.category===c).length}</button>`).join('')}</div>`:'';
+  return `<div class="toolbar"><label class="fld grow"><span>Search resources</span><input id="r-q" type="search" value="${esc(S.resQ)}" placeholder="Title, equipment, notes, file name" autocomplete="off"></label><button type="button" class="btn primary" data-action="res-new"${canWrite()?'':' disabled'}>Add resource</button></div>${chips}<div id="res-results">${resResults()}</div>`;
+}
+function resResults(){
+  const list=resFiltered();
+  if(!S.resources.length) return `<div class="empty small"><h2>No resources yet</h2><p>Keep service manuals, documentation, warranties and certificates here, and open them any time. Files up to 3 MB.</p></div>`;
+  if(!list.length) return `<div class="empty small"><h2>No matching resources</h2><p>Try another word, or add * to find words containing it.</p></div>`;
+  return `<div class="cards">${list.map(r=>`<article class="panel acard"><h3>${esc(r.title)}</h3>
+   <dl class="facts"><dt>Category</dt><dd>${esc(r.category||'Other')}</dd>${r.assetId?`<dt>Equipment</dt><dd>${esc(assetName(r.assetId))}</dd>`:''}<dt>File</dt><dd>${esc(r.fileName||'')} · ${esc(kb(r.size||0))}</dd><dt>Added</dt><dd>${esc(fmtDT(r.createdAt))}</dd>${r.notes?`<dt>Notes</dt><dd>${esc(r.notes)}</dd>`:''}</dl>
+   <div class="acts"><button type="button" class="btn sm primary" data-action="res-open" data-id="${esc(r.id)}">Open</button><button type="button" class="btn sm" data-action="res-edit" data-id="${esc(r.id)}"${canWrite()?'':' disabled'}>Edit</button></div></article>`).join('')}</div>`;
+}
+function resForm(r){ S.res=Object.assign({isNew:!r,id:r?r.id:'',title:r?r.title:'',category:r?(r.category||'Other'):'Service manual',assetId:r?(r.assetId||''):'',notes:r?(r.notes||''):'',pending:null,confirmDel:false},{}); S.sheet='res'; renderRes(); }
+function renderRes(focus){
+  const r=S.res; if(!r) return; const host=$('#modal'); const was=!host.hidden&&!!host.querySelector('#rs-h'); host.hidden=false;
+  const old=!r.isNew?S.resources.find(x=>x.id===r.id):null;
+  const assets=[...S.assets.values()].filter(a=>!a.archived).sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+  host.innerHTML=`<div class="scrim" data-action="close-modal"></div>
+  <section class="sheet narrow" role="dialog" aria-modal="true" aria-labelledby="rs-h">
+   <header class="sheet-h"><div><h2 id="rs-h">${r.isNew?'Add resource':'Edit resource'}</h2></div><button type="button" class="icon" data-action="close-modal" aria-label="Close">&times;</button></header>
+   <div class="sheet-b">
+    <label class="fld"><span>Title</span><input id="rs-title" data-rf="title" type="text" value="${esc(r.title)}" placeholder="e.g. Hilux 2019 service manual" autocomplete="off"></label>
+    <label class="fld"><span>Category</span><select id="rs-cat" data-rf="category">${RES_CATS.map(c=>`<option${c===r.category?' selected':''}>${esc(c)}</option>`).join('')}</select></label>
+    <label class="fld"><span>Equipment (optional)</span><select id="rs-asset" data-rf="assetId"><option value="">Not linked to equipment</option>${assets.map(a=>`<option value="${esc(a.id)}"${a.id===r.assetId?' selected':''}>${esc(a.name)}</option>`).join('')}</select></label>
+    <label class="fld"><span>Notes (optional)</span><textarea id="rs-notes" data-rf="notes" rows="3">${esc(r.notes)}</textarea></label>
+    <div class="fld"><span>File</span>
+     <p class="hint">${r.pending?esc(r.pending.name)+' · '+esc(kb(r.pending.size))+' (not saved yet)':old?esc(old.fileName)+' · '+esc(kb(old.size||0)):'No file chosen yet.'}</p>
+     <div class="ph"><label class="btn sm"><input type="file" data-resfile accept="application/pdf,image/*,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip" hidden>${r.pending||old?'Replace file':'Choose file'}</label></div>
+     <p class="hint">PDF, photo or Office file, up to 3 MB.</p></div>
+    ${!r.isNew?`<div class="fld"><button type="button" class="btn sm${r.confirmDel?' danger':''}" data-action="res-del">${r.confirmDel?'Press again to delete for good':'Delete resource'}</button></div>`:''}
+   </div>
+   <footer class="sheet-f"><span></span><div class="acts"><button type="button" class="btn" data-action="close-modal">Cancel</button><button type="button" class="btn primary" data-action="res-save"${S.saving?' disabled':''}>${S.saving?'Saving…':'Save'}</button></div></footer></section>`;
+  keepStill(host,was); syncInert(); if(focus){ const f=$('#'+focus); if(f) f.focus(); }
+}
+function resAddFile(input){
+  const f=input.files&&input.files[0]; input.value=''; if(!f||!S.res) return;
+  if(f.size>RES_MAX){ toast((f.name||'That file')+' is larger than 3 MB. Choose a smaller file.',true); return; }
+  const rd=new FileReader();
+  rd.onload=()=>{ if(!S.res) return; const b64=String(rd.result).split(',')[1]||''; S.res.pending={name:f.name||'file',mime:f.type||'application/octet-stream',size:f.size,b64}; if(!S.res.title.trim()) S.res.title=(f.name||'').replace(/\.[^.]+$/,''); renderRes(); };
+  rd.onerror=()=>toast('That file could not be read.',true);
+  rd.readAsDataURL(f);
+}
+async function resSave(){
+  const r=S.res; if(!r||S.saving) return;
+  if(!r.title.trim()){ toast('Give the resource a title.',true); return; }
+  if(r.isNew&&!r.pending){ toast('Choose a file first.',true); return; }
+  S.saving=true; renderRes();
+  try{
+    const id=r.id||('r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)); const now=new Date().toISOString();
+    const old=S.resources.find(x=>x.id===id)||null; const meta=Object.assign({},old||{}); delete meta.id;
+    Object.assign(meta,{title:r.title.trim(),category:r.category,assetId:r.assetId||'',notes:r.notes.trim(),updatedAt:now}); if(!old) meta.createdAt=now;
+    if(r.pending){
+      const n=Math.max(1,Math.ceil(r.pending.b64.length/RES_CHUNK));
+      for(let i=0;i<n;i++) await S.db.doc('rchunks/'+id+'-'+i).set({d:r.pending.b64.slice(i*RES_CHUNK,(i+1)*RES_CHUNK)});
+      for(let i=n;i<((old&&old.chunks)||0);i++) await S.db.doc('rchunks/'+id+'-'+i).delete();
+      Object.assign(meta,{fileName:r.pending.name,mime:r.pending.mime,size:r.pending.size,chunks:n});
+    }
+    await S.db.doc('resources/'+id).set(meta);
+    S.saving=false; closeSheet('res'); toast(old?'Resource saved':'Resource added'); render();
+  }catch(e){ S.saving=false; renderRes(); fail(e,'Not saved'); }
+}
+async function resDelete(){
+  const r=S.res; if(!r||r.isNew) return;
+  if(!r.confirmDel){ r.confirmDel=true; renderRes(); return; }
+  try{ const old=S.resources.find(x=>x.id===r.id); for(let i=0;i<((old&&old.chunks)||0);i++) await S.db.doc('rchunks/'+r.id+'-'+i).delete(); await S.db.doc('resources/'+r.id).delete(); closeSheet('res'); toast('Resource deleted'); render(); }
+  catch(e){ fail(e,'Not deleted'); }
+}
+async function resOpen(id){
+  const r=S.resources.find(x=>x.id===id); if(!r) return;
+  if(!S.downloads){ toast('Downloads are not available in this view.',true); return; }
+  try{
+    let b64=''; for(let i=0;i<(r.chunks||0);i++){ const sn=await S.db.doc('rchunks/'+id+'-'+i).get(); if(!sn.exists){ toast('This file is not complete on this device yet. Sync, then try again.',true); return; } b64+=sn.data().d; }
+    const bin=atob(b64); const u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
+    await S.downloads.save({filename:r.fileName||'resource',data:u.buffer});
+    toast(IS_IOS?'File ready':IS_APP?'Saved to Downloads':'File saved');
+  }catch(e){ if(!(e&&e.code==='declined')) toast('The file could not be opened.',true); }
 }
 
 /* ---------- task sheet ---------- */
@@ -2076,6 +2216,8 @@ function renderSettings(){
     ${syncBlock()}
     <label class="fld"><span>Currency code</span><input id="st-cur" list="st-curlist" type="text" maxlength="3" value="${esc(S.settings.currency||'SAR')}" autocomplete="off" ${canWrite()?'':'disabled'}><datalist id="st-curlist">${CURRENCIES.map(c=>`<option value="${c}"></option>`).join('')}</datalist></label>
     <p class="hint">Three-letter code such as SAR, USD or EUR. It changes how amounts are shown, not the numbers.</p>
+    <h3 class="sec-h">Reports</h3>
+    <div class="addrow"><button type="button" class="btn sm" data-action="report">PDF report</button></div><p class="hint">A summary of all completed tasks for a period. Each task also has its own Export PDF button.</p>
     <h3 class="sec-h">Updates</h3>
     ${aboutBlock()}
     <h3 class="sec-h">Backup</h3>
@@ -2634,7 +2776,7 @@ function syncInert(){
 }
 function closeSheet(which){
   S.pmOpen=false; S.pmSign=false;
-  if(which==='wo'||which==='settings'||which==='report'||which==='attrs'||which==='share'||which==='spend'){ S.wo=null; S.sheet=''; const h=$('#modal'); h.innerHTML=''; h.hidden=true; }
+  if(which==='wo'||which==='settings'||which==='report'||which==='attrs'||which==='share'||which==='spend'||which==='res'||which==='search'){ S.res=null; S.wo=null; S.sheet=''; const h=$('#modal'); h.innerHTML=''; h.hidden=true; }
   syncInert();
 }
 function closeAddMenu(){ const m=$('#addmenu'); if(m&&!m.hidden){ m.hidden=true; const b=$('#btn-add'); if(b) b.setAttribute('aria-expanded','false'); return true; } return false; }
@@ -2656,6 +2798,14 @@ document.addEventListener('click',e=>{
   const a=el.dataset.action, id=el.dataset.id;
   switch(a){
     case 'tab': setView(el.dataset.view); break;
+    case 'search': openSearch(); break;
+    case 'srch-open': { const k=el.dataset.k; if(k==='asset'){ openAsset(id); } else if(k==='res'){ closeSheet('search'); const r=S.resources.find(x=>x.id===id); if(r) resForm(r); } else { closeSheet('search'); openWO(id); } break; }
+    case 'rcat': S.rcat=el.dataset.cat||''; renderView(); break;
+    case 'res-new': if(canWrite()) resForm(null); break;
+    case 'res-edit': { const r=S.resources.find(x=>x.id===id); if(r&&canWrite()) resForm(r); break; }
+    case 'res-open': resOpen(id); break;
+    case 'res-save': resSave(); break;
+    case 'res-del': resDelete(); break;
     case 'toggle-add': toggleAddMenu(); break;
     case 'new-wo': if(canWrite()) openWO(null); break;
     case 'open-wo': openWO(id); break;
@@ -2755,6 +2905,9 @@ function onInput(e){
     else if(k==='parentId'){ renderAsset(t.id); }
     return;
   }
+  if(S.sheet==='res'&&S.res&&t.dataset&&t.dataset.rf!==undefined){ S.res[t.dataset.rf]=t.value; return; }
+  if(t.id==='srch-q'){ if(t.value===S.srchQ&&S.srchDone) return; S.srchQ=t.value; S.srchDone=true; const h=$('#srch-results'); if(h) h.innerHTML=searchHTML(t.value); return; }
+  if(t.id==='r-q'){ if(t.value===S.resQ&&e.type==='change') return; S.resQ=t.value; const h=$('#res-results'); if(h) h.innerHTML=resResults(); return; }
   if(t.closest&&t.closest('#modal')&&S.wo&&S.sheet==='wo'){ onWoInput(e); return; }
   switch(t.id){
     case 'f-q': S.f.q=t.value; $('#orders-results').innerHTML=ordersResults(); break;
@@ -2770,13 +2923,14 @@ function onInput(e){
 document.addEventListener('input',onInput);
 document.addEventListener('change',e=>{
   if(e.target&&e.target.id==='st-cur'){ saveCurrency(e.target.value); return; }
+  if(e.target&&e.target.dataset&&e.target.dataset.resfile!==undefined){ resAddFile(e.target); return; }
   if(e.target&&e.target.dataset&&e.target.dataset.photo){ addPhoto(e.target); return; }
   if(e.target&&e.target.id==='st-restore'){ readRestore(e.target.files&&e.target.files[0]); return; }
   onInput(e);
 });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target&&e.target.id==='sy-pass'){ e.preventDefault(); const b=$('[data-action="sync-in"]'); if(b) b.click(); return; } if(e.key==='Enter'&&e.target&&e.target.id==='ck-new'){ e.preventDefault(); ckAdd(); return; } if(e.key==='Escape'&&(!$('#modal').hidden||!$('#modal2').hidden||!$('#addmenu').hidden)){ e.preventDefault(); closeTop(); } });
-window.addEventListener('hashchange',()=>{ const h=location.hash.slice(1); if(['dashboard','orders','assets','parts'].indexOf(h)>=0&&h!==S.view){ S.view=h; render(); } });
-(function(){ const h=location.hash.slice(1); if(['dashboard','orders','assets','parts'].indexOf(h)>=0) S.view=h; })();
+window.addEventListener('hashchange',()=>{ const h=location.hash.slice(1); if(['dashboard','orders','assets','parts','resources'].indexOf(h)>=0&&h!==S.view){ S.view=h; render(); } });
+(function(){ const h=location.hash.slice(1); if(['dashboard','orders','assets','parts','resources'].indexOf(h)>=0) S.view=h; })();
 (function(){ if(!/^#qr=/.test(location.hash)) return; const link=PAGES_URL+location.hash; try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
   setTimeout(()=>{ if(SY.sess&&SY.sess.verified) qrOpenWith(link); else toast('To sign in with a code, open Settings and choose Sign in with a QR code.',true); },1500); })();
 
