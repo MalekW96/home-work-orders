@@ -47,7 +47,8 @@ cp "$ASSETS/libs/"* "$PWA/libs/"
 python3 - "$ASSETS/index.html" "$PWA/index.html" <<'PY'
 import sys
 src=open(sys.argv[1]).read()
-head=('<link rel="manifest" href="manifest.webmanifest">'
+head=('<link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="shortcut icon" href="favicon.ico">'
+ '<link rel="manifest" href="manifest.webmanifest">'
  '<link rel="apple-touch-icon" href="apple-touch-icon.png">'
  '<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">'
  '<meta name="apple-mobile-web-app-title" content="I Got This"><meta name="apple-mobile-web-app-status-bar-style" content="default">'

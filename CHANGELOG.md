@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.6.1.0
+
+- Browser tab icon (favicon): the app logo now shows in the tab and bookmarks of the web version, as SVG with PNG and ICO fallbacks.
+
 ## 5.6.0.0
 
 - Cases: an umbrella over tasks. New Cases tab shows a tree (case, then its tasks) with progress and cost; Open/Closed filter; "Tasks without a case" group.

@@ -1,6 +1,6 @@
-/* I Got This service worker (generated into docs/sw.js by scripts/sync-web.sh). Version: 5.6.0.0 */
-const CACHE='igotthis-5.6.0.0';
-const CORE=['./','index.html','manifest.webmanifest','apple-touch-icon.png','icon-192.png','icon-512.png','libs/jspdf.umd.min.js','libs/jspdf.plugin.autotable.min.js'];
+/* I Got This service worker (generated into docs/sw.js by scripts/sync-web.sh). Version: 5.6.1.0 */
+const CACHE='igotthis-5.6.1.0';
+const CORE=['./','index.html','manifest.webmanifest','apple-touch-icon.png','favicon.svg','favicon-32.png','favicon.ico','icon-192.png','icon-512.png','libs/jspdf.umd.min.js','libs/jspdf.plugin.autotable.min.js'];
 
 self.addEventListener('install',e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE.map(u=>new Request(u,{cache:'reload'})))).then(()=>self.skipWaiting()));
