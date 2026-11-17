@@ -270,6 +270,14 @@ textarea{min-height:76px;resize:vertical}
 #lb img{max-width:100%;max-height:calc(100vh - 90px);object-fit:contain;border-radius:8px}
 #lb figcaption{color:#fff;font-size:15px;text-align:center}
 .atts{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
+.att-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.att-m{display:flex;flex-direction:column;gap:3px;min-width:0}
+.att-d{font-weight:600;overflow-wrap:anywhere}
+.att-when,.alog time{font-size:12px;color:var(--muted,#66727f)}
+.thumb.pdfth{display:flex;align-items:center;justify-content:center;color:var(--accent,#1f5fbf)}
+.alog{list-style:none;margin:8px 0 0;padding:0;max-height:230px;overflow-y:auto;border:1px solid var(--line2);border-radius:10px;background:var(--panel2)}
+.alog li{display:flex;flex-direction:column;gap:2px;padding:9px 12px;border-bottom:1px solid var(--line2)}
+.alog li:last-child{border-bottom:0}
 .att{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center}
 
 /* table */
@@ -420,8 +428,8 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['transport','Transport'],['travel','Travel'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],transport:['Quantity','Cost each'],travel:['Trips','Cost per trip'],other:['Quantity','Amount each']};
-const APP_VERSION='5.3.0.0';
-const RELEASE_NOTES=['The task PDF is now a Service Report: customer and owner, service location, equipment and product cards, work order details, work performed, then parts, labour, travel, transport and expenses, a cost summary, photos and signature boxes.','New modern look for every PDF: clean header with status, soft cards, light tables and page footers. The Check List and Maintenance report use it too.','Technician signature is the task signature; the customer or owner box is left to sign on paper.'];
+const APP_VERSION='5.4.0.0';
+const RELEASE_NOTES=['Attachments: with nothing uploaded you see just an Add attachments button. Photos and PDFs (up to 500 KB each) are listed with their description and the day and time they were added.','Press Edit on the attachments list to change a description, add more, or delete one. This works on closed tasks too.','New Activity log at the end of every task: a scrollable list of everything done on it, newest first, with the date and time.'];
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -1310,14 +1318,14 @@ function partsResults(){
 function blankVisit(){ return {on:false,name:'',contact:'',loc:null,atts:[]}; }
 function blankWO(p){
   p=p||{};
-  return {isNew:true,fromAsset:!!p.assetId,pm:null,sig:null,atts:[],number:'',title:p.title||'',assetId:p.assetId||'',type:p.type||'Preventive maintenance',priority:'Normal',status:'Open',openedOn:todayISO(),dueOn:'',completedOn:'',meter:'',doneBy:'',description:'',notes:'',lines:[],followUpOf:p.followUpOf||'',furtherAt:'',startedAt:'',closedAt:'',checklist:null,locked:false,visit:blankVisit()};
+  return {isNew:true,fromAsset:!!p.assetId,pm:null,sig:null,atts:[],log:[],number:'',title:p.title||'',assetId:p.assetId||'',type:p.type||'Preventive maintenance',priority:'Normal',status:'Open',openedOn:todayISO(),dueOn:'',completedOn:'',meter:'',doneBy:'',description:'',notes:'',lines:[],followUpOf:p.followUpOf||'',furtherAt:'',startedAt:'',closedAt:'',checklist:null,locked:false,visit:blankVisit()};
 }
 function openWO(id,prefill){
   if(id){
     const o=S.orders.find(x=>x.id===id); if(!o) return;
     const c=JSON.parse(JSON.stringify(o));
     S.wo=Object.assign(c,{isNew:false,locked:isClosed(o),sig:o.sig||null,reports:(o.reports||[]).map(r=>({name:r.name,at:r.at,src:r.src})),startedAt:o.startedAt||'',closedAt:o.closedAt||'',checklist:Array.isArray(ckItems(o))&&o.checklist&&Array.isArray(o.checklist.items)?{items:o.checklist.items.map(x=>({id:x.id||('c'+Math.random().toString(36).slice(2,8)),text:x.text||'',done:!!x.done}))}:null,number:o.number||o.id,type:o.type==='Repair'?'Corrective maintenance':(o.type||'Preventive maintenance'),furtherAt:o.furtherAt||'',
-      visit:o.visit?{on:true,name:o.visit.name||'',contact:o.visit.contact||'',loc:o.visit.loc||null,atts:[]}:blankVisit(),atts:(o.atts||(o.visit&&o.visit.atts)||[]).map(x=>({src:x.src,caption:x.caption||''})),meter:o.meter==null?'':String(o.meter),dueOn:o.dueOn||'',completedOn:o.completedOn||'',doneBy:o.doneBy||'',description:o.description||'',notes:o.notes||'',
+      visit:o.visit?{on:true,name:o.visit.name||'',contact:o.visit.contact||'',loc:o.visit.loc||null,atts:[]}:blankVisit(),atts:(o.atts||(o.visit&&o.visit.atts)||[]).map(attKeep),log:Array.isArray(o.log)?o.log.slice():[],meter:o.meter==null?'':String(o.meter),dueOn:o.dueOn||'',completedOn:o.completedOn||'',doneBy:o.doneBy||'',description:o.description||'',notes:o.notes||'',
       lines:(o.lines||[]).map(l=>({kind:l.kind||'part',name:l.name||'',partNo:l.partNo||'',supplier:l.supplier||'',qty:String(l.qty==null?'':l.qty),unitCost:String(l.unitCost==null?'':l.unitCost)}))});
   } else S.wo=blankWO(prefill);
   S.sheet='wo'; renderWO(S.wo.isNew?'wo-title':null);
@@ -1374,10 +1382,11 @@ function renderWO(focusId){
      <div class="addrow" style="margin-top:10px"><button type="button" class="btn sm" data-action="add-line" data-kind="part">Add part</button><button type="button" class="btn sm" data-action="add-line" data-kind="labour">Add labour</button><button type="button" class="btn sm" data-action="add-line" data-kind="transport">Add transport</button><button type="button" class="btn sm" data-action="add-line" data-kind="travel">Add travel</button><button type="button" class="btn sm" data-action="add-line" data-kind="other">Add other cost</button></div></div>
     ${attachmentsHTML(w)}
     ${signatureHTML(w)}
+    ${logHTML(w)}
    </div>
    <footer class="sheet-f"><div class="tot"><span>Order total</span><strong id="wo-total">${money(total)}</strong></div>
     <div class="acts"><button type="button" class="btn" data-action="export-task" aria-label="Export this task as PDF">Export PDF</button>${w.locked?'':`<button type="button" class="btn" data-action="close-modal">Cancel</button><button type="button" class="btn primary" data-action="save-wo"${S.saving?' disabled':''}>${w.status==='Completed'?(w.isNew?'Create and close task':'Save and close task'):(w.isNew?'Create task':'Save changes')}</button>`}</div></footer></section>`;
-  if(w.locked) host.querySelectorAll('.sheet-b input:not([data-photo]):not([data-vcap]),.sheet-b select,.sheet-b textarea,.sheet-b [data-action]:not([data-action="view-photo"]):not([data-action="del-photo"]):not([data-action="wo-sign"]):not([data-action="open-report"]):not([data-action="pm-open"]):not([data-action="pm-pdf"])').forEach(el=>{ el.disabled=true; });
+  if(w.locked) host.querySelectorAll('.sheet-b input:not([data-photo]):not([data-vcap]),.sheet-b select,.sheet-b textarea,.sheet-b [data-action]:not([data-action="view-photo"]):not([data-action="del-photo"]):not([data-action="att-edit"]):not([data-action="wo-sign"]):not([data-action="open-report"]):not([data-action="pm-open"]):not([data-action="pm-pdf"])').forEach(el=>{ el.disabled=true; });
   keepStill(host,was);
   const sb=$('.sheet-b',host); if(sb) sb.scrollTop=scroll;
   syncInert();
@@ -1430,15 +1439,27 @@ async function captureLocation(){
   S.locBusy=false; if(S.wo) renderWO('wo-visit-loc');
 }
 async function addVisitPhoto(input){
-  const w=S.wo; const file=input.files&&input.files[0]; input.value='';
-  if(!w||!file) return;
-  try{
-    const url=await shrink(file,1280,.72);
-    if(!S.wo) return;
-    if(w.atts.length<MAX_ATT) w.atts.push({src:url,caption:''});
-    renderWO('wo-vcap-'+(w.atts.length-1));
-    if(w.locked) await woPatch(w,{atts:attsDoc(w)});
-  }catch(e){ toast(e&&e.message?e.message:'The attachment could not be added.',true); }
+  const w=S.wo; const files=[...(input.files||[])]; input.value='';
+  if(!w||!files.length) return;
+  let added=0;
+  for(const file of files){
+    if(w.atts.length>=MAX_ATT){ toast('Up to '+MAX_ATT+' attachments.',true); break; }
+    try{
+      const pdf=file.type==='application/pdf'||/\.pdf$/i.test(file.name||'');
+      if(pdf){
+        if(file.size>500*1024){ toast((file.name||'That PDF')+' is larger than 500 KB. Choose a smaller PDF.',true); continue; }
+        const src=await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).replace(/^data:[^;,]*/,'data:application/pdf')); r.onerror=()=>rej(new Error('That PDF could not be read.')); r.readAsDataURL(file); });
+        w.atts.push({src,caption:'',at:new Date().toISOString(),kind:'pdf',name:file.name||'attachment.pdf'});
+      } else {
+        const url=await shrink(file,1280,.72); if(!S.wo) return;
+        w.atts.push({src:url,caption:'',at:new Date().toISOString()});
+      }
+      added++;
+    }catch(e){ toast(e&&e.message?e.message:'The attachment could not be added.',true); }
+  }
+  if(!S.wo||!added) return;
+  w.attEdit=true; renderWO('wo-vcap-'+(w.atts.length-1));
+  if(w.locked) await woPatch(w,{atts:attsDoc(w)});
 }
 /* Reminders: the phone apps schedule a notification for each corrective, High-priority task 3 days after it was set to Further action. */
 let remTimer=null;
@@ -1456,11 +1477,55 @@ function updateTotals(){
   let sum=0; S.wo.lines.forEach((l,i)=>{ const v=lineTotal(l); sum+=v; const el=document.getElementById('ln-'+i+'-total'); if(el) el.textContent=money(v); });
   const t=$('#wo-total'); if(t) t.textContent=money(sum);
 }
-const attsDoc=w=>(w.atts||[]).map(x=>({src:x.src,caption:String(x.caption||'').trim()}));
+const attKeep=x=>{ const r={src:x.src,caption:String(x.caption||'').trim()}; if(x.at) r.at=x.at; if(x.kind==='pdf'){ r.kind='pdf'; r.name=x.name||'attachment.pdf'; } return r; };
+const attsDoc=w=>(w.atts||[]).map(attKeep);
+const attLabel=x=>(x.caption||x.name||(x.kind==='pdf'?'PDF':'photo'));
+/* ---------- activity log ---------- */
+function attLog(oldA,newA){
+  const out=[]; const om=new Map((oldA||[]).map(x=>[x.src,x])); const nm=new Map((newA||[]).map(x=>[x.src,x]));
+  (newA||[]).forEach(x=>{ const o=om.get(x.src); if(!o) out.push('Attachment added: '+attLabel(x)); else if(String(o.caption||'')!==String(x.caption||'')) out.push('Attachment description changed: '+(x.caption||attLabel(x))); });
+  (oldA||[]).forEach(x=>{ if(!nm.has(x.src)) out.push('Attachment removed: '+attLabel(x)); });
+  return out;
+}
+const linesSig=a=>JSON.stringify((a||[]).map(l=>[l.kind||'part',l.name||'',l.partNo||'',l.supplier||'',Number(l.qty)||0,Number(l.unitCost)||0]));
+function orderLog(o,d){
+  const out=[]; const nz=v=>v==null?'':String(v);
+  if(!o){ out.push('Task created'); if(d.status!=='Open') out.push('Status set to '+statusLabel(d.status)); if(d.atts&&d.atts.length) out.push(...attLog([],d.atts)); return out; }
+  if(o.status!==d.status) out.push(d.status==='Completed'?'Task closed':'Status changed from '+statusLabel(o.status)+' to '+statusLabel(d.status));
+  if(o.assetId!==d.assetId) out.push('Equipment changed to '+assetName(d.assetId));
+  [['title','Title'],['priority','Priority'],['type','Type'],['dueOn','Due date'],['openedOn','Opened date'],['doneBy','Done by'],['meter','Reading']].forEach(([k,l])=>{ if(nz(o[k])!==nz(d[k])) out.push(l+' changed'+(nz(d[k])?' to '+d[k]:' (cleared)')); });
+  if(nz(o.description)!==nz(d.description)) out.push('Work performed updated');
+  if(nz(o.notes)!==nz(d.notes)) out.push('Notes updated');
+  if(linesSig(o.lines)!==linesSig(d.lines)){ const t=(d.lines||[]).reduce((a,l)=>a+lineTotal(l),0); out.push('Costs updated: '+(d.lines||[]).length+' line'+((d.lines||[]).length===1?'':'s')+', total '+money(t)); }
+  const ck=x=>x&&x.items?x.items.filter(i=>i.done).length+'/'+x.items.length:'';
+  if(ck(o.checklist)!==ck(d.checklist)&&d.checklist) out.push('Check list updated: '+d.checklist.items.filter(i=>i.done).length+' of '+d.checklist.items.length+' done');
+  if(JSON.stringify(o.visit||null)!==JSON.stringify(d.visit||null)) out.push('Garage visit details updated');
+  out.push(...attLog(o.atts||(o.visit&&o.visit.atts)||[],d.atts||[]));
+  if(!o.sig&&d.sig) out.push('Task signed'); else if(o.sig&&d.sig&&o.sig.at!==d.sig.at) out.push('Signature updated');
+  return out;
+}
+const logBase=o=>Array.isArray(o.log)&&o.log.length?o.log:(o.createdAt?[{at:o.createdAt,text:'Task created'}]:[]);
+function logMerge(base,texts,at){
+  const log=Array.isArray(base)?base.slice():[]; const t=at||new Date().toISOString();
+  texts.forEach(x=>{ const last=log[log.length-1]; if(last&&last.text===x&&Math.abs(new Date(t)-new Date(last.at))<120000){ last.at=t; return; } log.push({at:t,text:x}); });
+  return log.length>400?log.slice(-400):log;
+}
+function logOf(w){
+  const L=(w.log||[]).slice(); if(!L.length&&!w.isNew&&w.createdAt) L.push({at:w.createdAt,text:'Task created'});
+  return L.sort((a,b)=>String(b.at).localeCompare(String(a.at)));
+}
+function logHTML(w){
+  const L=logOf(w);
+  return `<div class="ckbox"><strong>Activity log</strong>
+   ${L.length?`<ol class="alog" tabindex="0" aria-label="Activity log, newest first">${L.map(e=>`<li><span class="al-t">${esc(e.text)}</span><time>${esc(fmtDT(e.at))}</time></li>`).join('')}</ol>`:'<p class="hint">Everything done on this task will be listed here with the time and date.</p>'}</div>`;
+}
 /* A closed task is read-only, except its signature and attachments, which can still be added. These write straight away. */
 async function woPatch(w,fields){
   const o=w&&!w.isNew&&S.orders.find(x=>x.id===w.id); if(!o) return false;
-  try{ const doc=Object.assign({},o); delete doc.id; Object.assign(doc,fields,{updatedAt:new Date().toISOString()}); await S.db.doc('workorders/'+o.id).set(doc); return true; }
+  try{ const doc=Object.assign({},o); delete doc.id; const ent=[];
+    if(fields.atts) ent.push(...attLog(o.atts||(o.visit&&o.visit.atts)||[],fields.atts));
+    if(fields.sig) ent.push(o.sig?'Signature updated':'Task signed');
+    Object.assign(doc,fields,{updatedAt:new Date().toISOString()}); doc.log=logMerge(logBase(o),ent); await S.db.doc('workorders/'+o.id).set(doc); if(S.wo===w) w.log=doc.log; return true; }
   catch(e){ toast('That could not be saved yet. Try again.',true); return false; }
 }
 function signatureHTML(w){
@@ -1469,13 +1534,18 @@ function signatureHTML(w){
    ${g?`<div class="pm-sig"><img src="${g.img}" alt="Signature"><span class="hint">Signed ${esc(pmStamp(g.at))}</span></div>`:'<p class="hint">Not signed yet. You can sign before or after the task is closed.</p>'}
    ${can?`<div class="addrow"><button type="button" class="btn${g?' sm':' primary'}" data-action="wo-sign" aria-label="${g?'Sign again':'Sign'}">${PEN_SVG} ${g?'Sign again':'Sign'}</button></div>`:''}</div>`;
 }
+const PDF_SVG='<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M8.5 15h7M8.5 18h4"/></svg>';
 function attachmentsHTML(w){
-  const photos=w.atts||[]; const reps=w.reports||[];
-  return `<div class="ckbox"><strong>Attachments</strong>
-   ${photos.length?`<div class="atts">${photos.map((x,i)=>`<div class="att"><button type="button" class="thumb" data-action="view-photo" data-k="visit" data-i="${i}" aria-label="View photo ${i+1}"><img src="${x.src}" alt=""></button>
-     <input id="wo-vcap-${i}" class="capin" data-vcap="${i}" type="text" value="${esc(x.caption)}" placeholder="Caption, e.g. Garage entrance" autocomplete="off" aria-label="Caption for photo ${i+1}">
-     <button type="button" class="icon" data-action="del-photo" data-k="visit" data-i="${i}" aria-label="Remove photo ${i+1}">&times;</button></div>`).join('')}</div>`:'<p class="hint">No photos yet.</p>'}
-   ${photos.length<MAX_ATT?`<div class="ph"><label class="btn sm"><input type="file" accept="image/*" data-photo="visit" hidden>Add photo</label></div>`:`<span class="hint">Up to ${MAX_ATT} photos.</span>`}
+  const list=w.atts||[]; const reps=w.reports||[]; const ed=!!w.attEdit&&list.length>0;
+  const add=`<div class="ph"><label class="btn${list.length?' sm':''}"><input type="file" accept="image/*,application/pdf" data-photo="visit" multiple hidden>Add attachments</label></div>`;
+  const row=(x,i)=>{ const pdf=x.kind==='pdf'; const th=`<button type="button" class="thumb${pdf?' pdfth':''}" data-action="view-photo" data-k="visit" data-i="${i}" aria-label="${pdf?'Open PDF':'View photo'} ${i+1}">${pdf?PDF_SVG:`<img src="${x.src}" alt="">`}</button>`;
+    const when=x.at?`<time class="att-when">${esc(fmtDT(x.at))}</time>`:'';
+    if(ed) return `<div class="att">${th}<div class="att-m"><input id="wo-vcap-${i}" class="capin" data-vcap="${i}" type="text" value="${esc(x.caption)}" placeholder="${pdf?esc(x.name||'Description'):'Description, e.g. Garage entrance'}" autocomplete="off" aria-label="Description for attachment ${i+1}">${when}</div>
+      <button type="button" class="icon" data-action="del-photo" data-k="visit" data-i="${i}" aria-label="Delete attachment ${i+1}">&times;</button></div>`;
+    return `<div class="att">${th}<div class="att-m"><span class="att-d">${esc(x.caption||x.name||(pdf?'PDF':'No description'))}</span>${when}</div></div>`; };
+  return `<div class="ckbox"><div class="att-h"><strong>Attachments</strong>${list.length?`<button type="button" class="btn sm${ed?' primary':''}" data-action="att-edit">${ed?'Done':'Edit'}</button>`:''}</div>
+   ${list.length?`<div class="atts">${list.map(row).join('')}</div>`:''}
+   ${!list.length||ed?(list.length<MAX_ATT?add:`<span class="hint">Up to ${MAX_ATT} attachments.</span>`):''}
    ${reps.map((r,i)=>`<div class="ck-i"><span class="hint" style="flex:1;min-width:0">PDF · ${esc(r.name)} · ${esc(fmtDT(r.at))}</span><button type="button" class="btn sm" data-action="open-report" data-i="${i}">Save again</button></div>`).join('')}</div>`;
 }
 /* ---------- preventive maintenance checklist (opens in its own window) ---------- */
@@ -1653,7 +1723,7 @@ function renderSign(){
 async function pmPersist(w){
   if(!w||w.isNew) return true;
   const o=S.orders.find(x=>x.id===w.id); if(!o||isClosed(o)) return true;
-  try{ const doc=Object.assign({},o); delete doc.id; doc.pm=w.pm||null; doc.updatedAt=new Date().toISOString(); await S.db.doc('workorders/'+o.id).set(doc); return true; }
+  try{ const doc=Object.assign({},o); delete doc.id; doc.pm=w.pm||null; doc.updatedAt=new Date().toISOString(); const ent=[],op=o.pm||{},np=w.pm||{}; if(!op.startedAt&&np.startedAt) ent.push('Preventive check list started'); if(!op.completedAt&&np.completedAt) ent.push('Preventive check list completed'); if(!(op.sig)&&np.sig) ent.push('Preventive check list signed'); if(ent.length) doc.log=logMerge(logBase(o),ent); await S.db.doc('workorders/'+o.id).set(doc); if(ent.length&&S.wo===w) w.log=doc.log; return true; }
   catch(e){ toast('The Check List could not be saved yet. Press Save changes on the task.',true); return false; }
 }
 async function pmCompleteDo(){
@@ -1809,7 +1879,8 @@ async function saveWO(){
     sig:w.sig||null,
     checklist:w.checklist?{items:w.checklist.items.map(x=>({id:x.id,text:x.text,done:!!x.done}))}:null,
     visit:w.visit&&w.visit.on?{name:w.visit.name.trim(),contact:w.visit.contact.trim(),loc:w.visit.loc||null,atts:[]}:null,
-    atts:(w.atts||[]).map(x=>({src:x.src,caption:String(x.caption||'').trim()}))};
+    atts:(w.atts||[]).map(attKeep)};
+  { const o0=w.isNew?null:S.orders.find(x=>x.id===w.id); doc.log=logMerge(o0?logBase(o0):[],orderLog(o0,doc),now); }
   S.saving=true; renderWO();
   try{
     if(w.isNew){
@@ -2295,7 +2366,7 @@ function buildTaskPDF(deps,w){
   }
   if(w.pm&&pmDoneAt(w.pm)){ section('Check List'); para('Completed '+pmStamp(pmDoneAt(w.pm))+(w.pm.sig?' and signed.':', not signed.')+' The full Check List is exported separately from the task.'); }
   /* photos */
-  const ph=(w.atts||[]).filter(x=>x&&x.src);
+  const ph=(w.atts||[]).filter(x=>x&&x.src&&x.kind!=='pdf');
   if(ph.length){
     section('Attachments'); y+=1; const per=3, pw=(CW-(per-1)*4)/per;
     for(let i=0;i<ph.length;i+=per){
@@ -2488,13 +2559,13 @@ async function attachReport(taskId,name,data){
   try{
     const o=S.orders.find(x=>x.id===taskId); if(!o||data.byteLength>1500000) return;
     const doc=Object.assign({},o); delete doc.id;
-    doc.reports=(o.reports||[]).concat([{name,at:new Date().toISOString(),src:bufToDataUri(data)}]);
+    doc.reports=(o.reports||[]).concat([{name,at:new Date().toISOString(),src:bufToDataUri(data)}]); doc.log=logMerge(logBase(o),['PDF exported: '+name]);
     await S.db.doc('workorders/'+o.id).set(doc);
   }catch(e){ toast('The report was saved, but could not be kept on the task.',true); }
 }
 async function saveStoredReport(r){
   if(!S.downloads){ toast('Downloads are not available in this view.',true); return; }
-  try{ const bin=atob(String(r.src).split(',')[1]||''); const u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); await S.downloads.save({filename:r.name,data:u.buffer}); toast('Report saved'); }
+  try{ const bin=atob(String(r.src).split(',')[1]||''); const u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); await S.downloads.save({filename:r.name,data:u.buffer}); toast('Saved'); }
   catch(e){ if(!(e&&e.code==='declined')) toast('The report could not be saved.',true); }
 }
 async function makeReport(){
@@ -2576,7 +2647,7 @@ document.addEventListener('click',e=>{
     case 'del-line': if(S.wo){ S.wo.lines.splice(+el.dataset.i,1); renderWO(); } break;
     case 'new-asset': if(canWrite()) openAsset(null,false); break;
     case 'edit-asset': openAsset(id,false); break;
-    case 'view-photo': { if(el.dataset.k==='pm'){ const pp=pmAns(S.wo,id).p; if(pp&&pp[0]) showPhoto(pp[0],''); break; } if(el.dataset.k==='visit'){ const x=S.wo&&S.wo.atts[+el.dataset.i||0]; if(x) showPhoto(x.src,x.caption); break; } const src=id?S.assets.get(id):S.asset; if(src){ const l=id?attsOf(src):src.attachments; const x=l[+el.dataset.i||0]; if(x) showPhoto(x.src,x.caption); } break; }
+    case 'view-photo': { if(el.dataset.k==='pm'){ const pp=pmAns(S.wo,id).p; if(pp&&pp[0]) showPhoto(pp[0],''); break; } if(el.dataset.k==='visit'){ const x=S.wo&&S.wo.atts[+el.dataset.i||0]; if(x){ if(x.kind==='pdf') saveStoredReport({src:x.src,name:x.name||'attachment.pdf'}); else showPhoto(x.src,x.caption); } break; } const src=id?S.assets.get(id):S.asset; if(src){ const l=id?attsOf(src):src.attachments; const x=l[+el.dataset.i||0]; if(x) showPhoto(x.src,x.caption); } break; }
     case 'del-photo': if(el.dataset.k==='visit'){ if(S.wo){ S.wo.atts.splice(+el.dataset.i||0,1); renderWO(); if(S.wo.locked) woPatch(S.wo,{atts:attsDoc(S.wo)}); } } else if(S.asset){ S.asset.attachments.splice(+el.dataset.i||0,1); renderAsset(); } break;
     case 'asset-history': S.f={status:'all',asset:id,year:'',q:''}; setView('orders'); break;
     case 'asset-wo': if(canWrite()) openWO(null,{assetId:id}); break;
@@ -2594,6 +2665,7 @@ document.addEventListener('click',e=>{
     case 'attr-add': if(S.attrEdit){ S.attrEdit.push({id:'',name:'',active:true}); renderAttrs('at-n-'+(S.attrEdit.length-1)); } break;
     case 'attr-save': saveAttrs(); break;
     case 'report-task': { const aid=S.wo&&S.wo.assetId, tid=S.wo&&S.wo.id; closeSheet('wo'); openReport({asset:aid||'',task:tid||''}); break; }
+    case 'att-edit': if(S.wo){ S.wo.attEdit=!S.wo.attEdit; renderWO(); } break;
     case 'open-report': { const r=S.wo&&(S.wo.reports||[])[+el.dataset.i]; if(r) saveStoredReport(r); break; }
     case 'do-restore': doRestore(); break;
     case 'check-update': S.dl=null; checkUpdate(); break;

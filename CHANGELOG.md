@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.4.0.0
+
+- Attachments: an empty task shows only an Add attachments button. Attachments (photos and PDFs up to 500 KB) are listed with the description and the day and time they were uploaded. Edit lets you change descriptions, add more or delete, also on closed tasks.
+- Activity log at the end of every task: scrollable, newest first, with date and time (created, status changes, edits, costs, attachments, signature, PDF exports, check list).
+
 ## 5.3.0.0
 
 - Task PDF rebuilt as a Service Report (customer / owner, service location, equipment, product details, work order details, service requested, work performed, notes, parts, labour, travel, transport, other expenses, cost summary, photos, technician and customer signature boxes) with a modern look.
