@@ -420,8 +420,8 @@ const MAX_ATT=8;
 const METERS=[['','No meter'],['km','Kilometres (km)'],['mi','Miles (mi)'],['h','Running hours (h)']];
 const KINDS=[['part','Part'],['labour','Labour'],['transport','Transport'],['travel','Travel'],['other','Other']];
 const KIND_LABELS={part:['Quantity','Unit cost'],labour:['Hours','Rate per hour'],transport:['Quantity','Cost each'],travel:['Trips','Cost per trip'],other:['Quantity','Amount each']};
-const APP_VERSION='5.1.0.0';
-const RELEASE_NOTES=['Cost lines on a task can now be Part, Labour, Transport, Travel or Other, with Add transport and Add travel buttons.','Transport and travel show separately on the Dashboard, in the category breakdown, the CSV export and the PDF report.','Existing tasks are not changed.'];
+const APP_VERSION='5.2.0.0';
+const RELEASE_NOTES=['Export PDF is now always on the task, whether it is new, open or closed, with the details, costs, photos and signature.','A Signature section at the end of the task: press Sign, sign in the white block, before or after closing.','Photos can still be added, captioned and removed after a task is closed.'];
 const PAGES_URL='https://malekw96.github.io/home-work-orders/';
 const RELEASES_URL='https://github.com/MalekW96/home-work-orders/releases';
 const BRIDGE=window.AndroidBridge||window.IOSBridge;
@@ -1310,13 +1310,13 @@ function partsResults(){
 function blankVisit(){ return {on:false,name:'',contact:'',loc:null,atts:[]}; }
 function blankWO(p){
   p=p||{};
-  return {isNew:true,fromAsset:!!p.assetId,pm:null,atts:[],number:'',title:p.title||'',assetId:p.assetId||'',type:p.type||'Preventive maintenance',priority:'Normal',status:'Open',openedOn:todayISO(),dueOn:'',completedOn:'',meter:'',doneBy:'',description:'',notes:'',lines:[],followUpOf:p.followUpOf||'',furtherAt:'',startedAt:'',closedAt:'',checklist:null,locked:false,visit:blankVisit()};
+  return {isNew:true,fromAsset:!!p.assetId,pm:null,sig:null,atts:[],number:'',title:p.title||'',assetId:p.assetId||'',type:p.type||'Preventive maintenance',priority:'Normal',status:'Open',openedOn:todayISO(),dueOn:'',completedOn:'',meter:'',doneBy:'',description:'',notes:'',lines:[],followUpOf:p.followUpOf||'',furtherAt:'',startedAt:'',closedAt:'',checklist:null,locked:false,visit:blankVisit()};
 }
 function openWO(id,prefill){
   if(id){
     const o=S.orders.find(x=>x.id===id); if(!o) return;
     const c=JSON.parse(JSON.stringify(o));
-    S.wo=Object.assign(c,{isNew:false,locked:isClosed(o),reports:(o.reports||[]).map(r=>({name:r.name,at:r.at,src:r.src})),startedAt:o.startedAt||'',closedAt:o.closedAt||'',checklist:Array.isArray(ckItems(o))&&o.checklist&&Array.isArray(o.checklist.items)?{items:o.checklist.items.map(x=>({id:x.id||('c'+Math.random().toString(36).slice(2,8)),text:x.text||'',done:!!x.done}))}:null,number:o.number||o.id,type:o.type==='Repair'?'Corrective maintenance':(o.type||'Preventive maintenance'),furtherAt:o.furtherAt||'',
+    S.wo=Object.assign(c,{isNew:false,locked:isClosed(o),sig:o.sig||null,reports:(o.reports||[]).map(r=>({name:r.name,at:r.at,src:r.src})),startedAt:o.startedAt||'',closedAt:o.closedAt||'',checklist:Array.isArray(ckItems(o))&&o.checklist&&Array.isArray(o.checklist.items)?{items:o.checklist.items.map(x=>({id:x.id||('c'+Math.random().toString(36).slice(2,8)),text:x.text||'',done:!!x.done}))}:null,number:o.number||o.id,type:o.type==='Repair'?'Corrective maintenance':(o.type||'Preventive maintenance'),furtherAt:o.furtherAt||'',
       visit:o.visit?{on:true,name:o.visit.name||'',contact:o.visit.contact||'',loc:o.visit.loc||null,atts:[]}:blankVisit(),atts:(o.atts||(o.visit&&o.visit.atts)||[]).map(x=>({src:x.src,caption:x.caption||''})),meter:o.meter==null?'':String(o.meter),dueOn:o.dueOn||'',completedOn:o.completedOn||'',doneBy:o.doneBy||'',description:o.description||'',notes:o.notes||'',
       lines:(o.lines||[]).map(l=>({kind:l.kind||'part',name:l.name||'',partNo:l.partNo||'',supplier:l.supplier||'',qty:String(l.qty==null?'':l.qty),unitCost:String(l.unitCost==null?'':l.unitCost)}))});
   } else S.wo=blankWO(prefill);
@@ -1373,10 +1373,11 @@ function renderWO(focusId){
      <div class="lines" id="wo-lines">${w.lines.length?w.lines.map(lineHTML).join(''):'<p class="hint">No cost lines yet. Add the parts you used, labour, transport and travel.</p>'}</div>
      <div class="addrow" style="margin-top:10px"><button type="button" class="btn sm" data-action="add-line" data-kind="part">Add part</button><button type="button" class="btn sm" data-action="add-line" data-kind="labour">Add labour</button><button type="button" class="btn sm" data-action="add-line" data-kind="transport">Add transport</button><button type="button" class="btn sm" data-action="add-line" data-kind="travel">Add travel</button><button type="button" class="btn sm" data-action="add-line" data-kind="other">Add other cost</button></div></div>
     ${attachmentsHTML(w)}
+    ${signatureHTML(w)}
    </div>
    <footer class="sheet-f"><div class="tot"><span>Order total</span><strong id="wo-total">${money(total)}</strong></div>
-    <div class="acts">${!w.isNew&&w.locked?'<button type="button" class="btn" data-action="report-task">PDF report</button>':''}${w.locked?'':`<button type="button" class="btn" data-action="close-modal">Cancel</button><button type="button" class="btn primary" data-action="save-wo"${S.saving?' disabled':''}>${w.status==='Completed'?(w.isNew?'Create and close task':'Save and close task'):(w.isNew?'Create task':'Save changes')}</button>`}</div></footer></section>`;
-  if(w.locked) host.querySelectorAll('.sheet-b input,.sheet-b select,.sheet-b textarea,.sheet-b [data-action]:not([data-action="view-photo"]):not([data-action="open-report"]):not([data-action="pm-open"]):not([data-action="pm-pdf"])').forEach(el=>{ el.disabled=true; });
+    <div class="acts"><button type="button" class="btn" data-action="export-task" aria-label="Export this task as PDF">Export PDF</button>${w.locked?'':`<button type="button" class="btn" data-action="close-modal">Cancel</button><button type="button" class="btn primary" data-action="save-wo"${S.saving?' disabled':''}>${w.status==='Completed'?(w.isNew?'Create and close task':'Save and close task'):(w.isNew?'Create task':'Save changes')}</button>`}</div></footer></section>`;
+  if(w.locked) host.querySelectorAll('.sheet-b input:not([data-photo]):not([data-vcap]),.sheet-b select,.sheet-b textarea,.sheet-b [data-action]:not([data-action="view-photo"]):not([data-action="del-photo"]):not([data-action="wo-sign"]):not([data-action="open-report"]):not([data-action="pm-open"]):not([data-action="pm-pdf"])').forEach(el=>{ el.disabled=true; });
   keepStill(host,was);
   const sb=$('.sheet-b',host); if(sb) sb.scrollTop=scroll;
   syncInert();
@@ -1436,6 +1437,7 @@ async function addVisitPhoto(input){
     if(!S.wo) return;
     if(w.atts.length<MAX_ATT) w.atts.push({src:url,caption:''});
     renderWO('wo-vcap-'+(w.atts.length-1));
+    if(w.locked) await woPatch(w,{atts:attsDoc(w)});
   }catch(e){ toast(e&&e.message?e.message:'The attachment could not be added.',true); }
 }
 /* Reminders: the phone apps schedule a notification for each corrective, High-priority task 3 days after it was set to Further action. */
@@ -1453,6 +1455,19 @@ function syncReminders(){
 function updateTotals(){
   let sum=0; S.wo.lines.forEach((l,i)=>{ const v=lineTotal(l); sum+=v; const el=document.getElementById('ln-'+i+'-total'); if(el) el.textContent=money(v); });
   const t=$('#wo-total'); if(t) t.textContent=money(sum);
+}
+const attsDoc=w=>(w.atts||[]).map(x=>({src:x.src,caption:String(x.caption||'').trim()}));
+/* A closed task is read-only, except its signature and attachments, which can still be added. These write straight away. */
+async function woPatch(w,fields){
+  const o=w&&!w.isNew&&S.orders.find(x=>x.id===w.id); if(!o) return false;
+  try{ const doc=Object.assign({},o); delete doc.id; Object.assign(doc,fields,{updatedAt:new Date().toISOString()}); await S.db.doc('workorders/'+o.id).set(doc); return true; }
+  catch(e){ toast('That could not be saved yet. Try again.',true); return false; }
+}
+function signatureHTML(w){
+  const g=w.sig; const can=!(w.locked&&g);
+  return `<div class="ckbox"><strong>Signature</strong>
+   ${g?`<div class="pm-sig"><img src="${g.img}" alt="Signature"><span class="hint">Signed ${esc(pmStamp(g.at))}</span></div>`:'<p class="hint">Not signed yet. You can sign before or after the task is closed.</p>'}
+   ${can?`<div class="addrow"><button type="button" class="btn${g?' sm':' primary'}" data-action="wo-sign" aria-label="${g?'Sign again':'Sign'}">${PEN_SVG} ${g?'Sign again':'Sign'}</button></div>`:''}</div>`;
 }
 function attachmentsHTML(w){
   const photos=w.atts||[]; const reps=w.reports||[];
@@ -1629,9 +1644,9 @@ function renderSign(){
   host.hidden=false;
   host.innerHTML=`<div class="scrim" data-action="pm-sign-back"></div>
   <section class="sheet narrow" role="dialog" aria-modal="true" aria-labelledby="sg-h">
-   <header class="sheet-h"><div><p class="eyebrow">${esc(fmtNo(w.number))}${assetIdent(w.assetId)?' · '+esc(assetIdent(w.assetId)):''}</p><h2 id="sg-h">Sign</h2></div><button type="button" class="icon" data-action="pm-sign-back" aria-label="Back">&times;</button></header>
+   <header class="sheet-h"><div><p class="eyebrow">${w.isNew?'New task':esc(fmtNo(w.number))}${assetIdent(w.assetId)?' · '+esc(assetIdent(w.assetId)):''}</p><h2 id="sg-h">Sign</h2></div><button type="button" class="icon" data-action="pm-sign-back" aria-label="Back">&times;</button></header>
    <div class="sheet-b"><p class="hint">Sign inside the white block with your finger or mouse. The task number, date and time are stamped behind your signature.</p><canvas id="sg" class="sgpad" aria-label="Signature area"></canvas></div>
-   <footer class="sheet-f"><button type="button" class="btn" data-action="pm-sign-clear">Clear</button><div class="acts"><button type="button" class="btn" data-action="pm-sign-back">Back</button><button type="button" class="btn primary" data-action="pm-sign-ok">Sign and finish</button></div></footer>
+   <footer class="sheet-f"><button type="button" class="btn" data-action="pm-sign-clear">Clear</button><div class="acts"><button type="button" class="btn" data-action="pm-sign-back">Back</button><button type="button" class="btn primary" data-action="pm-sign-ok">${S.sgMode==='task'?'Sign':'Sign and finish'}</button></div></footer>
   </section>`;
   S.sg=null; syncInert(); sgInit();
 }
@@ -1646,9 +1661,17 @@ async function pmCompleteDo(){
   w.pm.completedAt=new Date().toISOString(); S.pmOpen=false; renderPM(); renderWO(); toast('Check List completed');
   await pmPersist(w);
 }
+function taskSignClose(){ S.sgMode=''; S.sg=null; const h=$('#modal2'); h.innerHTML=''; h.hidden=true; syncInert(); }
 async function pmSignOk(){
   const w=S.wo, g=S.sg; if(!w||!g) return;
   if(!g.drawn){ toast('Sign inside the white block first.',true); return; }
+  if(S.sgMode==='task'){
+    if(w.locked&&w.sig){ taskSignClose(); return; }
+    w.sig={img:g.c.toDataURL('image/jpeg',.85),at:g.at,no:w.isNew?'':fmtNo(w.number)};
+    taskSignClose(); renderWO(); toast('Signed');
+    if(!w.isNew) await woPatch(w,{sig:w.sig});
+    return;
+  }
   if(!pmComplete(w.pm)){ toast('Answer every question first.',true); return; }
   const img=g.c.toDataURL('image/jpeg',.85);
   if(!w.pm) w.pm={a:{}}; w.pm.sig={img,at:g.at,no:fmtNo(w.number)}; if(!w.pm.completedAt) w.pm.completedAt=g.at;
@@ -1732,7 +1755,7 @@ function onWoInput(e){
     const c=$('#ck-count'); if(c) c.textContent=S.wo.checklist.items.filter(x=>x.done).length+' of '+S.wo.checklist.items.length+' done';
     return;
   }
-  if(t.dataset.vcap!==undefined){ const x=S.wo.atts[+t.dataset.vcap]; if(x) x.caption=t.value; return; }
+  if(t.dataset.vcap!==undefined){ const x=S.wo.atts[+t.dataset.vcap]; if(x) x.caption=t.value; if(S.wo.locked){ clearTimeout(S.capT); const w0=S.wo; S.capT=setTimeout(()=>woPatch(w0,{atts:attsDoc(w0)}),600); } return; }
   const f=t.dataset.f; if(!f) return;
   const prev=S.wo[f];
   if(f==='status'&&t.value==='Completed'&&!S.wo.locked){ const g=ckGate(S.wo); if(g){ toast(g,true); renderWO(t.id); return; } }
@@ -1759,6 +1782,7 @@ async function saveWO(){
     startedAt:w.startedAt||(w.status!=='Open'?(w.isNew?now:(w.createdAt||now)):''),closedAt:w.status==='Completed'?(w.closedAt||now):'',
     reports:w.reports||[],
     pm:w.pm||null,
+    sig:w.sig||null,
     checklist:w.checklist?{items:w.checklist.items.map(x=>({id:x.id,text:x.text,done:!!x.done}))}:null,
     visit:w.visit&&w.visit.on?{name:w.visit.name.trim(),contact:w.visit.contact.trim(),loc:w.visit.loc||null,atts:[]}:null,
     atts:(w.atts||[]).map(x=>({src:x.src,caption:String(x.caption||'').trim()}))};
@@ -2186,6 +2210,61 @@ function buildReportPDF(deps,opt){
   }
   return doc;
 }
+/* ---------- one task as a PDF (works for open, new and closed tasks, from what is on screen) ---------- */
+function buildTaskPDF(deps,w){
+  const doc=new deps.JsPDF({unit:'mm',format:'a4'}); const W=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight(), M=14, CW=W-2*M;
+  const ACC=[31,95,191], INK=[20,32,46], MUT=[102,114,127]; let y=20;
+  const need=h=>{ if(y+h>H-16){ doc.addPage(); y=18; } };
+  const txt=(t,size,bold,col)=>{ doc.setFont('helvetica',bold?'bold':'normal'); doc.setFontSize(size); doc.setTextColor(...(col||INK)); const lines=doc.splitTextToSize(pdfText(t),CW); lines.forEach(l=>{ need(size*0.45+1); doc.text(l,M,y); y+=size*0.42+1.2; }); };
+  const section=t=>{ need(14); y+=3; doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(...INK); doc.text(t,M,y); y+=3; };
+  const table=o=>{ const cfg=Object.assign({startY:y,margin:{left:M,right:M,bottom:16},theme:'striped',styles:{font:'helvetica',fontSize:9,cellPadding:1.8,textColor:INK,overflow:'linebreak'},headStyles:{fillColor:ACC,textColor:255,fontStyle:'bold'},footStyles:{fillColor:[230,235,241],textColor:INK,fontStyle:'bold'},alternateRowStyles:{fillColor:[245,247,249]}},o); if(deps.autoTable) deps.autoTable(doc,cfg); else doc.autoTable(cfg); y=doc.lastAutoTable.finalY+6; };
+  const a=S.assets.get(w.assetId)||{};
+  doc.setFont('helvetica','bold'); doc.setFontSize(20); doc.setTextColor(...INK); doc.text('Task report',M,y); y+=6;
+  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...MUT); doc.text(pdfText('I Got This   |   '+(w.isNew?'New task (not saved yet)':fmtNo(w.number))+'   |   Generated '+pdfDate(todayISO())),M,y); y+=3;
+  doc.setDrawColor(...ACC); doc.setLineWidth(0.6); doc.line(M,y,W-M,y); y+=7;
+  if(w.title){ txt(w.title,13,true); y+=1; }
+  const unit=a.meterUnit||'';
+  const facts=[['Equipment',assetName(w.assetId)+(assetIdent(w.assetId)?' ('+assetIdent(w.assetId)+')':'')],['Type',w.type],['Priority',w.priority],['Status',statusLabel(w.status)],['Opened',pdfDate(w.openedOn)],
+    (!isCorrective(w)&&w.dueOn)?['Due',pdfDate(w.dueOn)]:null,(w.status==='Completed')?['Completed',pdfDate(w.completedOn||todayISO())]:null,w.meter!==''&&w.meter!=null?['Reading',String(w.meter)+(unit?' '+unit:'')]:null,
+    w.doneBy?['Done by',w.doneBy]:null,(w.visit&&w.visit.on&&w.visit.name)?['Garage / technician',w.visit.name+(w.visit.contact?' ('+w.visit.contact+')':'')]:null].filter(Boolean);
+  table({body:facts.map(f=>[pdfText(f[0]),pdfText(f[1])]),theme:'plain',styles:{font:'helvetica',fontSize:9.5,cellPadding:1.2,textColor:INK},columnStyles:{0:{cellWidth:42,fontStyle:'bold',textColor:MUT}}});
+  if(w.description){ section('Work performed'); y+=2; txt(w.description,10,false); }
+  if(w.notes){ section('Notes'); y+=2; txt(w.notes,10,false); }
+  const lines=(w.lines||[]).filter(l=>String(l.name||'').trim()||num(l.unitCost));
+  if(lines.length){
+    section('Parts, labour and costs'); const kn=Object.fromEntries(KINDS); const total=lines.reduce((t,l)=>t+lineTotal(l),0);
+    table({head:[['Type','Description','Qty','Unit cost','Total']],body:lines.map(l=>[kn[l.kind]||'Other',pdfText(l.name+(l.partNo?' ('+l.partNo+')':'')),String(num(l.qty===''?1:l.qty)),pdfMoney(num(l.unitCost)),pdfMoney(lineTotal({qty:l.qty===''?1:l.qty,unitCost:l.unitCost}))]),
+      foot:[['','Order total','','',pdfMoney(lines.reduce((t,l)=>t+lineTotal({qty:l.qty===''?1:l.qty,unitCost:l.unitCost}),0))]],showFoot:'lastPage',columnStyles:{0:{cellWidth:24},2:{cellWidth:16,halign:'right'},3:{cellWidth:30,halign:'right'},4:{cellWidth:32,halign:'right'}}});
+  }
+  if(w.pm&&pmDoneAt(w.pm)){ section('Check List'); y+=2; txt('Completed '+pmStamp(pmDoneAt(w.pm))+(w.pm.sig?', signed':', not signed')+'. The Check List can be exported separately from the task.',10,false); }
+  const ph=(w.atts||[]).filter(x=>x&&x.src);
+  if(ph.length){
+    section('Attachments'); y+=3; const cw=(CW-6)/2;
+    for(let i=0;i<ph.length;i+=2){
+      const row=ph.slice(i,i+2).map(x=>{ let pr; try{ pr=doc.getImageProperties(x.src); }catch(e){ return null; } const h=Math.min(75,cw*pr.height/pr.width); return {x,h,w:h<cw*pr.height/pr.width?h*pr.width/pr.height:cw}; });
+      const rh=Math.max(...row.map(r=>r?r.h:0))+(row.some(r=>r&&r.x.caption)?7:2); need(rh);
+      row.forEach((r,j)=>{ if(!r) return; const x0=M+j*(cw+6); try{ doc.addImage(r.x.src,'JPEG',x0,y,r.w,r.h); }catch(e){} if(r.x.caption){ doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(...MUT); doc.text(doc.splitTextToSize(pdfText(r.x.caption),cw)[0],x0,y+r.h+4.5); } });
+      y+=rh+2;
+    }
+  }
+  need(w.sig&&w.sig.img?62:24); section('Signature'); y+=2;
+  if(w.sig&&w.sig.img){ let sh=32; try{ const pr=doc.getImageProperties(w.sig.img); sh=80*pr.height/pr.width; }catch(e){} need(sh+12); try{ doc.addImage(w.sig.img,'JPEG',M,y,80,sh); }catch(e){} y+=sh+4; doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...MUT); doc.text('Signed '+pdfText(pmStamp(w.sig.at))+(w.sig.no?'   |   '+pdfText(w.sig.no):''),M,y); y+=5; }
+  else txt('Not signed.',10,false,MUT);
+  const n=doc.getNumberOfPages(); for(let i=1;i<=n;i++){ doc.setPage(i); doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...MUT); doc.text('Page '+i+' of '+n,W-M,H-8,{align:'right'}); }
+  return doc;
+}
+async function exportTaskPDF(){
+  const w=S.wo; if(!w) return;
+  const jp=window.jspdf&&window.jspdf.jsPDF;
+  if(!jp){ toast('The PDF library did not load. Check your connection and reload the page.',true); return; }
+  if(!S.downloads){ toast('Downloads are not available in this view.',true); return; }
+  try{
+    const doc=buildTaskPDF({JsPDF:jp,autoTable:window.jspdf.autoTable},w);
+    const name='task-'+(w.isNew?'new':fmtNo(w.number))+'-'+todayISO()+'.pdf';
+    await S.downloads.save({filename:name,data:doc.output('arraybuffer')});
+    toast(IS_IOS?'PDF ready':IS_APP?'PDF saved to Downloads':'PDF saved');
+  }catch(e){ if(!(e&&e.code==='declined')) toast(e&&e.code==='unavailable'?'Downloads are not available here.':'The PDF could not be created.',true); }
+}
 /* REPORT-END */
 const hasDone=()=>S.orders.some(o=>o.status==='Completed');
 const reportReady=()=>!!(S.db&&S.downloads&&S.ready.orders&&S.ready.assets&&hasDone());
@@ -2385,6 +2464,7 @@ function closeTop(){
   if(closeAddMenu()) return;
   if(closePhoto()) return;
   if(S.qrScan){ qrScanClose(); return; }
+  if(S.sgMode==='task'&&!$('#modal2').hidden){ taskSignClose(); return; }
   if(!$('#modal2').hidden){ if(S.pmOpen){ pmClose(); return; } S.asset=null; renderAsset(); return; }
   if(!$('#modal').hidden) closeSheet(S.sheet||'wo');
 }
@@ -2404,8 +2484,10 @@ document.addEventListener('click',e=>{
     case 'close-modal2': if(S.qrScan){ qrScanClose(); break; } S.asset=null; renderAsset(); break;
     case 'pm-open': pmOpen(); break;
     case 'pm-close': pmClose(); break;
-    case 'pm-sign': if(S.wo&&pmComplete(S.wo.pm)&&!S.wo.locked&&!(S.wo.pm&&S.wo.pm.sig)){ S.pmSign=true; renderSign(); } break;
-    case 'pm-sign-back': S.pmSign=false; S.sg=null; renderPM(); break;
+    case 'pm-sign': if(S.wo&&pmComplete(S.wo.pm)&&!S.wo.locked&&!(S.wo.pm&&S.wo.pm.sig)){ S.sgMode='pm'; S.pmSign=true; renderSign(); } break;
+    case 'pm-sign-back': if(S.sgMode==='task'){ taskSignClose(); break; } S.pmSign=false; S.sg=null; renderPM(); break;
+    case 'wo-sign': if(S.wo&&!(S.wo.locked&&S.wo.sig)){ S.sgMode='task'; S.pmSign=false; renderSign(); } break;
+    case 'export-task': exportTaskPDF(); break;
     case 'pm-sign-clear': if(S.sg){ S.sg.drawn=false; sgPaintBg(); } break;
     case 'pm-sign-ok': pmSignOk(); break;
     case 'pm-pdf': pmExportPDF(); break;
@@ -2423,7 +2505,7 @@ document.addEventListener('click',e=>{
     case 'new-asset': if(canWrite()) openAsset(null,false); break;
     case 'edit-asset': openAsset(id,false); break;
     case 'view-photo': { if(el.dataset.k==='pm'){ const pp=pmAns(S.wo,id).p; if(pp&&pp[0]) showPhoto(pp[0],''); break; } if(el.dataset.k==='visit'){ const x=S.wo&&S.wo.atts[+el.dataset.i||0]; if(x) showPhoto(x.src,x.caption); break; } const src=id?S.assets.get(id):S.asset; if(src){ const l=id?attsOf(src):src.attachments; const x=l[+el.dataset.i||0]; if(x) showPhoto(x.src,x.caption); } break; }
-    case 'del-photo': if(el.dataset.k==='visit'){ if(S.wo){ S.wo.atts.splice(+el.dataset.i||0,1); renderWO(); } } else if(S.asset){ S.asset.attachments.splice(+el.dataset.i||0,1); renderAsset(); } break;
+    case 'del-photo': if(el.dataset.k==='visit'){ if(S.wo){ S.wo.atts.splice(+el.dataset.i||0,1); renderWO(); if(S.wo.locked) woPatch(S.wo,{atts:attsDoc(S.wo)}); } } else if(S.asset){ S.asset.attachments.splice(+el.dataset.i||0,1); renderAsset(); } break;
     case 'asset-history': S.f={status:'all',asset:id,year:'',q:''}; setView('orders'); break;
     case 'asset-wo': if(canWrite()) openWO(null,{assetId:id}); break;
     case 'save-asset': saveAsset(); break;

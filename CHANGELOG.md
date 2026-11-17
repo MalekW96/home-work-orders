@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.2.0.0
+
+- Export PDF button on every task (new, open or closed): details, work performed, notes, costs, check list status, photos and signature.
+- Signature section at the end of the task: press Sign, sign in the white block (task number, date and time stamped behind it). Works before or after closing; a signed closed task keeps its signature.
+- Photos can be added, captioned and removed at any time, including after a task is closed.
+
 ## 5.1.0.0
 
 - Cost lines can be Part, Labour, Transport, Travel or Other. Transport and Travel have Add buttons on the task and appear separately in the Dashboard split, the Spent by category sheet, the CSV export and the PDF report.
