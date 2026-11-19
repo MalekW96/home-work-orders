@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.0.0.0
+
+- Tasks that belong to a case get Start working, Start travel and Further action timer buttons instead of the status pull-down. The clock runs in real time and survives closing the app; only one runs at a time.
+- Recorded time is added to Parts, labour and costs automatically (Work time and Further action time as labour, Travel time as travel) at the hourly rates set in Settings. Complete task and Cancel task stop the clock and close the task. Starts and stops are logged.
+
 ## 5.6.1.0
 
 - Browser tab icon (favicon): the app logo now shows in the tab and bookmarks of the web version, as SVG with PNG and ICO fallbacks.
